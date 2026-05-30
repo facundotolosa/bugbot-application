@@ -37,7 +37,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `reviewer-runner` accepts only **v2** findings (`version: "2"`, `analyzer`, `issue`, severities `critical` \| `major` \| `minor` \| `enhancement`); v1 rejected. |
 
 #### Steps
@@ -53,9 +53,9 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`findings` / fixture-related tests)
-- [ ] `parseFindingsJson` accepts minimal valid v2 document from spec
-- [ ] v1 and unknown `version` throw with clear errors
+- [x] `npm test -w reviewer-runner` passes (`findings` / fixture-related tests)
+- [x] `parseFindingsJson` accepts minimal valid v2 document from spec
+- [x] v1 and unknown `version` throw with clear errors
 
 #### Notes
 
@@ -336,3 +336,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | Date | Change |
 |------|--------|
 | 2026-05-30 | Initial plan from spec (8 phases, acceptance mapping) |
+| 2026-05-30 | Phase 1 done: schema v2 in `findings.ts`, fixtures and tests migrated; v1 rejected |

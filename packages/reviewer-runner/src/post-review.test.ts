@@ -3,27 +3,30 @@ import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
 import type { FindingsReport } from "./findings.js";
 
 const report: FindingsReport = {
-  version: "1",
+  version: "2",
   findings: [
     {
-      severity: "warning",
+      analyzer: "security",
+      severity: "major",
       file: "src/in-pr.ts",
       line: 10,
-      problem: "bug in pr",
+      issue: "bug in pr",
       suggestion: "fix",
     },
     {
-      severity: "warning",
+      analyzer: "security",
+      severity: "major",
       file: "src/out-of-pr.ts",
       line: 5,
-      problem: "outside pr",
+      issue: "outside pr",
       suggestion: "ignore",
     },
     {
-      severity: "error",
+      analyzer: "performance",
+      severity: "critical",
       file: "src/in-pr.ts",
       line: 20,
-      problem: "duplicate line",
+      issue: "duplicate line",
       suggestion: "fix dup",
     },
   ],

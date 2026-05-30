@@ -1,8 +1,10 @@
 export {
   parseFindingsFile,
   parseFindingsJson,
+  type AnalyzerKey,
   type Finding,
   type FindingsReport,
+  type Severity,
 } from "./findings.js";
 export {
   formatCommentBody,
