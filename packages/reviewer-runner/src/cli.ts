@@ -77,29 +77,10 @@ async function main() {
   }
 
   log.header("AI Code Review");
-  log.meta("repo root", repoRoot);
 
-  const { targetRef, sourceBranch, prTitle, prNumber } = await loadPrMetadata(
+  const { targetRef, sourceBranch, prTitle } = await loadPrMetadata(
     process.env.GITHUB_EVENT_PATH,
   );
-  log.meta("target branch", targetRef);
-  if (sourceBranch) {
-    log.meta("source branch", sourceBranch);
-  }
-  log.meta("base SHA", base);
-  log.meta("head SHA", gitHead);
-  if (prNumber != null) {
-    log.meta("pull request", `#${prNumber}`);
-  }
-  if (prTitle) {
-    log.meta("title", prTitle);
-  }
-  if (args.dryRun) {
-    log.meta("dry-run", "yes");
-  }
-  if (args.skipAgent) {
-    log.meta("skip-agent", "yes");
-  }
 
   const token = process.env.GITHUB_TOKEN;
   const repoFull = process.env.GITHUB_REPOSITORY;

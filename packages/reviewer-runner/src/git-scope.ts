@@ -199,28 +199,11 @@ export async function resolveReviewMode(
   return { mode: "incremental", sinceCommit: since };
 }
 
-export function logReviewMode(result: ResolveReviewModeResult): void {
-  if (result.mode === "incremental") {
-    log.meta("mode", `incremental since ${result.sinceCommit}`);
-    return;
-  }
-  if (result.reason) {
-    log.meta("mode", `full (${result.reason})`);
-    return;
-  }
-  log.meta("mode", "full");
-}
+/** @deprecated Logging removed — mode is visible in orchestrator 📋 block and Review Summary. */
+export function logReviewMode(_result: ResolveReviewModeResult): void {}
 
-export function logReviewScope(mode: ReviewMode, scope: EffectiveScope): void {
-  if (mode === "incremental") {
-    log.meta(
-      "scope",
-      `pr=${scope.prFiles.length} incremental=${scope.incrementalFiles.length} effective=${scope.effectiveFiles.length}`,
-    );
-    return;
-  }
-  log.meta("scope", `pr=${scope.prFiles.length} effective=${scope.effectiveFiles.length}`);
-}
+/** @deprecated Logging removed — scope is visible in orchestrator output and Review Summary. */
+export function logReviewScope(_mode: ReviewMode, _scope: EffectiveScope): void {}
 
 export async function listPrFiles(
   base: string,

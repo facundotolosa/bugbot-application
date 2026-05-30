@@ -68,7 +68,7 @@ export function meta(label: string, value: string): void {
   const padded = label.padEnd(12);
   writeln(
     stdout,
-    `  ${fmt(c, DIM, padded)}${fmt(c, WHITE, value)}`,
+    `  ${fmt(c, DIM, padded)} ${fmt(c, WHITE, value)}`,
   );
 }
 
@@ -104,14 +104,38 @@ export interface PromptMeta {
 
 export function prompt(text: string, meta: PromptMeta): void {
   const c = shouldUseColor();
-  const metaLine = `${meta.chars} chars · ${meta.knownIssues} known issue(s)`;
-  const border = "─".repeat(72);
+  const border = "─".repeat(68);
+  writeln(stdout, "");
+  writeln(stdout, fmt(c, BOLD + CYAN, "Prompt"));
+  writeln(
+    stdout,
+    fmt(c, DIM, `  ${meta.chars} chars · ${meta.knownIssues} known issue(s)`),
+  );
   writeln(stdout, fmt(c, CYAN, border));
+
   for (const line of text.split("\n")) {
-    writeln(stdout, fmt(c, CYAN, `│ ${line}`));
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (trimmed === "Parameters:") {
+      writeln(stdout, fmt(c, BOLD, "  Parameters"));
+      continue;
+    }
+    const param = /^([A-Za-z][^:]*):\s*(.*)$/.exec(trimmed);
+    if (param) {
+      const [, label, value] = param;
+      writeln(
+        stdout,
+        `    ${fmt(c, DIM, `${label}:`)} ${fmt(c, WHITE, value)}`,
+      );
+      continue;
+    }
+    writeln(stdout, `  ${fmt(c, DIM, trimmed)}`);
   }
+
   writeln(stdout, fmt(c, CYAN, border));
-  writeln(stdout, fmt(c, DIM, metaLine));
+  writeln(stdout, "");
 }
 
 export function summary(fields: Record<string, string | number>): void {
@@ -156,7 +180,7 @@ export function subAgentDone(
 
 export function orchestratorPrefix(): string {
   const c = shouldUseColor();
-  return fmt(c, DIM + CYAN, "[orchestrator] ");
+  return fmt(c, BOLD + CYAN, "[orchestrator] ");
 }
 
 /** Styled orchestrator stdout line (block headers bold, detail lines dim label + white value). */

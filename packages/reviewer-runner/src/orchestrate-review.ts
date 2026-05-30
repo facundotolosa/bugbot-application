@@ -17,8 +17,6 @@ import {
 } from "./github.js";
 import {
   createExecGitRunner,
-  logReviewMode,
-  logReviewScope,
   resolveReviewMode,
   shouldSkipAgent,
   writePrFilesList,
@@ -102,8 +100,6 @@ export async function executeReviewOrchestration(
     cwd: config.repoRoot,
     runner: git,
   });
-  logReviewMode(mode);
-
   const scope = await shouldSkipAgent({
     mode: mode.mode,
     sinceCommit: mode.sinceCommit,
@@ -112,8 +108,6 @@ export async function executeReviewOrchestration(
     cwd: config.repoRoot,
     runner: git,
   });
-  logReviewScope(mode.mode, scope);
-
   async function advanceTracking(): Promise<void> {
     if (!gh) {
       return;
@@ -151,12 +145,6 @@ export async function executeReviewOrchestration(
   const prFilesPath = join(aiDir, "pr-files.txt");
   const knownIssuesPath = join(aiDir, "known-issues.json");
 
-  log.meta("review mode", mode.mode === "incremental" ? `incremental (since ${mode.sinceCommit})` : "full");
-  log.meta("pr files", String(scope.prFiles.length));
-  log.meta("effective files", String(scope.effectiveFiles.length));
-  log.meta("pr-files.txt", prFilesPath);
-  log.meta("known-issues.json", knownIssuesPath);
-
   await writePrFilesList(scope.prFiles, prFilesPath);
 
   let knownIssues = [] as ReturnType<typeof mapInlineReviewToKnownIssues>;
@@ -167,7 +155,6 @@ export async function executeReviewOrchestration(
   }
   await writeFile(knownIssuesPath, JSON.stringify(buildKnownIssuesJson(knownIssues), null, 2), "utf8");
   const knownIssuesCount = await countKnownIssues(knownIssuesPath);
-  log.meta("known issues", String(knownIssuesCount));
 
   if (deps.runAgent) {
     try {
