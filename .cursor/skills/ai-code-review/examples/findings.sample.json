@@ -1,11 +1,12 @@
 {
-  "version": "1",
+  "version": "2",
   "findings": [
     {
-      "severity": "warning",
+      "analyzer": "security",
+      "severity": "major",
       "file": ".cursor/skills/ai-code-review/examples/smoke-target.ts",
       "line": 3,
-      "problem": "Division by zero when value is 0.",
+      "issue": "Division by zero when value is 0.",
       "suggestion": "Guard with `if (value === 0) return 0` or throw a clear error."
     }
   ]

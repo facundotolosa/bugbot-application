@@ -1,11 +1,44 @@
 ---
 name: ai-code-review
-description: Review PR-scoped git diffs for obvious bugs and quality issues; write structured findings to .ai-code-review/findings.json. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
+description: Orchestrate PR-scoped diff review via security/performance subagents; write schema v2 findings to .ai-code-review/findings.json. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
 ---
 
-# AI Code Review
+# AI Code Review (orchestrator)
 
-Single-pass code review: **`prepare-diff` → diff summary → heuristic analysis → `.ai-code-review/findings.json`**.
+You are the **orchestrator**. You do **not** perform heuristic analysis yourself. You coordinate:
+
+**`prepare-diff` → work artifacts → invocation criteria → parallel analyzer Tasks → merge → `.ai-code-review/findings.json` (v2)**
+
+Subagent intelligence lives in `.cursor/agents/ai-code-review-{security,performance}-analyzer.md`. Your Task prompts to analyzers are **two lines only** (read path + write path).
+
+## Architecture
+
+```mermaid
+flowchart TB
+  PD[prepare-diff]
+  IC[invocation criteria]
+  SEC[security-analyzer Task]
+  PERF[performance-analyzer Task]
+  MERGE[merge findings]
+  OUT[findings.json v2]
+
+  PD --> IC
+  PD -->|work/diff.json| SEC
+  PD -->|work/diff.json| PERF
+  IC --> SEC
+  IC --> PERF
+  SEC --> MERGE
+  PERF --> MERGE
+  MERGE --> OUT
+```
+
+| Layer | Responsibility |
+|-------|----------------|
+| **You (orchestrator)** | `prepare-diff`, stdout summary, write `work/diff.json`, select analyzers, launch Tasks, collect outputs, merge, write final file |
+| **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
+| **reviewer-runner** | Incremental scope, tracking, known-issues filter, validate v2, post inline comments |
+
+You do **not** filter severity, dedupe findings, or run a validator step.
 
 ## Inputs
 
@@ -25,17 +58,33 @@ Single-pass code review: **`prepare-diff` → diff summary → heuristic analysi
 
 ## Workflow checklist
 
-1. Run `prepare-diff` (see below) and read the JSON output (stdout or `--output` file).
-2. Print the **mandatory diff run summary** to **stdout** (exact format below) using metadata from the script output.
-3. If incremental was requested but `metadata.is_incremental === false`, print a separate line: `Warning: full review fallback` plus any `metadata.warnings` entries (each prefixed with `Warning:`).
-4. Analyze **only** the per-file diffs in the `prepare-diff` output (changed hunks on the **new** side).
-5. Use known-issues JSON (if provided) as hints; do not duplicate existing inline threads at the same `(file, line)`.
-6. **Overwrite** `.ai-code-review/findings.json` at the repo root (create `.ai-code-review/` if missing).
-7. Confirm the findings file exists on disk before finishing.
+1. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
+2. Print the **mandatory diff run summary** to **stdout** (exact format below).
+3. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
+4. Ensure `.ai-code-review/work/` exists. **Write** `.ai-code-review/work/diff.json` with the same shape as the `prepare-diff` output (`metadata` + `files[]`).
+5. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
+
+   ```bash
+   npx tsx -e "
+   import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+   import { selectAnalyzers } from './.cursor/skills/ai-code-review/scripts/select-analyzers.ts';
+   const diff = JSON.parse(readFileSync('.ai-code-review/work/diff.json','utf8'));
+   const selected = selectAnalyzers(diff.files ?? []);
+   console.log(selected.join(', '));
+   "
+   ```
+
+6. **Log analyzers** to stdout (exactly one line):
+   - Both: `Analyzers: security, performance`
+   - Performance skipped: `Analyzers: security (skipped: performance)`
+7. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers.
+8. **Collect** each analyzer output file (see file contract). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
+9. **Merge** into schema v2 (same semantics as `scripts/merge-findings.ts` — concatenate, no cross-analyzer dedup). For skipped analyzers, use empty `findings`.
+10. **Overwrite** `.ai-code-review/findings.json` at repo root. Confirm the file exists before finishing.
 
 ## `prepare-diff`
 
-Script path (repo-relative): `.cursor/skills/ai-code-review/scripts/prepare-diff.ts`
+Script: `.cursor/skills/ai-code-review/scripts/prepare-diff.ts`
 
 ```bash
 npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
@@ -46,12 +95,9 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
   [--output .ai-code-review/prepare-diff.json]
 ```
 
-- `--since-commit` only when incremental (runner or human supplied `Since commit:`).
-- PR file list: one repo-relative path per line (runner writes this in CI).
-
 ## Mandatory diff run summary (stdout)
 
-Print **after** `prepare-diff` completes and **before** analyzing code. Values must match `metadata` from the script output.
+Print **after** `prepare-diff` and **before** launching analyzers. Values from `metadata`:
 
 **Incremental** (`metadata.is_incremental === true`):
 
@@ -61,8 +107,6 @@ Diff stats: <n> files, +<added>/-<removed>
 Excluded: <files_excluded> files
 ```
 
-Use `metadata.since_commit` for `<full-sha>`, `metadata.total_files`, `metadata.total_lines_added`, `metadata.total_lines_removed`, `metadata.files_excluded`.
-
 **Full review** (`metadata.is_incremental === false`):
 
 ```text
@@ -71,37 +115,91 @@ Diff stats: <n> files, +<added>/-<removed>
 Excluded: <files_excluded> files
 ```
 
-Use `metadata.diff_base` for `<full-sha>`.
+Then print `metadata.warnings` as `Warning: <message>` lines.
 
-Then print any `metadata.warnings` as separate lines: `Warning: <message>`.
+## Invocation criteria
 
-## Processing (single pass)
+Full rules: [references/invocation-criteria.md](references/invocation-criteria.md)
 
-1. Parse each file diff from `prepare-diff` output (files, hunks, line numbers on the **new** side).
-2. Scan changed hunks for **obvious** issues (heuristic, not exhaustive):
-   - Possible bugs (null/undefined misuse, wrong comparisons, race-prone patterns)
-   - Security smells (secrets in code, unsafe `eval`, injection surfaces)
-   - Missing error handling on risky operations
-   - Confusing naming or misleading types
-   - Large or risky changes without tests
-3. For each issue you would flag on a real PR, add one entry to `findings[]`.
-4. **Overwrite** `.ai-code-review/findings.json`.
+| Analyzer | When |
+|----------|------|
+| **security** | **Always** |
+| **performance** | Any path/diff heuristic matches (see reference) |
 
-## Output contract
+## File contract (`.ai-code-review/`)
 
-**Path:** `.ai-code-review/findings.json` (repo root)
+| Path | Role |
+|------|------|
+| `prepare-diff.json` | Optional; `--output` from `prepare-diff` |
+| `work/diff.json` | Orchestrator → analyzers (copy of prepare-diff payload) |
+| `work/security-findings.json` | Security subagent output |
+| `work/performance-findings.json` | Performance subagent output |
+| `findings.json` | Final v2 report for `reviewer-runner` |
 
-**Schema:**
+## Analyzer Tasks
+
+Use the **Task** tool. `subagent_type` must match agent frontmatter `name` exactly.
+
+| Analyzer | `subagent_type` | Output path |
+|----------|-----------------|-------------|
+| security | `ai-code-review-security-analyzer` | `.ai-code-review/work/security-findings.json` |
+| performance | `ai-code-review-performance-analyzer` | `.ai-code-review/work/performance-findings.json` |
+
+### Task prompt (exactly two lines — anti-pattern: duplicating `.md` rules here)
+
+Security:
+
+```text
+Read diff from: .ai-code-review/work/diff.json
+Write findings to: .ai-code-review/work/security-findings.json
+```
+
+Performance:
+
+```text
+Read diff from: .ai-code-review/work/diff.json
+Write findings to: .ai-code-review/work/performance-findings.json
+```
+
+**Do not** trust Task return text for findings. Only read output files; validate JSON.
+
+### Collect and retry
+
+1. Read output path after Task completes.
+2. If missing or invalid JSON → retry **once** with the **same** two-line prompt.
+3. Second failure → treat as `{ "analyzer": "<key>", "findings": [] }`.
+
+### Merge
+
+Build outputs in order: security (if run), then performance (if run). Skipped analyzers contribute `{ "findings": [] }`.
+
+Optional helper (same logic as `scripts/merge-findings.ts`):
+
+```bash
+npx tsx -e "
+import { readFileSync, writeFileSync } from 'node:fs';
+import { mergeAnalyzerOutputs } from './.cursor/skills/ai-code-review/scripts/merge-findings.ts';
+const read = (p) => { try { return JSON.parse(readFileSync(p,'utf8')); } catch { return null; } };
+const sec = read('.ai-code-review/work/security-findings.json') ?? { analyzer: 'security', findings: [] };
+const perf = read('.ai-code-review/work/performance-findings.json') ?? { analyzer: 'performance', findings: [] };
+writeFileSync('.ai-code-review/findings.json', JSON.stringify(mergeAnalyzerOutputs([sec, perf]), null, 2));
+"
+```
+
+## Output contract (final report — schema v2)
+
+**Path:** `.ai-code-review/findings.json`
 
 ```json
 {
-  "version": "1",
+  "version": "2",
   "findings": [
     {
-      "severity": "info",
+      "analyzer": "security",
+      "severity": "major",
       "file": "path/from/repo/root.ts",
       "line": 42,
-      "problem": "what is wrong",
+      "issue": "what is wrong",
       "suggestion": "how to fix it"
     }
   ]
@@ -110,50 +208,32 @@ Then print any `metadata.warnings` as separate lines: `Warning: <message>`.
 
 | Field | Rules |
 |-------|--------|
-| `version` | Must be `"1"` |
-| `severity` | One of `info`, `warning`, `error` |
-| `file` | Repo-relative path; must appear in the reviewable `prepare-diff` file set |
-| `line` | **Required** for inline PR comments — line on the **new** file version. Omit if you cannot anchor. |
-| `problem` | Short, specific description |
-| `suggestion` | Actionable fix |
+| `version` | Must be `"2"` |
+| `analyzer` | `security` \| `performance` on each finding |
+| `severity` | `critical` \| `major` \| `minor` \| `enhancement` |
+| `file` | Repo-relative path from reviewable diff set |
+| `line` | Required for inline PR comments (new-file line number) |
+| `issue` / `suggestion` | Non-empty strings |
 
-**Empty review:** `{ "version": "1", "findings": [] }`.
+**Empty review:** `{ "version": "2", "findings": [] }`.
 
-**Do not** emit review content only in chat; the runner reads the **file**, not stdout.
+**Do not** emit findings only in chat. **Do not** dump merged JSON in chat.
 
-### Example (one finding)
+Example: [examples/findings.sample.json](examples/findings.sample.json)
 
-```json
-{
-  "version": "1",
-  "findings": [
-    {
-      "severity": "warning",
-      "file": ".cursor/skills/ai-code-review/examples/smoke-target.ts",
-      "line": 3,
-      "problem": "Division by zero when value is 0.",
-      "suggestion": "Guard with `if (value === 0) return 0` or throw a clear error."
-    }
-  ]
-}
-```
+## Known issues
 
-## GitHub comment shape (for consistency)
+If the runner supplies known-issues JSON, pass it as context only. **Do not** filter or dedupe in the orchestrator or subagents — the runner applies `filterFindingsForPost` after reading `findings.json`.
 
-The runner maps each finding with `file` + `line` to an inline PR comment:
+## GitHub posting (runner-owned)
 
-```markdown
-*Problem*
-{problem}
-
-Suggested fix: *{suggestion}*
-```
-
-You do not post to GitHub; only write the JSON file.
+The runner formats inline comments (analyzer title + severity emoji + suggestion). Subagents and you write **JSON only**.
 
 ## Out of scope
 
-- Subagents, multi-pass review
+- Multi-batch `batch-{i}.json` for large PRs
+- Validator agent (semantic dedup, category filter)
+- Analyzers other than `security` and `performance`
 - `evals/` harness
 - Posting GitHub comments directly
 - External tracking state (runner owns PR tracking comment)

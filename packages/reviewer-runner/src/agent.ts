@@ -2,6 +2,7 @@ import { Agent, CursorAgentError } from "@cursor/sdk";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { logAgentStreamEvent } from "./agent-stream.js";
+import { parseFindingsFile } from "./findings.js";
 
 const FINDINGS_PATH = ".ai-code-review/findings.json";
 const PREPARE_DIFF_OUTPUT = ".ai-code-review/prepare-diff.json";
@@ -48,7 +49,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     .filter(Boolean)
     .join(" ");
 
-  return `${header}You are running the ai-code-review skill.
+  return `${header}You are running the **ai-code-review orchestrator** skill (one SDK agent; the skill delegates to security/performance subagents via Task).
 
 Read and follow every instruction in \`${SKILL_PATH}\`.
 
@@ -63,11 +64,13 @@ ${prFilesLine}${knownIssuesLine}
 2. Read the JSON at \`${prepareDiffOutput}\`.
 3. Print the mandatory diff run summary block to stdout (see skill — incremental vs full examples).
 4. If incremental was requested but metadata.is_incremental is false, print Warning lines for fallback and metadata.warnings.
-5. Analyze only the per-file diffs in that JSON.
-6. Create or overwrite \`${findingsFile}\` with valid JSON matching the skill schema (use Write/edit tool).
-   Repo-relative path: \`${FINDINGS_PATH}\`.
+5. Write \`.ai-code-review/work/diff.json\` (same payload as prepare-diff output).
+6. Select analyzers per the skill; log \`Analyzers: ...\` to stdout.
+7. Launch security and/or performance analyzer subagents in **one parallel Task batch** (two-line prompts only; see skill).
+8. Collect analyzer output files; retry once on missing/invalid JSON per skill.
+9. Merge to **schema v2** and overwrite \`${findingsFile}\` (\`version: "2"\`, \`analyzer\`, \`issue\`, severities critical|major|minor|enhancement).
 
-Do not only describe findings in chat. Do not rely on a pre-inlined unified diff in this prompt.
+Do not perform heuristic analysis in this agent. Do not only describe findings in chat. Do not rely on a pre-inlined unified diff in this prompt.
 `;
 }
 
@@ -112,12 +115,12 @@ export async function runReviewAgent(options: ReviewPromptInput & { apiKey: stri
   }
 
   try {
-    await access(findingsPath);
-    await readFile(findingsPath, "utf8");
-  } catch {
+    await parseFindingsFile(findingsPath);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Agent did not write ${FINDINGS_PATH} at repo root (${findingsPath}). ` +
-        "Ensure the skill ran prepare-diff and used the Write tool for findings.",
+      `Agent did not write valid ${FINDINGS_PATH} at repo root (${findingsPath}): ${message}. ` +
+        "Ensure the orchestrator ran prepare-diff, subagents, and merged schema v2 findings.",
     );
   }
 }

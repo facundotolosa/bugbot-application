@@ -65,20 +65,22 @@ function githubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
 }
 
 const findings: FindingsReport = {
-  version: "1",
+  version: "2",
   findings: [
     {
-      severity: "warning",
+      analyzer: "security",
+      severity: "major",
       file: "src/a.ts",
       line: 5,
-      problem: "p",
+      issue: "p",
       suggestion: "s",
     },
     {
-      severity: "warning",
+      analyzer: "performance",
+      severity: "minor",
       file: "src/a.ts",
       line: 10,
-      problem: "dup",
+      issue: "dup",
       suggestion: "s",
     },
   ],
