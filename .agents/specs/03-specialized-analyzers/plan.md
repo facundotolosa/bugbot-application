@@ -160,7 +160,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Two analyzer agent files with frontmatter `name` matching Task `subagent_type`, fixed `model: composer-2.5`, and narrow domain prompts. |
 
 #### Steps
@@ -176,9 +176,9 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] Both files exist under `.cursor/agents/`
-- [ ] Frontmatter `name` matches spec examples exactly (Task `subagent_type`)
-- [ ] Manual skim: no overlap instructions contradicting spec exclusion table
+- [x] Both files exist under `.cursor/agents/`
+- [x] Frontmatter `name` matches spec examples exactly (Task `subagent_type`)
+- [x] Manual skim: no overlap instructions contradicting spec exclusion table
 
 #### Notes
 
@@ -340,3 +340,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Phase 2 done: `formatCommentBody(Finding)` with analyzer titles and severity emojis |
 | 2026-05-30 | Phase 3 done: `select-analyzers.ts`, tests, `references/invocation-criteria.md` |
 | 2026-05-30 | Phase 4 done: `merge-findings.ts` concatenates analyzer outputs to v2 report |
+| 2026-05-30 | Phase 5 done: security and performance analyzer agents under `.cursor/agents/` |
