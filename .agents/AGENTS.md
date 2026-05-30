@@ -31,7 +31,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | [`specs/01-mvp-foundation/`](specs/01-mvp-foundation/) | MVP: `ai-code-review` skill, fixture app, `reviewer-runner`, GitHub PR comments. [plan.md](specs/01-mvp-foundation/plan.md) | Done |
 | [`specs/02-incremental-review/`](specs/02-incremental-review/) | Incremental PR reviews: tracking comment, scoped diffs, skip rules, dedup. [plan.md](specs/02-incremental-review/plan.md) | Done |
 | [`specs/03-specialized-analyzers/`](specs/03-specialized-analyzers/) | Orchestrator + parallel security/performance subagents, invocation criteria, merge to findings v2 + enriched inline comments. [plan.md](specs/03-specialized-analyzers/plan.md) | Done |
-| [`specs/04-validator-subagent/`](specs/04-validator-subagent/) | Validator subagent: 6-phase funnel (dedup, FP filters, known issues, verification, severity) between analyzer merge and findings v2. | Pending |
+| [`specs/04-validator-subagent/`](specs/04-validator-subagent/) | Validator subagent: 5-phase funnel between analyzer merge and findings v2; runner PR-only post filter. [plan.md](specs/04-validator-subagent/plan.md) | In progress |
 
 ## Spec workflow
 
