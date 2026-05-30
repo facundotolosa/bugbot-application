@@ -190,7 +190,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `ai-code-review` skill coordinates `prepare-diff` → work artifacts → parallel Tasks → merge → `findings.json` v2; single-pass heuristic analysis removed. |
 
 #### Steps
@@ -212,10 +212,10 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] Skill checklist matches spec orchestrator flow end-to-end
-- [ ] `references/invocation-criteria.md` linked from skill
-- [ ] No instruction to dump findings in chat; file contract preserved
-- [ ] Anti-pattern documented: long Task prompts duplicating `.md` rules
+- [x] Skill checklist matches spec orchestrator flow end-to-end
+- [x] `references/invocation-criteria.md` linked from skill
+- [x] No instruction to dump findings in chat; file contract preserved
+- [x] Anti-pattern documented: long Task prompts duplicating `.md` rules
 
 #### Notes
 
@@ -341,3 +341,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Phase 3 done: `select-analyzers.ts`, tests, `references/invocation-criteria.md` |
 | 2026-05-30 | Phase 4 done: `merge-findings.ts` concatenates analyzer outputs to v2 report |
 | 2026-05-30 | Phase 5 done: security and performance analyzer agents under `.cursor/agents/` |
+| 2026-05-30 | Phase 6 done: orchestrator SKILL.md, README, v2 sample findings |
