@@ -12,11 +12,11 @@ const events: SDKMessage[] = [
     agent_id: "a1",
     run_id: "run-1",
     call_id: "call-abcd1234",
-    name: "Task",
+    name: "task",
     status: "running",
     args: {
-      subagent_type: "ai-code-review-security-analyzer",
       description: "security pass",
+      subagentType: { kind: "custom", name: "ai-code-review-security-analyzer" },
     },
   },
   {
@@ -24,7 +24,7 @@ const events: SDKMessage[] = [
     agent_id: "a1",
     run_id: "run-1",
     call_id: "call-abcd1234",
-    name: "Task",
+    name: "task",
     status: "completed",
     result: { ok: true },
   },

@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { SDKMessage } from "@cursor/sdk";
-import { humanSubagentDescription } from "./agent-stream.js";
+import { humanSubagentDescription, isTaskToolCall, parseTaskArgs } from "./agent-stream.js";
 
 export interface RunArtifactsPayload {
   runId: string;
@@ -10,21 +10,6 @@ export interface RunArtifactsPayload {
   events: SDKMessage[];
   startedAt: string;
   endedAt: string;
-}
-
-function parseTaskArgs(args: unknown): {
-  description?: string;
-  subagent_type?: string;
-} {
-  if (!args || typeof args !== "object") {
-    return {};
-  }
-  const record = args as Record<string, unknown>;
-  return {
-    description: typeof record.description === "string" ? record.description : undefined,
-    subagent_type:
-      typeof record.subagent_type === "string" ? record.subagent_type : undefined,
-  };
 }
 
 function slugFromSubagentType(subagentType?: string): string {
@@ -57,7 +42,7 @@ export function collectSubagentRecords(
   >();
 
   for (const event of events) {
-    if (event.type !== "tool_call" || event.name !== "Task") {
+    if (event.type !== "tool_call" || !isTaskToolCall(event.name)) {
       continue;
     }
     const callId = event.call_id;

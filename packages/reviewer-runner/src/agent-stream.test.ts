@@ -8,6 +8,7 @@ import {
   forwardOrchestratorText,
   humanSubagentDescription,
   logAgentStreamEvent,
+  parseTaskArgs,
   resetOrchestratorStream,
   stripOrchestratorMarkdown,
 } from "./agent-stream.js";
@@ -39,6 +40,17 @@ describe("humanSubagentDescription", () => {
     expect(humanSubagentDescription("ai-code-review-security-analyzer")).toBe(
       "security analyzer",
     );
+  });
+});
+
+describe("parseTaskArgs", () => {
+  it("reads subagentType.name from SDK task args", () => {
+    const { subagent_type, description } = parseTaskArgs({
+      description: "Security analyzer for PR diff",
+      subagentType: { kind: "custom", name: "ai-code-review-security-analyzer" },
+    });
+    expect(subagent_type).toBe("ai-code-review-security-analyzer");
+    expect(description).toBe("Security analyzer for PR diff");
   });
 });
 
@@ -115,9 +127,12 @@ describe("logAgentStreamEvent", () => {
         agent_id: "a",
         run_id: "r",
         call_id: "call-abc12345",
-        name: "Task",
+        name: "task",
         status: "running",
-        args: { subagent_type: "ai-code-review-security-analyzer", description: "sec" },
+        args: {
+          description: "Security analyzer for PR diff",
+          subagentType: { kind: "custom", name: "ai-code-review-security-analyzer" },
+        },
       },
       tracker,
     );
@@ -127,17 +142,17 @@ describe("logAgentStreamEvent", () => {
         agent_id: "a",
         run_id: "r",
         call_id: "call-abc12345",
-        name: "Task",
+        name: "task",
         status: "completed",
       },
       tracker,
     );
 
-    expect(launched).toHaveBeenCalledWith("sec");
+    expect(launched).toHaveBeenCalledWith("Security analyzer for PR diff");
     expect(done).toHaveBeenCalledWith(
       "completed",
       expect.any(Number),
-      "sec",
+      "Security analyzer for PR diff",
     );
   });
 

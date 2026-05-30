@@ -72,7 +72,12 @@ export function forwardOrchestratorText(text: string): void {
   streamForwarder.append(text);
 }
 
-function parseTaskArgs(args: unknown): {
+export function isTaskToolCall(name: string): boolean {
+  return name.toLowerCase() === "task";
+}
+
+/** Cursor SDK uses `task` tool with `subagentType.name` (camelCase). */
+export function parseTaskArgs(args: unknown): {
   description?: string;
   subagent_type?: string;
 } {
@@ -80,10 +85,18 @@ function parseTaskArgs(args: unknown): {
     return {};
   }
   const record = args as Record<string, unknown>;
+  let subagent_type: string | undefined;
+  if (typeof record.subagent_type === "string") {
+    subagent_type = record.subagent_type;
+  } else if (record.subagentType && typeof record.subagentType === "object") {
+    const nested = record.subagentType as Record<string, unknown>;
+    if (typeof nested.name === "string") {
+      subagent_type = nested.name;
+    }
+  }
   return {
     description: typeof record.description === "string" ? record.description : undefined,
-    subagent_type:
-      typeof record.subagent_type === "string" ? record.subagent_type : undefined,
+    subagent_type,
   };
 }
 
@@ -105,19 +118,31 @@ export function humanSubagentDescription(
 
 export class SubAgentTracker {
   private readonly starts = new Map<string, { at: number; description: string }>();
+  private readonly finished = new Set<string>();
 
   handleToolCall(event: Extract<SDKMessage, { type: "tool_call" }>): void {
-    if (event.name !== "Task") {
+    if (!isTaskToolCall(event.name)) {
       return;
     }
     const { description, subagent_type: subagentType } = parseTaskArgs(event.args);
     const label = humanSubagentDescription(subagentType, description);
 
     if (event.status === "running") {
+      if (this.starts.has(event.call_id)) {
+        return;
+      }
       this.starts.set(event.call_id, { at: Date.now(), description: label });
       log.subAgentLaunched(label);
       return;
     }
+
+    if (event.status !== "completed" && event.status !== "error") {
+      return;
+    }
+    if (this.finished.has(event.call_id)) {
+      return;
+    }
+    this.finished.add(event.call_id);
 
     const started = this.starts.get(event.call_id);
     const elapsedSec = started ? (Date.now() - started.at) / 1000 : 0;
