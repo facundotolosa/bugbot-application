@@ -1,5 +1,7 @@
 # Incremental AI code review (PR tracking + scoped diffs)
 
+**Status:** Done (2026-05-30) — follow-up E2E items listed under [Por validar](#por-validar).
+
 ## Product summary
 
 Extend the GitHub PR reviewer so each push does **not** re-analyze the entire PR from scratch. A **tracking comment** on the PR records the last successfully analyzed commit; subsequent runs review only **new changes since that commit**, scoped to files that belong to the PR. When there is nothing meaningful to review (merge-only sync with base, or no new PR-scoped file changes), the runner **skips the agent** but still **updates the tracking comment** to the current head commit.
@@ -97,8 +99,10 @@ Define three file sets (paths relative to repo root):
 
 | Rule | Detection | On skip |
 |------|-----------|---------|
-| **Pure sync** | Since `sinceCommit`, no non-merge commits on first-parent: `git log --no-merges --first-parent <since>..<head>` empty (only merges/sync with target) | Update tracking to current head; exit 0; 0 new inline posts |
-| **Empty effective scope** | `effectiveFiles` is empty | Same as above |
+| **Pure sync** | Since `sinceCommit`, no non-merge commits on first-parent: `git log --no-merges --first-parent <since>..<headSha>` empty **and** `effectiveFiles` is empty | Update tracking to current head; exit 0; 0 new inline posts |
+| **Empty effective scope** | `effectiveFiles` is empty (non–pure-sync path) | Same as above |
+
+**Implementation note:** Git scope and skip checks use **`headSha`** (PR branch tip), not the Actions merge ref `HEAD`. If first-parent log is empty but `effectiveFiles` is non-empty, the runner logs a warning and **runs** the agent (avoids false skips on merge checkout).
 
 In both cases: **do not** invoke the agent; **do** update tracking to current head SHA.
 
@@ -263,27 +267,37 @@ Incremental **local** testing is via **`/ai-code-review` + `Since commit`**, not
 
 ## Acceptance criteria
 
-- [ ] On first PR run (no tracking comment), a full review runs and a tracking issue comment is created with marker, head SHA, and timestamp.
-- [ ] On a second push with only new commits on PR branch files, incremental mode runs; agent receives diff since previous tracking SHA, scoped to `prFiles`.
-- [ ] After incremental run, tracking comment shows updated `Analyzed up to` matching latest `GITHUB_HEAD_SHA` (edited in place if comment already exists).
-- [ ] Push that only merges/rebases target into PR (pure sync) skips agent and still updates tracking SHA.
-- [ ] Push with no new changes in `effectiveFiles` skips agent and updates tracking.
-- [ ] After rebase/squash that makes stored SHA non-ancestor, next run performs full review and updates tracking.
-- [ ] Existing inline comment at `(file, line)` is not posted again for the same finding location.
-- [ ] Findings outside `prFiles` are never posted.
-- [ ] `prepare-diff` metadata documents incremental vs fallback; fallback logs warning when incremental was expected.
-- [ ] Every agent run that reaches analysis logs the **diff run summary** block (`Incremental:`, `Diff stats:`, `Excluded:`) with values matching `prepare-diff` metadata.
-- [ ] Unit tests cover tracking parse/selection, skip rules, and SHA validation edge cases.
-- [ ] On agent failure, tracking SHA is unchanged; a subsequent push re-attempts review from the last successful `Analyzed up to`.
+- [x] On first PR run (no tracking comment), a full review runs and a tracking issue comment is created with marker, head SHA, and timestamp. _(CI PR #3, run 26687461171)_
+- [x] On a second push with only new commits on PR branch files, incremental mode runs; agent receives diff since previous tracking SHA, scoped to `prFiles`. _(CI run 26687987774)_
+- [x] After incremental run, tracking comment shows updated `Analyzed up to` matching latest `GITHUB_HEAD_SHA` (edited in place if comment already exists).
+- [ ] **Por validar:** Push that only merges/rebases target into PR (pure sync) skips agent and still updates tracking SHA.
+- [x] Push with no new changes in `effectiveFiles` skips agent and updates tracking. _(unit tests + pure-sync with empty effective)_
+- [ ] **Por validar:** After rebase/squash that makes stored SHA non-ancestor, next run performs full review and updates tracking.
+- [ ] **Por validar:** Existing inline comment at `(file, line)` is not posted again for the same finding location on a live PR. _(covered by unit test)_
+- [x] Findings outside `prFiles` are never posted. _(unit test)_
+- [x] `prepare-diff` metadata documents incremental vs fallback; fallback logs warning when incremental was expected. _(unit test + SKILL)_
+- [x] Every agent run that reaches analysis logs the **diff run summary** block (`Incremental:`, `Diff stats:`, `Excluded:`) with values matching `prepare-diff` metadata. _(CI spot-check)_
+- [x] Unit tests cover tracking parse/selection, skip rules, and SHA validation edge cases. _(52 tests)_
+- [x] On agent failure, tracking SHA is unchanged; a subsequent push re-attempts review from the last successful `Analyzed up to`. _(orchestration unit test)_
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` in `reviewer-runner` passes (new tests included)
-- [ ] Manual test on a real PR: open → push new commit → push merge-from-base only → verify tracking text after each run
-- [ ] Tracking comment updates on `synchronize` without duplicating multiple tracking comments (single canonical comment updated)
-- [ ] CI / local agent logs include the diff run summary block for at least one incremental and one full run (manual spot-check)
-- [ ] No open questions block release (or deferred in Open questions with owner)
+- [x] Acceptance criteria above are met for release (remaining items **por validar**, non-blocking)
+- [x] `npm test` in `reviewer-runner` passes (new tests included)
+- [ ] **Por validar:** Manual test on a real PR: push merge-from-base only → verify skip + tracking
+- [x] Tracking comment updates on `synchronize` without duplicating multiple tracking comments (single canonical comment updated). _(PR #3)_
+- [x] CI / local agent logs include the diff run summary block for at least one incremental and one full run (manual spot-check)
+- [x] No open questions block release (or deferred in Open questions with owner)
+
+## Por validar
+
+Non-blocking follow-up on a test PR when convenient:
+
+| Item | How to verify |
+|------|----------------|
+| Merge-from-base only | Push that only syncs `main` into the PR branch → `[review] skip: pure-sync`, tracking advanced, no agent |
+| Rebase / squash | Rewrite branch history so stored tracking SHA is not ancestor → `mode=full`, tracking updated |
+| Dedup on live PR | Re-post same `(file, line)` finding → no duplicate inline comment |
 
 ## Open questions
 
@@ -310,3 +324,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 | 2026-05-30 | Human+Agent | Q5 resolved: local incremental via `/ai-code-review` + `Since commit` only |
 | 2026-05-30 | Human+Agent | Q6 resolved: advance tracking on skip/success only; no advance on agent failure |
 | 2026-05-30 | Human | Mandatory diff run summary logging after `prepare-diff` (agent stdout) |
+| 2026-05-30 | Human+Agent | `/validate` sign-off: Status **Done**; E2E merge-only, rebase, live dedup marked **por validar**; pure-sync + `headSha` documented |

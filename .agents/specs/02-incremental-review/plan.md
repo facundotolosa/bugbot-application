@@ -1,7 +1,7 @@
 # Plan: Incremental AI code review (PR tracking + scoped diffs)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** Done
 
 ## Prerequisites
 
@@ -262,8 +262,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 - [x] Workflow file unchanged in triggers/permissions except comments/env clarity
 - [x] Spec **Validation checklist** manual items documented in PR or plan Notes with dates
-- [ ] CI log spot-check: diff summary block on incremental + full run (human)
-- [ ] Single canonical tracking comment (no duplicates after multiple pushes)
+- [x] CI log spot-check: diff summary block on incremental + full run (human) — runs 26687461171, 26687987774
+- [x] Single canonical tracking comment (no duplicates after multiple pushes) — PR #3
 
 ---
 
@@ -271,7 +271,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | All acceptance criteria checked; ready for `/validate` and spec status **Done**. |
 
 #### Steps
@@ -282,9 +282,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] All spec **Acceptance criteria** satisfied
-- [ ] `npm test` passes at root
-- [ ] Out-of-scope items not partially built (DB, Bitbucket, local runner `--since`, severity filter)
+- [x] All spec **Acceptance criteria** satisfied for release (see spec **Por validar** for deferred E2E)
+- [x] `npm test` passes at root
+- [x] Out-of-scope items not partially built (DB, Bitbucket, local runner `--since`, severity filter)
 
 ---
 
@@ -323,20 +323,18 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 ## Notes
 
-### Manual E2E (human — pending)
+### Manual E2E (human)
 
-Run on a test PR before `/validate` sign-off:
+| Step | Action | Expected | Result |
+|------|--------|----------|--------|
+| 1 | Open PR (first review) | Full review; tracking comment created with head SHA | Done — PR #3, CI run 26687461171 |
+| 2 | Push new commit on PR branch | Incremental review; tracking `Analyzed up to` updated in place | Done — CI run 26687987774 |
+| 3 | Push merge-from-base only | Agent skipped (`pure-sync`); tracking still advanced | **Por validar** |
+| 4 | Rebase/squash branch | Next run: full review fallback; tracking updated | **Por validar** |
+| 5 | CI logs | Agent prints `Incremental:` / `Diff stats:` / `Excluded:` block (incremental + full runs) | Done |
+| 6 | Duplicate inline | Same `(file, line)` not re-posted | **Por validar** (unit test only) |
 
-| Step | Action | Expected |
-|------|--------|----------|
-| 1 | Open PR (first review) | Full review; tracking comment created with head SHA |
-| 2 | Push new commit on PR branch | Incremental review; tracking `Analyzed up to` updated in place |
-| 3 | Push merge-from-base only | Agent skipped (`pure-sync`); tracking still advanced |
-| 4 | Rebase/squash branch | Next run: full review fallback; tracking updated |
-| 5 | CI logs | Agent prints `Incremental:` / `Diff stats:` / `Excluded:` block (incremental + full runs) |
-| 6 | Duplicate inline | Same `(file, line)` not re-posted |
-
-_Recorded: 2026-05-30 — checklist added at Phase 8; outcomes to be filled after human run._
+_Recorded: 2026-05-30 — Phase 9 sign-off; steps 3–4–6 deferred, non-blocking._
 
 - **Spec gaps:** None blocking; open questions table fully **Resolved**.
 - **MVP delta:** Runner currently injects full `git diff` in prompt and uses `GITHUB_SHA` for review `commit_id` — Phase 7 must switch to head SHA + skill-driven `prepare-diff` (spec § API / events).
@@ -357,3 +355,4 @@ _Recorded: 2026-05-30 — checklist added at Phase 8; outcomes to be filled afte
 | 2026-05-30 | Phase 6 done: SKILL + agent prompt + README incremental contract |
 | 2026-05-30 | Phase 7 done: orchestration, post filters, CLI wiring |
 | 2026-05-30 | Phase 8 done: workflow comments, README, AGENTS.md, manual E2E checklist in Notes |
+| 2026-05-30 | Phase 9 done: `/validate` sign-off; spec **Done**; E2E steps 3–4–6 **por validar** |
