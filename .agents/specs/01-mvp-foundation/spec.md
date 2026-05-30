@@ -205,18 +205,18 @@ bugbot-application/
 - [x] **Local:** A documented command or Cursor flow produces **`.ai-code-review/findings.json`** for a diff between two branches in this repo.
 - [x] **Fixture:** `packages/ledger-lite/` contains a React+TS tree meeting the volume target; no functional requirements beyond “code exists.”
 - [x] **Runner:** `packages/reviewer-runner` builds with TypeScript; unit test reads a sample `.ai-code-review/findings.json` and maps `findings[]` to inline comment payloads.
-- [ ] **CI:** On a test PR, workflow runs without manual steps, invokes the agent with the skill, and **at least one inline review comment** appears with `*Problem*` + `Suggested fix:` format.
+- [x] **CI:** On a test PR, workflow runs without manual steps, invokes the agent with the skill, and **at least one inline review comment** appears with `*Problem*` + `Suggested fix:` format.
 - [x] Secrets documented: `CURSOR_API_KEY` required; GitHub token strategy documented in spec resolution or README.
 - [x] Root `AGENTS.md` lists `.cursor/skills/ai-code-review/`, `packages/` (runner + ledger-lite), `.github/workflows/`.
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` (or workspace equivalent) passes for `reviewer-runner` parser tests
-- [ ] Manual local run recorded once (command + sample redacted output in PR or plan notes)
-- [ ] Test PR in GitHub shows bot/agent comment linkage to structured report
-- [ ] No open questions marked `Open` block release unless explicitly `Deferred` with owner
-- [ ] Out-of-scope items (subagents, evals, Bitbucket) not partially implemented without spec update
+- [x] Acceptance criteria above are met
+- [x] `npm test` (or workspace equivalent) passes for `reviewer-runner` parser tests
+- [x] Manual local run recorded once (command + sample redacted output in PR or plan notes)
+- [x] Test PR in GitHub shows bot/agent comment linkage to structured report
+- [x] No open questions marked `Open` block release unless explicitly `Deferred` with owner
+- [x] Out-of-scope items (subagents, evals, Bitbucket) not partially implemented without spec update
 
 ## Open questions
 
