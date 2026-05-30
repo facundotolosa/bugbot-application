@@ -1,6 +1,6 @@
 # Validator subagent (findings funnel)
 
-**Status:** Pending
+**Status:** Implemented (pending `/validate`)
 
 ## Product summary
 
@@ -333,3 +333,4 @@ N/A for HTTP.
 |------|--------|--------|
 | 2026-05-30 | brainstorm | Initial draft |
 | 2026-05-30 | Human | Resolved all open questions: 5-phase funnel; no category/ticket/codebase-patterns; runner PR-only filter; CI fail on validator error; validator-summary + stdout |
+| 2026-05-30 | implement | Full plan delivered: validator agent, references, I/O scripts, orchestrator skill, runner PR-only filter |

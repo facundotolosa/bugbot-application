@@ -1,7 +1,7 @@
 # Plan: Validator subagent (findings funnel)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** In progress
+**Plan status:** Done
 
 ## Prerequisites
 
@@ -166,7 +166,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | Skill workflow runs validator after merge when raw findings non-empty; fail closed on validator errors; log funnel summary. |
 
 #### Steps
@@ -195,10 +195,10 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] SKILL.md checklist steps 9+ match spec workflow (raw → validator → v2)
-- [ ] Validator prompt in doc is exactly three lines (grepable)
-- [ ] Doc states: validator failure = abort, no `findings.json` from raw merge
-- [ ] `rg 'filterFindingsForPost' .cursor/skills/ai-code-review/SKILL.md` — describes PR-scope only at runner
+- [x] SKILL.md checklist steps 9+ match spec workflow (raw → validator → v2)
+- [x] Validator prompt in doc is exactly three lines (grepable)
+- [x] Doc states: validator failure = abort, no `findings.json` from raw merge
+- [x] `rg 'filterFindingsForPost' .cursor/skills/ai-code-review/SKILL.md` — describes PR-scope only at runner
 
 #### Notes
 
@@ -210,7 +210,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Full test suite green; spec validation checklist runnable; project indexes reflect validator feature. |
 
 #### Steps
@@ -224,10 +224,10 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` — all tests pass
-- [ ] `npm run build -w reviewer-runner` succeeds
+- [x] `npm test -w reviewer-runner` — all tests pass
+- [x] `npm run build -w reviewer-runner` succeeds
 - [ ] Spec acceptance criteria checkboxes can be ticked after human `/validate`
-- [ ] No `category` in `.ai-code-review` examples under skill `examples/` (if present)
+- [x] No `category` in `.ai-code-review` examples under skill `examples/` (if present)
 
 #### Notes
 
@@ -271,3 +271,4 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 | Date | Change |
 |------|--------|
 | 2026-05-30 | Initial plan from spec 04-validator-subagent |
+| 2026-05-30 | All phases implemented via `/implement` |
