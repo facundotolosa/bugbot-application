@@ -2,7 +2,11 @@ import { Agent, CursorAgentError } from "@cursor/sdk";
 import type { SDKMessage } from "@cursor/sdk";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { logAgentStreamEvent } from "./agent-stream.js";
+import {
+  flushOrchestratorStream,
+  logAgentStreamEvent,
+  resetOrchestratorStream,
+} from "./agent-stream.js";
 import { parseFindingsFile } from "./findings.js";
 import * as log from "./logger.js";
 import { writeRunArtifacts } from "./run-artifacts.js";
@@ -111,10 +115,12 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
     log.meta("run id", run.id);
     log.meta("agent id", agent.agentId);
 
+    resetOrchestratorStream();
     for await (const event of run.stream()) {
       streamEvents.push(event);
       logAgentStreamEvent(event);
     }
+    flushOrchestratorStream();
 
     const result = await run.wait();
     if (result.status === "error") {
