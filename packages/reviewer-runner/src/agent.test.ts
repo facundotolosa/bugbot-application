@@ -19,8 +19,13 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain("pr-files.txt");
     expect(prompt).toContain("known-issues.json");
     expect(prompt).toContain("mandatory diff run summary");
+    expect(prompt).toContain("orchestrator");
+    expect(prompt).toContain("subagents");
+    expect(prompt).toContain('schema v2');
+    expect(prompt).toContain("work/diff.json");
     expect(prompt).not.toContain("```diff");
     expect(prompt).not.toMatch(/runner owns diff/i);
+    expect(prompt).toContain("Do not perform heuristic analysis");
   });
 
   it("includes since commit and incremental prepare-diff flag", () => {

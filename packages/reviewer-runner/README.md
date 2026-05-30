@@ -1,15 +1,57 @@
 # reviewer-runner
 
-Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → Cursor agent (`prepare-diff` skill) → filtered inline comments.
+Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → **one** Cursor SDK agent (orchestrator skill) → security/performance subagents → filtered inline comments.
 
-Resolves the monorepo root via `git rev-parse`. Agent stdout is streamed with `[agent]` lines; the skill prints the mandatory diff summary block after `prepare-diff`.
+Resolves the monorepo root via `git rev-parse`. Agent stdout is streamed with `[agent]` lines; the orchestrator prints the mandatory diff summary block after `prepare-diff` and an `Analyzers:` line before subagent Tasks.
 
 ## Flow (CI)
 
 1. Load PR issue comments; find `< ai-review-tracking >` (latest `At` wins).
 2. `full` vs `incremental` from tracked SHA + ancestry validation.
 3. Skip agent on pure sync with base or empty effective file scope (still advance tracking).
-4. Otherwise run agent with `pr-files` + known-issues JSON; post new inline comments only; advance tracking on success.
+4. Otherwise run the orchestrator agent (`ai-code-review` skill): `prepare-diff` → parallel analyzer Tasks → merge **findings v2**.
+5. Post new inline comments (analyzer title + severity emoji + suggestion); advance tracking on success.
+
+## Findings schema (v2)
+
+Agent output: `.ai-code-review/findings.json` at repo root.
+
+```json
+{
+  "version": "2",
+  "findings": [
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/a.ts",
+      "line": 10,
+      "issue": "…",
+      "suggestion": "…"
+    }
+  ]
+}
+```
+
+| Field | Values |
+|-------|--------|
+| `analyzer` | `security` \| `performance` |
+| `severity` | `critical` \| `major` \| `minor` \| `enhancement` |
+
+v1 (`problem`, `info`/`warning`/`error`) is **rejected** at parse time.
+
+## Inline comment format
+
+Each finding with `file` + `line` becomes one PR review comment:
+
+```markdown
+🤖 **Security analyzer**
+
+⚠️ {issue}
+
+💡 **Suggestion:** {suggestion}
+```
+
+Analyzer titles and severity emojis are applied in `formatCommentBody` (`comments.ts`).
 
 ## Scripts
 
@@ -51,12 +93,16 @@ Updated in place when possible. Advances on skip or successful run; **not** on a
 
 ## Dry-run
 
-With `--dry-run` and no `CURSOR_API_KEY`, uses `fixtures/findings.json` after orchestration (agent skipped). Use `--skip-agent` to exercise mode/scope/tracking without findings.
+With `--dry-run` and no `CURSOR_API_KEY`, uses `fixtures/findings.json` (v2) after orchestration (agent skipped). Use `--skip-agent` to exercise mode/scope/tracking without findings.
 
 ## Related paths
 
 | Path | Role |
 |------|------|
-| `.cursor/skills/ai-code-review/SKILL.md` | Agent instructions + diff summary format |
-| `.cursor/skills/ai-code-review/scripts/prepare-diff.ts` | Scoped diff + metadata (skill-owned) |
-| `.ai-code-review/findings.json` | Agent output (repo root) |
+| `.cursor/skills/ai-code-review/SKILL.md` | Orchestrator: prepare-diff → Tasks → merge v2 |
+| `.cursor/skills/ai-code-review/scripts/prepare-diff.ts` | Scoped diff + metadata |
+| `.cursor/skills/ai-code-review/scripts/select-analyzers.ts` | Invocation criteria (deterministic) |
+| `.cursor/skills/ai-code-review/scripts/merge-findings.ts` | Merge analyzer outputs to v2 |
+| `.cursor/agents/ai-code-review-*-analyzer.md` | Security / performance subagent definitions |
+| `.ai-code-review/work/` | Diff input + per-analyzer JSON (orchestrator) |
+| `.ai-code-review/findings.json` | Final v2 report (runner reads this) |

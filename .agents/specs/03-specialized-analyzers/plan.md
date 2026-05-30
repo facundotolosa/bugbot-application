@@ -228,7 +228,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `reviewer-runner` reads v2 findings, posts new comment shape, and all spec 02 orchestration tests remain green. |
 
 #### Steps
@@ -243,10 +243,10 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] `npm test` at repo root passes (all workspaces + skill script tests)
-- [ ] `npm run build -w reviewer-runner` succeeds
-- [ ] `orchestrate-review.test.ts` and `post-review.test.ts` pass with v2 fixtures
-- [ ] No references to v1 `problem` / `info|warning|error` in runner publish path
+- [x] `npm test` at repo root passes (all workspaces + skill script tests)
+- [x] `npm run build -w reviewer-runner` succeeds
+- [x] `orchestrate-review.test.ts` and `post-review.test.ts` pass with v2 fixtures
+- [x] No references to v1 `problem` / `info|warning|error` in runner publish path
 
 ---
 
@@ -342,3 +342,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Phase 4 done: `merge-findings.ts` concatenates analyzer outputs to v2 report |
 | 2026-05-30 | Phase 5 done: security and performance analyzer agents under `.cursor/agents/` |
 | 2026-05-30 | Phase 6 done: orchestrator SKILL.md, README, v2 sample findings |
+| 2026-05-30 | Phase 7 done: agent prompt v2/orchestrator, parseFindingsFile validation, README + AGENTS.md |

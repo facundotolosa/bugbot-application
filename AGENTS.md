@@ -18,8 +18,11 @@ Application code and runtime assets.
 
 | Path | Contents |
 |------|----------|
-| `.cursor/skills/ai-code-review/` | Core review skill (`prepare-diff` → findings JSON; Cursor-registered) |
-| `.cursor/skills/ai-code-review/scripts/prepare-diff.ts` | PR-scoped incremental diff + metadata for the agent |
+| `.cursor/skills/ai-code-review/` | Orchestrator skill (`prepare-diff` → subagent Tasks → findings v2; Cursor-registered) |
+| `.cursor/skills/ai-code-review/scripts/prepare-diff.ts` | PR-scoped incremental diff + metadata |
+| `.cursor/skills/ai-code-review/scripts/select-analyzers.ts` | Deterministic analyzer invocation criteria |
+| `.cursor/skills/ai-code-review/scripts/merge-findings.ts` | Merge subagent outputs to findings v2 |
+| `.cursor/agents/` | Security and performance analyzer subagent definitions (`ai-code-review-*-analyzer.md`) |
 | `packages/reviewer-runner/` | Incremental orchestration, tracking comment, Cursor SDK, inline PR comments (npm workspace) |
 | `packages/ledger-lite/` | Non-functional React finance dashboard fixture (mock data + utils, npm workspace) |
 | `.github/workflows/ai-code-review.yml` | `pull_request` AI review via `reviewer-runner` |
