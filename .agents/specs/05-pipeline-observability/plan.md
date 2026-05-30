@@ -1,7 +1,7 @@
 # Plan: Pipeline observability (pre-analyzer + end-to-end)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** Done
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `logger.ts` implements the spec Visual design API with ANSI when enabled and plain glyphs when disabled. |
 
 #### Steps
@@ -60,8 +60,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/logger.test.ts` passes
-- [ ] `rg 'console\.(log|error)' packages/reviewer-runner/src/logger.ts` — logger is the only place that formats ANSI (consumers call `logger.*` later)
+- [x] `npm test -w reviewer-runner -- src/logger.test.ts` passes
+- [x] `rg 'console\.(log|error)' packages/reviewer-runner/src/logger.ts` — logger is the only place that formats ANSI (consumers call `logger.*` later)
 
 #### Notes
 
@@ -73,7 +73,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `agent-stream.ts` forwards only orchestrator assistant text (prefixed, markdown-stripped) and derives sub-agent lifecycle lines from Task `tool_call` events—no raw SDK noise. |
 
 #### Steps
@@ -90,8 +90,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/agent-stream.test.ts` passes
-- [ ] `rg '\[agent\]' packages/reviewer-runner/src` — no matches outside tests/fixtures
+- [x] `npm test -w reviewer-runner -- src/agent-stream.test.ts` passes
+- [x] `rg '\[agent\]' packages/reviewer-runner/src` — no matches outside tests/fixtures
 
 #### Notes
 
@@ -104,7 +104,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Before `Agent.create`, operators see a styled banner: PR/repo meta, mode, skip hints, artifact paths, full prompt box, then “Launching Cursor agent…”. |
 
 #### Steps
@@ -120,8 +120,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (updated orchestration/git-scope tests)
-- [ ] `npm run build -w reviewer-runner && npm run review -w reviewer-runner -- --dry-run --base <sha> --head <sha>` shows header → meta → scope steps without `CURSOR_API_KEY` (local manual spot-check)
+- [x] `npm test -w reviewer-runner` passes (updated orchestration/git-scope tests)
+- [x] `npm run build -w reviewer-runner && npm run review -w reviewer-runner -- --dry-run --base <sha> --head <sha>` shows header → meta → scope steps without `CURSOR_API_KEY` (local manual spot-check)
 
 #### Notes
 
@@ -133,7 +133,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | After agent (or skip), wrapper prints findings/post/tracking summary table and exits cleanly; failures leave tracking untouched with actionable errors. |
 
 #### Steps
@@ -152,8 +152,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes
-- [ ] Orchestration tests no longer depend on `[review]` prefix strings
+- [x] `npm test -w reviewer-runner` passes
+- [x] Orchestration tests no longer depend on `[review]` prefix strings
 
 ---
 
@@ -161,7 +161,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Skill documents and enforces human-facing progress: emoji blocks, optional TodoWrite checklist, consolidated close, strict final path line; removes plain mandatory diff block. |
 
 #### Steps
@@ -179,9 +179,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/agent.test.ts` passes
-- [ ] `rg 'Mandatory diff run summary' .cursor/skills/ai-code-review/` — no matches (section removed)
-- [ ] `rg 'Analyzers:|Validator funnel:' .cursor/skills/ai-code-review/SKILL.md` — both machine lines still documented
+- [x] `npm test -w reviewer-runner -- src/agent.test.ts` passes
+- [x] `rg 'Mandatory diff run summary' .cursor/skills/ai-code-review/` — no matches (section removed)
+- [x] `rg 'Analyzers:|Validator funnel:' .cursor/skills/ai-code-review/SKILL.md` — both machine lines still documented
 - [ ] Manual (with `CURSOR_API_KEY`): local review run shows 📊 block + consolidated 🎯 before wrapper post-agent lines (human sign-off)
 
 ---
@@ -190,7 +190,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | After every agent run (success or failure), persist debug JSON under `.ai-code-review/run-artifacts/` without polluting stdout. |
 
 #### Steps
@@ -205,7 +205,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/run-artifacts.test.ts` passes
+- [x] `npm test -w reviewer-runner -- src/run-artifacts.test.ts` passes
 - [ ] Manual: after local agent run, directory exists with expected files (when API key available)
 
 ---
@@ -214,7 +214,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | GitHub Actions enables ANSI in logs and uploads run artifacts; full test suite and spec validation checklist satisfied. |
 
 #### Steps
@@ -227,8 +227,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (all tests)
-- [ ] Workflow YAML contains `FORCE_COLOR=1` and `upload-artifact` for `run-artifacts`
+- [x] `npm test -w reviewer-runner` passes (all tests)
+- [x] Workflow YAML contains `FORCE_COLOR=1` and `upload-artifact` for `run-artifacts`
 - [ ] Manual: PR/sync CI run shows colored wrapper lines in Actions log viewer
 - [ ] Manual: downloaded artifact `ai-review-run-artifacts` contains `manifest.json` + `orchestrator.json`
 - [ ] Spec acceptance criteria table in spec.md — all items checked during `/validate`
@@ -275,3 +275,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `packages/reviewer-runner
 | Date | Change |
 |------|--------|
 | 2026-05-30 | Initial plan from spec 05 (three-layer observability) |
+| 2026-05-30 | All phases implemented; 95 unit tests green |

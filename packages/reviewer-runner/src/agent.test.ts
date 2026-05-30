@@ -18,7 +18,8 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain("prepare-diff.ts");
     expect(prompt).toContain("pr-files.txt");
     expect(prompt).toContain("known-issues.json");
-    expect(prompt).toContain("mandatory diff run summary");
+    expect(prompt).toContain("📊 Diff stats");
+    expect(prompt).toContain("Report written to: .ai-code-review/findings.json");
     expect(prompt).toContain("orchestrator");
     expect(prompt).toContain("subagents");
     expect(prompt).toContain('schema v2');

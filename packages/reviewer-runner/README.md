@@ -2,7 +2,7 @@
 
 Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → **one** Cursor SDK agent (orchestrator skill) → security/performance subagents → validator funnel → filtered inline comments.
 
-Resolves the monorepo root via `git rev-parse`. Agent stdout is streamed with `[agent]` lines; the orchestrator prints the mandatory diff summary block after `prepare-diff` and an `Analyzers:` line before subagent Tasks.
+Resolves the monorepo root via `git rev-parse`. The wrapper uses ANSI `logger.*` lines (set `FORCE_COLOR=1` in CI). Orchestrator assistant text is prefixed `[orchestrator]`; Task lifecycle shows styled `› [sub-agent]` / `✔ [sub-agent]` lines only (no raw SDK `tool_call` noise). The orchestrator prints emoji progress blocks (📋 📊 🔬 …) and machine lines `Analyzers:` / `Validator funnel:` per the skill.
 
 ## Flow (CI)
 

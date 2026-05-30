@@ -237,32 +237,36 @@ describe("writePrFilesList", () => {
 });
 
 describe("logReviewMode", () => {
-  it("logs incremental mode with since sha", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("logs incremental mode with since sha", async () => {
+    const logger = await import("./logger.js");
+    const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     logReviewMode({ mode: "incremental", sinceCommit: SINCE });
-    expect(logSpy).toHaveBeenCalledWith(`[review] mode=incremental since=${SINCE}`);
-    logSpy.mockRestore();
+    expect(metaSpy).toHaveBeenCalledWith("mode", `incremental since ${SINCE}`);
+    metaSpy.mockRestore();
   });
 
-  it("logs full mode with optional reason", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("logs full mode with optional reason", async () => {
+    const logger = await import("./logger.js");
+    const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     logReviewMode({ mode: "full", reason: "no-tracking" });
-    expect(logSpy).toHaveBeenCalledWith("[review] mode=full (no-tracking)");
-    logSpy.mockRestore();
+    expect(metaSpy).toHaveBeenCalledWith("mode", "full (no-tracking)");
+    metaSpy.mockRestore();
   });
 });
 
 describe("logReviewScope", () => {
-  it("logs incremental file counts", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("logs incremental file counts", async () => {
+    const logger = await import("./logger.js");
+    const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     logReviewScope("incremental", {
       prFiles: ["a.ts", "b.ts"],
       incrementalFiles: ["a.ts"],
       effectiveFiles: ["a.ts"],
     });
-    expect(logSpy).toHaveBeenCalledWith(
-      "[review] scope: pr=2 incremental=1 effective=1",
+    expect(metaSpy).toHaveBeenCalledWith(
+      "scope",
+      "pr=2 incremental=1 effective=1",
     );
-    logSpy.mockRestore();
+    metaSpy.mockRestore();
   });
 });

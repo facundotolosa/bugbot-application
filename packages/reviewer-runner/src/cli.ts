@@ -5,6 +5,7 @@ import { runReviewAgent } from "./agent.js";
 import { resolveShasFromEnv } from "./diff.js";
 import { parseFindingsJson } from "./findings.js";
 import { createGitHubClient, loadPrContextFromEvent, postInlineReview } from "./github.js";
+import * as log from "./logger.js";
 import { executeReviewOrchestration } from "./orchestrate-review.js";
 import { resolveRepoRoot } from "./repo-root.js";
 
@@ -34,16 +35,18 @@ function parseArgs(argv: string[]) {
 async function loadPrMetadata(eventPath?: string): Promise<{
   targetRef: string;
   prTitle?: string;
+  prNumber?: number;
 }> {
   if (!eventPath) {
     return { targetRef: "main" };
   }
   const event = JSON.parse(await readFile(eventPath, "utf8")) as {
-    pull_request?: { base?: { ref?: string }; title?: string };
+    pull_request?: { base?: { ref?: string }; title?: string; number?: number };
   };
   return {
     targetRef: event.pull_request?.base?.ref ?? "main",
     prTitle: event.pull_request?.title,
+    prNumber: event.pull_request?.number,
   };
 }
 
@@ -58,13 +61,29 @@ async function main() {
   const gitHead = process.env.GITHUB_HEAD_SHA ?? envShas?.head ?? args.head ?? "HEAD";
 
   if (!base) {
-    console.error("Missing --base or GITHUB_BASE_SHA");
+    log.error("Missing --base or GITHUB_BASE_SHA");
     process.exit(1);
   }
 
-  console.log(`[review] git repo root: ${repoRoot}`);
+  log.header("AI Code Review");
+  log.meta("repo root", repoRoot);
 
-  const { targetRef, prTitle } = await loadPrMetadata(process.env.GITHUB_EVENT_PATH);
+  const { targetRef, prTitle, prNumber } = await loadPrMetadata(process.env.GITHUB_EVENT_PATH);
+  log.meta("target branch", targetRef);
+  log.meta("base SHA", base);
+  log.meta("head SHA", gitHead);
+  if (prNumber != null) {
+    log.meta("pull request", `#${prNumber}`);
+  }
+  if (prTitle) {
+    log.meta("title", prTitle);
+  }
+  if (args.dryRun) {
+    log.meta("dry-run", "yes");
+  }
+  if (args.skipAgent) {
+    log.meta("skip-agent", "yes");
+  }
 
   const token = process.env.GITHUB_TOKEN;
   const repoFull = process.env.GITHUB_REPOSITORY;
@@ -85,7 +104,7 @@ async function main() {
   const needsAgent = !args.dryRun && !args.skipAgent;
 
   if (needsAgent && !apiKey) {
-    console.error("CURSOR_API_KEY is required unless --dry-run or --skip-agent");
+    log.error("CURSOR_API_KEY is required unless --dry-run or --skip-agent");
     process.exit(1);
   }
 
@@ -115,25 +134,21 @@ async function main() {
   });
 
   if (outcome.status === "skipped") {
-    console.log(`Review skipped (${outcome.reason}).`);
     return;
   }
   if (outcome.status === "skip-agent") {
-    console.log("Review finished (--skip-agent).");
+    log.done("Review finished (--skip-agent)");
     return;
   }
 
-  console.log(`Review completed. Inline comments: ${outcome.posted}`);
   if (!githubDeps && !args.dryRun) {
-    console.log("Skipping GitHub post (not in Actions PR context).");
+    log.step("Skipping GitHub post (not in Actions PR context)");
   } else if (args.dryRun) {
-    console.log("Dry-run: no GitHub post.");
-  } else {
-    console.log("Posted PR review with inline comments.");
+    log.step("Dry-run: no GitHub post");
   }
 }
 
 main().catch((err) => {
-  console.error(err);
+  log.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 });
