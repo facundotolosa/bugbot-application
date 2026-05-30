@@ -44,7 +44,7 @@ v1 (`problem`, `info`/`warning`/`error`) is **rejected** at parse time.
 Each finding with `file` + `line` becomes one PR review comment:
 
 ```markdown
-🤖 ### Security analyzer
+### 🤖 Security analyzer
 
 ⚠️ {issue}
 

@@ -31,7 +31,7 @@ describe("formatCommentBody", () => {
         suggestion: "example suggestion",
       }),
     );
-    expect(body).toContain(`🤖 ### ${title}`);
+    expect(body).toContain(`### 🤖 ${title}`);
   });
 
   it.each<[Severity, string]>([
@@ -77,7 +77,7 @@ describe("formatCommentBody", () => {
     );
     expect(body).toBe(
       [
-        "🤖 ### Performance analyzer",
+        "### 🤖 Performance analyzer",
         "",
         "💡 `getPracticeAccountFeatures` loads accountFeatures even though only `practice.country` is used.",
         "",
@@ -98,7 +98,7 @@ describe("toInlineReviewComments", () => {
       line: 3,
       side: "RIGHT",
     });
-    expect(comments[0].body).toContain("🤖 ### Security analyzer");
+    expect(comments[0].body).toContain("### 🤖 Security analyzer");
     expect(comments[0].body).toContain("⚠️ Division by zero");
     expect(comments[0].body).toContain("💡 **Suggestion:**");
   });
