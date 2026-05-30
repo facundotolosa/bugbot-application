@@ -15,7 +15,7 @@
 
 | Criterion (spec) | Phase |
 |------------------|-------|
-| `skills/ai-code-review/SKILL.md` exists with v1 flow | 1 |
+| `.cursor/skills/ai-code-review/SKILL.md` exists with v1 flow | 1 |
 | Local flow produces `.ai-code-review/findings.json` | 2 |
 | `packages/ledger-lite/` React+TS volume target | 3 |
 | `reviewer-runner` builds; unit test maps findings → comment payloads | 4 |
@@ -61,11 +61,11 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 | Field | Value |
 |-------|--------|
 | **Status** | `done` |
-| **Goal** | Product skill at `skills/ai-code-review/` documents diff → analyze → write `.ai-code-review/findings.json`. |
+| **Goal** | Product skill at `.cursor/skills/ai-code-review/` documents diff → analyze → write `.ai-code-review/findings.json`. |
 
 #### Steps
 
-1. Create `skills/ai-code-review/SKILL.md` with:
+1. Create `.cursor/skills/ai-code-review/SKILL.md` with:
    - Inputs: unified diff text (injected by runner in CI; locally via documented flow), optional PR metadata for report header.
    - Processing: single-pass heuristic scan (bugs, security smells, error handling, naming, large risky hunks).
    - Output: **overwrite** `.ai-code-review/findings.json` with schema `version: "1"` and `findings[]` (`severity`, `file`, `line`, `problem`, `suggestion`).
@@ -76,7 +76,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [x] `skills/ai-code-review/SKILL.md` exists and describes full v1 flow
+- [x] `.cursor/skills/ai-code-review/SKILL.md` exists and describes full v1 flow
 - [x] Schema and file path match spec § Skill output contract
 - [x] Manual read-through: no references to subagents, evals, or stdout JSON parsing
 
@@ -91,7 +91,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Steps
 
-1. Add `skills/ai-code-review/README.md` (or section in `SKILL.md`) with **Local invocation** steps:
+1. Add `.cursor/skills/ai-code-review/README.md` (or section in `SKILL.md`) with **Local invocation** steps:
    - Cursor: attach skill, repo `cwd`, provide diff (`git diff main...HEAD` or paste).
    - Expected artifact: `.ai-code-review/findings.json`.
 2. Create a tiny intentional change on a branch (or use existing diff) — e.g. a small `.ts` / `.tsx` file under repo root or early `packages/` stub — sufficient for one finding.
@@ -106,8 +106,8 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 #### Notes
 
 - Does **not** require `ledger-lite` volume yet (spec: skill-first).
-- Smoke artifact: `skills/ai-code-review/examples/findings.sample.json`; local run also writes gitignored `.ai-code-review/findings.json`.
-- Command: `git diff main -- skills/ai-code-review/examples/smoke-target.ts` + Cursor skill (see README).
+- Smoke artifact: `.cursor/skills/ai-code-review/examples/findings.sample.json`; local run also writes gitignored `.ai-code-review/findings.json`.
+- Command: `git diff main -- .cursor/skills/ai-code-review/examples/smoke-target.ts` + Cursor skill (see README).
 
 ---
 
@@ -180,7 +180,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 #### Steps
 
 1. Implement diff resolution from env (`GITHUB_EVENT_PATH` / `GITHUB_BASE_SHA` / `GITHUB_HEAD_SHA`) and local flags (`--base`, `--head`) for dev.
-2. Run `git diff <base>...<head>`; inject unified diff into prompt; attach **`skills/ai-code-review`** skill path per Cursor SDK docs (`@cursor/sdk`, `Agent.prompt`, `local: { cwd }`).
+2. Run `git diff <base>...<head>`; inject unified diff into prompt; attach **`.cursor/skills/ai-code-review`** skill path per Cursor SDK docs (`@cursor/sdk`, `Agent.prompt`, `local: { cwd }`).
 3. After agent completes, read `.ai-code-review/findings.json`; call Phase 4 mapper.
 4. Implement GitHub REST: create PR review with **inline comments only** (no summary comment); use `GITHUB_TOKEN`.
 5. CLI entry e.g. `node dist/cli.js` or `npm run review` — document in package README.
@@ -236,7 +236,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Steps
 
-1. Update root `AGENTS.md`: replace “Planned” with brief descriptions for `skills/ai-code-review/`, `packages/reviewer-runner/`, `packages/ledger-lite/`, `.github/workflows/ai-code-review.yml`.
+1. Update root `AGENTS.md`: replace “Planned” with brief descriptions for `.cursor/skills/ai-code-review/`, `packages/reviewer-runner/`, `packages/ledger-lite/`, `.github/workflows/ai-code-review.yml`.
 2. Update `.agents/AGENTS.md` spec row when implementation completes (status **Done** only after `/validate`).
 3. Walk spec **Validation checklist**; fix gaps.
 
@@ -256,8 +256,8 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 | `package.json` | Create (workspaces root) |
 | `.gitignore` | Create / update |
 | `README.md` | Create / update (secrets, local + CI) |
-| `skills/ai-code-review/SKILL.md` | Create |
-| `skills/ai-code-review/README.md` | Create (local invocation) |
+| `.cursor/skills/ai-code-review/SKILL.md` | Create |
+| `.cursor/skills/ai-code-review/README.md` | Create (local invocation) |
 | `packages/ledger-lite/**` | Create (Vite React fixture) |
 | `packages/reviewer-runner/package.json` | Create |
 | `packages/reviewer-runner/tsconfig.json` | Create |
@@ -292,3 +292,4 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 |------|--------|
 | 2026-05-30 | Initial plan from spec (8 phases, acceptance mapping) |
 | 2026-05-30 | `/implement` — monorepo, skill, fixture, runner, workflow |
+| 2026-05-30 | Move `ai-code-review` to `.cursor/skills/` for local Cursor registration |

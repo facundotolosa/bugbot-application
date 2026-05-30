@@ -3,11 +3,11 @@
 ## Prerequisites
 
 - Repo checked out at the workspace root
-- Cursor with this repo open (or Cursor CLI / SDK with `local` cwd = repo root)
+- Cursor with this repo open (skill lives under `.cursor/skills/` for IDE registration)
 
 ## Steps (Cursor Agent)
 
-1. Attach the **`ai-code-review`** skill (`skills/ai-code-review/SKILL.md`).
+1. Attach the **`ai-code-review`** skill (`.cursor/skills/ai-code-review/SKILL.md`).
 2. Produce the diff (runner does this in CI; locally you run git):
 
    ```bash
@@ -39,10 +39,10 @@
 Intentional bug for manual smoke:
 
 ```bash
-git diff main -- skills/ai-code-review/examples/smoke-target.ts
+git diff main -- .cursor/skills/ai-code-review/examples/smoke-target.ts
 ```
 
-Expected sample output (reference): `skills/ai-code-review/examples/findings.sample.json`.
+Expected sample output (reference): `.cursor/skills/ai-code-review/examples/findings.sample.json`.
 
 ## CI path
 

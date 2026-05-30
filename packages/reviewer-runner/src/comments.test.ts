@@ -26,7 +26,7 @@ describe("toInlineReviewComments", () => {
     const comments = toInlineReviewComments(report);
     expect(comments).toHaveLength(1);
     expect(comments[0]).toMatchObject({
-      path: "skills/ai-code-review/examples/smoke-target.ts",
+      path: ".cursor/skills/ai-code-review/examples/smoke-target.ts",
       line: 3,
       side: "RIGHT",
     });

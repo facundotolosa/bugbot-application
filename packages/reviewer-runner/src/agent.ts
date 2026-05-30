@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const FINDINGS_PATH = ".ai-code-review/findings.json";
-const SKILL_PATH = "skills/ai-code-review/SKILL.md";
+const SKILL_PATH = ".cursor/skills/ai-code-review/SKILL.md";
 
 export function buildReviewPrompt(diff: string, prTitle?: string): string {
   const header = prTitle
