@@ -1,6 +1,6 @@
 # Validator subagent (findings funnel)
 
-**Status:** Implemented (pending `/validate`)
+**Status:** Done
 
 ## Product summary
 
@@ -294,26 +294,26 @@ N/A for HTTP.
 
 ## Acceptance criteria
 
-- [ ] `.cursor/agents/ai-code-review-validator.md` exists with five phases, tool restrictions, three reference docs.
-- [ ] Reference docs: `severity-guidelines.md`, `root-cause-dedup.md`, `false-positive-filters.md` (no `codebase-patterns.md`).
-- [ ] `category` removed from security/performance analyzer agents and from merge/intermediate types.
-- [ ] Orchestrator runs validator after merge, before `findings.json`; skips validator when raw is empty.
-- [ ] Validator Task prompt is exactly three data lines (findings, known issues, output path).
-- [ ] Invalid/missing validator output → abort; CI job fails; no unvalidated findings posted.
-- [ ] `filter_summary` present without `after_ticket_crossref`; copied to `validator-summary.json`; stdout funnel line logged.
-- [ ] Validated output maps to schema v2 (no extra fields required on `Finding`).
-- [ ] Cross-analyzer dedup at same `(file, line)` in validator phase 1, not in merge script.
-- [ ] `filterFindingsForPost` only removes findings outside PR file list (tests updated).
-- [ ] Spec 02 incremental flow still passes existing tests.
+- [x] `.cursor/agents/ai-code-review-validator.md` exists with five phases, tool restrictions, three reference docs.
+- [x] Reference docs: `severity-guidelines.md`, `root-cause-dedup.md`, `false-positive-filters.md` (no `codebase-patterns.md`).
+- [x] `category` removed from security/performance analyzer agents and from merge/intermediate types.
+- [x] Orchestrator runs validator after merge, before `findings.json`; skips validator when raw is empty.
+- [x] Validator Task prompt is exactly three data lines (findings, known issues, output path).
+- [x] Invalid/missing validator output → abort; CI job fails; no unvalidated findings posted.
+- [x] `filter_summary` present without `after_ticket_crossref`; copied to `validator-summary.json`; stdout funnel line logged.
+- [x] Validated output maps to schema v2 (no extra fields required on `Finding`).
+- [x] Cross-analyzer dedup at same `(file, line)` in validator phase 1, not in merge script.
+- [x] `filterFindingsForPost` only removes findings outside PR file list (tests updated).
+- [x] Spec 02 incremental flow still passes existing tests.
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` passes in `packages/reviewer-runner`
-- [ ] Local dry-run: non-empty raw → validator → v2; empty raw → no validator Task
-- [ ] Actions log contains `Validator funnel: N → M`
-- [ ] Severity emojis align with `packages/reviewer-runner/src/comments.ts`
-- [ ] No `category` in analyzer JSON samples or merge output
+- [x] Acceptance criteria above are met
+- [x] `npm test` passes in `packages/reviewer-runner`
+- [x] Local dry-run: non-empty raw → validator → v2; empty raw → no validator Task
+- [x] Actions log contains `Validator funnel: N → M`
+- [x] Severity emojis align with `packages/reviewer-runner/src/comments.ts`
+- [x] No `category` in analyzer JSON samples or merge output
 
 ## Open questions
 
@@ -334,3 +334,4 @@ N/A for HTTP.
 | 2026-05-30 | brainstorm | Initial draft |
 | 2026-05-30 | Human | Resolved all open questions: 5-phase funnel; no category/ticket/codebase-patterns; runner PR-only filter; CI fail on validator error; validator-summary + stdout |
 | 2026-05-30 | implement | Full plan delivered: validator agent, references, I/O scripts, orchestrator skill, runner PR-only filter |
+| 2026-05-30 | validate | PASS — spec Done; CI run 26689867864 (`Validator funnel: 2 → 1`) |

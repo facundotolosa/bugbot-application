@@ -6,7 +6,7 @@
 ## Prerequisites
 
 - [x] Spec reviewed; all open questions **Resolved** in spec (no blockers)
-- [ ] Human approves this plan before `/implement`
+- [x] Human approves this plan before `/implement`
 - [x] Specs 01–03 delivered: orchestrator skill, security/performance analyzers, `merge-findings.ts`, schema v2, incremental `prepare-diff` + tracking
 - [x] Node.js **20+**, npm workspaces; `npm test -w reviewer-runner` includes `.cursor/skills/ai-code-review/scripts/**/*.test.ts`
 - [x] `.ai-code-review/` gitignored; runner builds `known-issues.json` today (`post-review.ts`)
@@ -226,7 +226,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 - [x] `npm test -w reviewer-runner` — all tests pass
 - [x] `npm run build -w reviewer-runner` succeeds
-- [ ] Spec acceptance criteria checkboxes can be ticked after human `/validate`
+- [x] Spec acceptance criteria checkboxes can be ticked after human `/validate`
 - [x] No `category` in `.ai-code-review` examples under skill `examples/` (if present)
 
 #### Notes
@@ -272,3 +272,4 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 |------|--------|
 | 2026-05-30 | Initial plan from spec 04-validator-subagent |
 | 2026-05-30 | All phases implemented via `/implement` |
+| 2026-05-30 | `/validate` PASS — spec and index marked Done |
