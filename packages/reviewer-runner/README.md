@@ -1,6 +1,6 @@
 # reviewer-runner
 
-Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → **one** Cursor SDK agent (orchestrator skill) → security/performance subagents → filtered inline comments.
+Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → **one** Cursor SDK agent (orchestrator skill) → security/performance subagents → validator funnel → filtered inline comments.
 
 Resolves the monorepo root via `git rev-parse`. Agent stdout is streamed with `[agent]` lines; the orchestrator prints the mandatory diff summary block after `prepare-diff` and an `Analyzers:` line before subagent Tasks.
 
@@ -9,8 +9,8 @@ Resolves the monorepo root via `git rev-parse`. Agent stdout is streamed with `[
 1. Load PR issue comments; find `< ai-review-tracking >` (latest `At` wins).
 2. `full` vs `incremental` from tracked SHA + ancestry validation.
 3. Skip agent on pure sync with base or empty effective file scope (still advance tracking).
-4. Otherwise run the orchestrator agent (`ai-code-review` skill): `prepare-diff` → parallel analyzer Tasks → merge **findings v2**.
-5. Post new inline comments (analyzer title + severity emoji + suggestion); advance tracking on success.
+4. Otherwise run the orchestrator agent (`ai-code-review` skill): `prepare-diff` → parallel analyzer Tasks → merge raw → validator Task (when non-empty) → **findings v2**.
+5. Post new inline comments (analyzer title + severity emoji + suggestion); `filterFindingsForPost` keeps PR-scoped files only; advance tracking on success.
 
 ## Findings schema (v2)
 
@@ -44,7 +44,7 @@ v1 (`problem`, `info`/`warning`/`error`) is **rejected** at parse time.
 Each finding with `file` + `line` becomes one PR review comment:
 
 ```markdown
-🤖 ### Security analyzer
+### 🤖 Security analyzer
 
 ⚠️ {issue}
 
@@ -99,10 +99,13 @@ With `--dry-run` and no `CURSOR_API_KEY`, uses `fixtures/findings.json` (v2) aft
 
 | Path | Role |
 |------|------|
-| `.cursor/skills/ai-code-review/SKILL.md` | Orchestrator: prepare-diff → Tasks → merge v2 |
+| `.cursor/skills/ai-code-review/SKILL.md` | Orchestrator: prepare-diff → Tasks → validator → v2 |
 | `.cursor/skills/ai-code-review/scripts/prepare-diff.ts` | Scoped diff + metadata |
 | `.cursor/skills/ai-code-review/scripts/select-analyzers.ts` | Invocation criteria (deterministic) |
-| `.cursor/skills/ai-code-review/scripts/merge-findings.ts` | Merge analyzer outputs to v2 |
+| `.cursor/skills/ai-code-review/scripts/merge-findings.ts` | Merge analyzer outputs to raw v2 |
+| `.cursor/skills/ai-code-review/scripts/validator-output.ts` | Parse/map validator JSON to findings v2 |
 | `.cursor/agents/ai-code-review-*-analyzer.md` | Security / performance subagent definitions |
-| `.ai-code-review/work/` | Diff input + per-analyzer JSON (orchestrator) |
-| `.ai-code-review/findings.json` | Final v2 report (runner reads this) |
+| `.cursor/agents/ai-code-review-validator.md` | Validator funnel subagent |
+| `.ai-code-review/work/` | Diff, analyzer, raw, validator artifacts |
+| `.ai-code-review/known-issues.json` | Runner-built; validator input |
+| `.ai-code-review/findings.json` | Final v2 report post-validator (runner reads this) |

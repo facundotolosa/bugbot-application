@@ -116,7 +116,7 @@ describe("mergeAnalyzerOutputs", () => {
     expect(merged.findings[0].analyzer).toBe("performance");
   });
 
-  it("drops category from merged findings", () => {
+  it("merged findings expose only v2 fields", () => {
     const merged = mergeAnalyzerOutputs([
       {
         analyzer: "security",
@@ -127,12 +127,18 @@ describe("mergeAnalyzerOutputs", () => {
             line: 1,
             issue: "xss",
             suggestion: "sanitize",
-            category: "XSS",
           },
         ],
       },
     ]);
-    expect(merged.findings[0]).not.toHaveProperty("category");
+    expect(Object.keys(merged.findings[0]).sort()).toEqual([
+      "analyzer",
+      "file",
+      "issue",
+      "line",
+      "severity",
+      "suggestion",
+    ]);
   });
 
   it("throws on invalid severity", () => {

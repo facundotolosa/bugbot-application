@@ -43,12 +43,10 @@ describe("buildKnownIssuesJson", () => {
 });
 
 describe("filterFindingsForPost", () => {
-  it("drops findings outside prFiles and duplicate file-line keys", () => {
+  it("drops findings outside prFiles but keeps findings at known-issue file-line keys", () => {
     const prFiles = new Set(["src/in-pr.ts"]);
-    const filtered = filterFindingsForPost(report, prFiles, [
-      { file: "src/in-pr.ts", line: 20 },
-    ]);
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0]).toMatchObject({ file: "src/in-pr.ts", line: 10 });
+    const filtered = filterFindingsForPost(report, prFiles);
+    expect(filtered).toHaveLength(2);
+    expect(filtered.map((f) => f.line).sort()).toEqual([10, 20]);
   });
 });

@@ -161,7 +161,7 @@ export async function executeReviewOrchestration(
 
   const report = await readFindings(config.repoRoot);
   const prFileSet = new Set(scope.prFiles);
-  const filtered = filterFindingsForPost(report, prFileSet, knownIssues);
+  const filtered = filterFindingsForPost(report, prFileSet);
   const comments = toInlineReviewComments({ ...report, findings: filtered });
 
   console.log(`Inline comments to post: ${comments.length}`);
