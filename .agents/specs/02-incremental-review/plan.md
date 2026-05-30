@@ -212,7 +212,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Wire end-to-end CLI: tracking → mode → scope → skip or agent → filter findings → post → advance tracking per rules. |
 
 #### Steps
@@ -235,10 +235,10 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (orchestration + filter tests)
-- [ ] `npm run build -w reviewer-runner` && `node dist/cli.js --dry-run --skip-agent` logs mode/skip/tracking payload (with mocked env fixtures documented in test)
-- [ ] Dedup test: known `(file,line)` suppressed
-- [ ] prFiles filter test: out-of-scope finding dropped
+- [x] `npm test -w reviewer-runner` passes (orchestration + filter tests)
+- [x] `npm run build -w reviewer-runner` && `node dist/cli.js --dry-run --skip-agent` logs mode/skip/tracking payload (with mocked env fixtures documented in test)
+- [x] Dedup test: known `(file,line)` suppressed
+- [x] prFiles filter test: out-of-scope finding dropped
 
 ---
 
@@ -340,3 +340,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Phase 4 done: PR scope, skip rules, `writePrFilesList` (`git-scope.ts`) |
 | 2026-05-30 | Phase 5 done: `prepare-diff.ts` + tests + README |
 | 2026-05-30 | Phase 6 done: SKILL + agent prompt + README incremental contract |
+| 2026-05-30 | Phase 7 done: orchestration, post filters, CLI wiring |
