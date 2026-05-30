@@ -7,7 +7,6 @@ import {
   formatOrchestratorLine,
   forwardOrchestratorText,
   humanSubagentDescription,
-  isPrescribedOrchestratorLine,
   logAgentStreamEvent,
   parseTaskArgs,
   resetOrchestratorStream,
@@ -41,15 +40,6 @@ describe("humanSubagentDescription", () => {
     expect(humanSubagentDescription("ai-code-review-security-analyzer")).toBe(
       "security analyzer",
     );
-  });
-});
-
-describe("isPrescribedOrchestratorLine", () => {
-  it("allows emoji blocks, machine lines, and indented detail", () => {
-    expect(isPrescribedOrchestratorLine("📋 PR Metadata:")).toBe(true);
-    expect(isPrescribedOrchestratorLine("Analyzers: security, performance")).toBe(true);
-    expect(isPrescribedOrchestratorLine("  source: main")).toBe(true);
-    expect(isPrescribedOrchestratorLine("Voy a leer la skill")).toBe(false);
   });
 });
 
@@ -169,13 +159,13 @@ describe("logAgentStreamEvent", () => {
   it("forwardOrchestratorText skips empty lines", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
-      forwardOrchestratorText("\n\nReport written to: .ai-code-review/findings.json\n");
+      forwardOrchestratorText("\n\nline\n");
       flushOrchestratorStream();
     });
     expect(out.split("\n").filter((l) => l.includes("[orchestrator]")).length).toBe(1);
   });
 
-  it("buffers streaming deltas and drops non-prescribed narration", () => {
+  it("buffers streaming deltas until newline before prefixing", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
       forwardOrchestratorText("Voy a le");
@@ -183,19 +173,12 @@ describe("logAgentStreamEvent", () => {
       forwardOrchestratorText("Analyzers: security, performance\n");
       flushOrchestratorStream();
     });
-    expect(out).not.toContain("Voy a leer");
-    expect(out).toContain("Analyzers: security, performance");
-  });
-
-  it("dedupes identical prescribed lines", () => {
-    const out = captureOutput(() => {
-      resetOrchestratorStream();
-      forwardOrchestratorText("📋 PR Metadata:\n  source: main\n");
-      forwardOrchestratorText("📋 PR Metadata:\n  source: main\n");
-      flushOrchestratorStream();
-    });
-    const metadataHeaders = out.split("\n").filter((l) => l.includes("PR Metadata"));
-    expect(metadataHeaders).toHaveLength(1);
+    const orchestratorLines = out
+      .split("\n")
+      .filter((l) => l.includes("[orchestrator]"));
+    expect(orchestratorLines).toHaveLength(2);
+    expect(orchestratorLines[0]).toContain("Voy a leer las instrucciones");
+    expect(orchestratorLines[1]).toContain("Analyzers: security, performance");
   });
 });
 
@@ -208,12 +191,14 @@ describe("OrchestratorStreamForwarder", () => {
       return true;
     });
 
-    forwarder.append("Analyzers: hel");
-    forwarder.append("lo\n");
-    expect(chunks.join("")).toContain("Analyzers: hello");
-    forwarder.append("Report written to: out.json");
+    forwarder.append("hel");
+    forwarder.append("lo");
+    expect(chunks.join("")).toBe("");
+    forwarder.append("\n");
+    expect(chunks.join("")).toContain("hello");
+    forwarder.append("world");
     forwarder.flush();
-    expect(chunks.join("")).toContain("Report written to:");
+    expect(chunks.join("")).toContain("world");
     vi.restoreAllMocks();
   });
 });
