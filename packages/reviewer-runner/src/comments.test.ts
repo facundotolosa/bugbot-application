@@ -35,14 +35,54 @@ describe("toInlineReviewComments", () => {
   });
 
   it("returns empty array for empty findings", () => {
-    const comments = toInlineReviewComments({ version: "1", findings: [] });
+    const comments = toInlineReviewComments({ version: "2", findings: [] });
     expect(comments).toEqual([]);
   });
 });
 
 describe("parseFindingsJson", () => {
-  it("rejects invalid schema", () => {
-    expect(() => parseFindingsJson('{"version":"2","findings":[]}')).toThrow(/version/);
-    expect(() => parseFindingsJson('{"version":"1"}')).toThrow(/findings/);
+  const minimalV2Finding = {
+    analyzer: "security",
+    severity: "major",
+    file: "src/a.ts",
+    line: 1,
+    issue: "issue text",
+    suggestion: "suggestion text",
+  };
+
+  it("accepts minimal valid v2 document from spec", () => {
+    const report = parseFindingsJson(
+      JSON.stringify({ version: "2", findings: [minimalV2Finding] }),
+    );
+    expect(report).toEqual({ version: "2", findings: [minimalV2Finding] });
+  });
+
+  it("rejects v1 and unknown version", () => {
+    expect(() =>
+      parseFindingsJson(
+        '{"version":"1","findings":[{"severity":"warning","file":"a.ts","problem":"p","suggestion":"s"}]}',
+      ),
+    ).toThrow(/no longer supported|"1"/);
+    expect(() => parseFindingsJson('{"version":"3","findings":[]}')).toThrow(/version/);
+    expect(() => parseFindingsJson('{"version":"2"}')).toThrow(/findings/);
+  });
+
+  it("rejects empty issue or suggestion", () => {
+    expect(() =>
+      parseFindingsJson(
+        JSON.stringify({
+          version: "2",
+          findings: [{ ...minimalV2Finding, issue: "   " }],
+        }),
+      ),
+    ).toThrow(/issue/);
+    expect(() =>
+      parseFindingsJson(
+        JSON.stringify({
+          version: "2",
+          findings: [{ ...minimalV2Finding, suggestion: "" }],
+        }),
+      ),
+    ).toThrow(/suggestion/);
   });
 });

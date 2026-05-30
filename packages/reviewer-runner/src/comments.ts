@@ -21,7 +21,7 @@ export function toInlineReviewComments(report: FindingsReport): InlineReviewComm
       path: finding.file,
       line: finding.line,
       side: "RIGHT",
-      body: formatCommentBody(finding.problem, finding.suggestion),
+      body: formatCommentBody(finding.issue, finding.suggestion),
     });
   }
   return comments;
