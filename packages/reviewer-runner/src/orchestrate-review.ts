@@ -91,7 +91,7 @@ export async function executeReviewOrchestration(
     mode: mode.mode,
     sinceCommit: mode.sinceCommit,
     base: config.base,
-    head: config.head,
+    head: config.headSha,
     cwd: config.repoRoot,
     runner: git,
   });

@@ -277,8 +277,14 @@ export async function shouldSkipAgent(
   const scope = await computeEffectiveScope({ ...input, runner });
 
   if (input.mode === "incremental" && input.sinceCommit) {
-    if (await isPureSync(input.sinceCommit, input.head, input.cwd, runner)) {
+    const pureSync = await isPureSync(input.sinceCommit, input.head, input.cwd, runner);
+    if (pureSync && scope.effectiveFiles.length === 0) {
       return { ...scope, skip: true, reason: "pure-sync" };
+    }
+    if (pureSync && scope.effectiveFiles.length > 0) {
+      console.warn(
+        "[review] first-parent log empty but effective scope has files; not treating as pure-sync",
+      );
     }
   }
 
