@@ -146,7 +146,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Deterministic script under the skill that emits reviewable per-file diffs + metadata (`is_incremental`, ignore filters, warnings). |
 
 #### Steps
@@ -167,9 +167,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` runs prepare-diff tests
-- [ ] Manual: `npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help` exits 0
-- [ ] JSON output schema stable enough for skill + summary block (Phase 6)
+- [x] `npm test -w reviewer-runner` runs prepare-diff tests
+- [x] Manual: `npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help` exits 0
+- [x] JSON output schema stable enough for skill + summary block (Phase 6)
 
 #### Notes
 
@@ -338,3 +338,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Phase 2 done: GitHub tracking upsert + inline listing (`github.ts`) |
 | 2026-05-30 | Phase 3 done: SHA validation + `resolveReviewMode` (`git-scope.ts`) |
 | 2026-05-30 | Phase 4 done: PR scope, skip rules, `writePrFilesList` (`git-scope.ts`) |
+| 2026-05-30 | Phase 5 done: `prepare-diff.ts` + tests + README |
