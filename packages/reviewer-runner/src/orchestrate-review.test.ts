@@ -160,7 +160,7 @@ describe("executeReviewOrchestration", () => {
     expect(client.updateIssueComment).not.toHaveBeenCalled();
   });
 
-  it("posts filtered comments and advances tracking on success", async () => {
+  it("posts PR-scoped comments and advances tracking on success", async () => {
     const client = githubClient({
       listPullReviewComments: vi.fn().mockResolvedValue([
         { path: "src/a.ts", line: 10, body: "existing thread" },
@@ -183,9 +183,12 @@ describe("executeReviewOrchestration", () => {
     if (result.status !== "completed") {
       throw new Error("expected completed outcome");
     }
-    expect(result.posted).toBe(1);
+    expect(result.posted).toBe(2);
     expect(postComments).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ path: "src/a.ts", line: 5 })]),
+      expect.arrayContaining([
+        expect.objectContaining({ path: "src/a.ts", line: 5 }),
+        expect.objectContaining({ path: "src/a.ts", line: 10 }),
+      ]),
     );
     expect(client.createIssueComment).toHaveBeenCalled();
   });
