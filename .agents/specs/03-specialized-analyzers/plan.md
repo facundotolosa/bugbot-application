@@ -100,7 +100,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Pure function `selectAnalyzers(files)` returns `["security"]` or `["security", "performance"]` per spec v1 heuristics. |
 
 #### Steps
@@ -118,8 +118,8 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` includes new `select-analyzers.test.ts` green
-- [ ] `selectAnalyzers([])` returns `["security"]` (security always; empty diff edge — orchestrator may skip agent earlier via spec 02, but function is stable)
+- [x] `npm test -w reviewer-runner` includes new `select-analyzers.test.ts` green
+- [x] `selectAnalyzers([])` returns `["security"]` (security always; empty diff edge — orchestrator may skip agent earlier via spec 02, but function is stable)
 
 #### Notes
 
@@ -338,3 +338,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Initial plan from spec (8 phases, acceptance mapping) |
 | 2026-05-30 | Phase 1 done: schema v2 in `findings.ts`, fixtures and tests migrated; v1 rejected |
 | 2026-05-30 | Phase 2 done: `formatCommentBody(Finding)` with analyzer titles and severity emojis |
+| 2026-05-30 | Phase 3 done: `select-analyzers.ts`, tests, `references/invocation-criteria.md` |
