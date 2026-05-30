@@ -28,6 +28,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 |--------|-------|--------|
 | [`specs/_template/`](specs/_template/) | Boilerplate for `spec.md` and `plan.md`. | — |
 | [`specs/01-mvp-foundation/`](specs/01-mvp-foundation/) | MVP: `ai-code-review` skill, fixture app, `reviewer-runner`, GitHub PR comments. [plan.md](specs/01-mvp-foundation/plan.md) | Done |
+| [`specs/02-incremental-review/`](specs/02-incremental-review/) | Incremental PR reviews: tracking comment, scoped diffs, skip rules, dedup. | Pending |
 
 ## Spec workflow
 
