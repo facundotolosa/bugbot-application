@@ -1,10 +1,8 @@
 import type { SDKMessage } from "@cursor/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  OrchestratorProgressTracker,
   OrchestratorStreamForwarder,
   SubAgentTracker,
-  describeOrchestratorToolProgress,
   flushOrchestratorStream,
   formatOrchestratorLine,
   forwardOrchestratorText,
@@ -23,17 +21,18 @@ afterEach(() => {
 });
 
 describe("shouldForwardOrchestratorLine", () => {
-  it("allows prescribed blocks and machine lines", () => {
+  it("allows narration and prescribed blocks", () => {
     expect(shouldForwardOrchestratorLine("📋 PR Metadata:")).toBe(true);
     expect(shouldForwardOrchestratorLine("  source: main")).toBe(true);
-    expect(shouldForwardOrchestratorLine("Analyzers: security")).toBe(true);
-    expect(shouldForwardOrchestratorLine("Report written to: .ai-code-review/findings.json")).toBe(
+    expect(shouldForwardOrchestratorLine("Launching security and performance analyzers.")).toBe(
       true,
     );
+    expect(shouldForwardOrchestratorLine("Voy a leer la skill paso a paso.")).toBe(true);
   });
 
-  it("drops monologue narration", () => {
-    expect(shouldForwardOrchestratorLine("Voy a leer la skill paso a paso.")).toBe(false);
+  it("drops empty lines and TodoWrite checklist noise", () => {
+    expect(shouldForwardOrchestratorLine("")).toBe(false);
+    expect(shouldForwardOrchestratorLine("- [x] analyzers")).toBe(false);
   });
 });
 
@@ -58,60 +57,6 @@ describe("humanSubagentDescription", () => {
     expect(humanSubagentDescription("ai-code-review-security-analyzer")).toBe(
       "security analyzer",
     );
-  });
-});
-
-describe("describeOrchestratorToolProgress", () => {
-  it("maps read and shell tools to pipeline steps", () => {
-    expect(
-      describeOrchestratorToolProgress("read", {
-        path: "/repo/.cursor/skills/ai-code-review/SKILL.md",
-      }),
-    ).toBe("Reading ai-code-review skill");
-    expect(
-      describeOrchestratorToolProgress("shell", {
-        command: "npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts",
-      }),
-    ).toBe("Running prepare-diff");
-    expect(
-      describeOrchestratorToolProgress("shell", {
-        command: "mergeAnalyzerOutputs",
-      }),
-    ).toBe("Merging analyzer outputs");
-  });
-
-  it("returns null for unknown tools", () => {
-    expect(describeOrchestratorToolProgress("grep", {})).toBeNull();
-  });
-});
-
-describe("OrchestratorProgressTracker", () => {
-  it("logs step once per running tool_call", () => {
-    const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
-    const tracker = new OrchestratorProgressTracker();
-
-    tracker.handleToolCall({
-      type: "tool_call",
-      agent_id: "a",
-      run_id: "r",
-      call_id: "c1",
-      name: "read",
-      status: "running",
-      args: { path: "/repo/.ai-code-review/prepare-diff.json" },
-    });
-    tracker.handleToolCall({
-      type: "tool_call",
-      agent_id: "a",
-      run_id: "r",
-      call_id: "c1",
-      name: "read",
-      status: "running",
-      args: { path: "/repo/.ai-code-review/prepare-diff.json" },
-    });
-
-    expect(stepSpy).toHaveBeenCalledTimes(1);
-    expect(stepSpy).toHaveBeenCalledWith("Reading prepare-diff output");
-    stepSpy.mockRestore();
   });
 });
 
@@ -188,6 +133,21 @@ describe("logAgentStreamEvent", () => {
     expect(out).not.toContain("secret thought");
   });
 
+  it("does not log wrapper steps for read/shell tool_call", () => {
+    const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
+    logAgentStreamEvent({
+      type: "tool_call",
+      agent_id: "a",
+      run_id: "r",
+      call_id: "c1",
+      name: "read",
+      status: "running",
+      args: { path: "/repo/.ai-code-review/prepare-diff.json" },
+    });
+    expect(stepSpy).not.toHaveBeenCalled();
+    stepSpy.mockRestore();
+  });
+
   it("emits sub-agent lifecycle for Task tool_call only", () => {
     const launched = vi.spyOn(logger, "subAgentLaunched");
     const done = vi.spyOn(logger, "subAgentDone");
@@ -228,40 +188,25 @@ describe("logAgentStreamEvent", () => {
     );
   });
 
-  it("forwardOrchestratorText skips empty and non-prescribed lines", () => {
+  it("forwards orchestrator narration as it streams", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
-      forwardOrchestratorText("\n\nnarration only\n");
-      forwardOrchestratorText("Analyzers: security\n");
+      forwardOrchestratorText("I'll read the skill and run the review.\n");
+      forwardOrchestratorText("Launching analyzers.\n");
       flushOrchestratorStream();
     });
-    expect(out.split("\n").filter((l) => l.includes("[orchestrator]")).length).toBe(1);
+    expect(out).toContain("I'll read the skill");
+    expect(out).toContain("Launching analyzers");
   });
 
-  it("buffers streaming deltas until newline and filters monologue", () => {
+  it("buffers streaming deltas until newline", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
-      forwardOrchestratorText("Voy a le");
-      forwardOrchestratorText("er las instrucciones\n");
-      forwardOrchestratorText("Analyzers: security, performance\n");
+      forwardOrchestratorText("Preparing ");
+      forwardOrchestratorText("diff batch.\n");
       flushOrchestratorStream();
     });
-    const orchestratorLines = out
-      .split("\n")
-      .filter((l) => l.includes("[orchestrator]"));
-    expect(orchestratorLines).toHaveLength(1);
-    expect(orchestratorLines[0]).toContain("Analyzers: security, performance");
-    expect(out).not.toContain("Voy a leer");
-  });
-
-  it("dedupes identical orchestrator lines", () => {
-    const out = captureOutput(() => {
-      resetOrchestratorStream();
-      forwardOrchestratorText("📋 PR Metadata:\n");
-      forwardOrchestratorText("📋 PR Metadata:\n");
-      flushOrchestratorStream();
-    });
-    expect(out.split("PR Metadata:").length - 1).toBe(1);
+    expect(out).toContain("Preparing diff batch.");
   });
 });
 
@@ -274,14 +219,11 @@ describe("OrchestratorStreamForwarder", () => {
       return true;
     });
 
-    forwarder.append("Analyzers: sec");
-    forwarder.append("urity");
+    forwarder.append("Preparing ");
+    forwarder.append("diff");
     expect(chunks.join("")).toBe("");
     forwarder.append("\n");
-    expect(chunks.join("")).toContain("Analyzers: security");
-    forwarder.append("Validator funnel: 0 → 0\n");
-    forwarder.flush();
-    expect(chunks.join("")).toContain("Validator funnel");
+    expect(chunks.join("")).toContain("Preparing diff");
     vi.restoreAllMocks();
   });
 });
