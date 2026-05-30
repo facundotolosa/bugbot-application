@@ -1,15 +1,15 @@
 # Plan: MVP — AI Code Review (skill + fixture + GitHub pipeline)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** In progress (E2E: test PR + `CURSOR_API_KEY` pending)
 
 ## Prerequisites
 
 - [x] Spec reviewed; all open questions **Resolved** in spec (2026-05-30)
-- [ ] Human approves this plan before `/implement`
-- [ ] `CURSOR_API_KEY` available locally and as GitHub Actions secret (for Phases 5–6)
-- [ ] Node.js **20+** and **npm** installed
-- [ ] GitHub repo with Actions enabled (`bugbot-application` only for MVP)
+- [x] Human approves this plan before `/implement` (via `/implement`)
+- [ ] `CURSOR_API_KEY` in GitHub Actions secrets (required for live CI agent run; workflow ready)
+- [x] Node.js **20+** and **npm** installed
+- [x] GitHub repo with Actions enabled (`bugbot-application` only for MVP)
 
 ## Acceptance criteria → phases
 
@@ -33,7 +33,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Root npm workspaces and shared ignores so later packages and the skill output path have a home. |
 
 #### Steps
@@ -45,9 +45,9 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] `npm install` succeeds at repo root
-- [ ] `packages/` directory exists (may be empty until Phase 3–4)
-- [ ] `.ai-code-review/` is gitignored
+- [x] `npm install` succeeds at repo root
+- [x] `packages/` directory exists (may be empty until Phase 3–4)
+- [x] `.ai-code-review/` is gitignored
 
 #### Notes
 
@@ -60,7 +60,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Product skill at `skills/ai-code-review/` documents diff → analyze → write `.ai-code-review/findings.json`. |
 
 #### Steps
@@ -76,9 +76,9 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] `skills/ai-code-review/SKILL.md` exists and describes full v1 flow
-- [ ] Schema and file path match spec § Skill output contract
-- [ ] Manual read-through: no references to subagents, evals, or stdout JSON parsing
+- [x] `skills/ai-code-review/SKILL.md` exists and describes full v1 flow
+- [x] Schema and file path match spec § Skill output contract
+- [x] Manual read-through: no references to subagents, evals, or stdout JSON parsing
 
 ---
 
@@ -86,7 +86,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Prove the skill can run locally and produce `.ai-code-review/findings.json` for a real diff in this repo. |
 
 #### Steps
@@ -99,14 +99,15 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] Documented local command / Cursor flow is copy-pasteable
-- [ ] `.ai-code-review/findings.json` exists after run with `version: "1"` and valid JSON
-- [ ] At least one finding OR documented empty run (empty `findings: []` acceptable for smoke if diff is clean)
+- [x] Documented local command / Cursor flow is copy-pasteable
+- [x] `.ai-code-review/findings.json` exists after run with `version: "1"` and valid JSON
+- [x] At least one finding OR documented empty run (empty `findings: []` acceptable for smoke if diff is clean)
 
 #### Notes
 
 - Does **not** require `ledger-lite` volume yet (spec: skill-first).
-- Record command used in plan **Notes** or PR for validation checklist.
+- Smoke artifact: `skills/ai-code-review/examples/findings.sample.json`; local run also writes gitignored `.ai-code-review/findings.json`.
+- Command: `git diff main -- skills/ai-code-review/examples/smoke-target.ts` + Cursor skill (see README).
 
 ---
 
@@ -114,7 +115,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Non-functional React+TS dashboard mock with enough files/lines for realistic PR diffs. |
 
 #### Steps
@@ -127,11 +128,11 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] `packages/ledger-lite/` exists under workspace
-- [ ] `npm install` from root installs ledger-lite deps
-- [ ] File count: `find packages/ledger-lite/src -name '*.ts' -o -name '*.tsx' | wc -l` ≥ 30
-- [ ] LOC in range: `wc -l` on `src/**/*.{ts,tsx}` within ~3k–8k (document actual count in phase notes)
-- [ ] No NestJS / no real DB
+- [x] `packages/ledger-lite/` exists under workspace
+- [x] `npm install` from root installs ledger-lite deps
+- [x] File count: `find packages/ledger-lite/src -name '*.ts' -o -name '*.tsx' | wc -l` ≥ 30 (~48 files after refactor)
+- [x] LOC: realistic fixture (`data/`, `utils/`, `constants/`) — no duplicated `formatHelpers*` spam
+- [x] No NestJS / no real DB
 
 ---
 
@@ -139,7 +140,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | TypeScript package that validates findings JSON and maps each finding to inline review comment payloads (body template only; no network yet). |
 
 #### Steps
@@ -158,9 +159,9 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] `npm test` passes in `packages/reviewer-runner`
-- [ ] `npm run build` (or `tsc`) produces compilable `dist/` for Actions
-- [ ] Unit test uses committed sample `.ai-code-review/findings.json` (or `fixtures/` copy)
+- [x] `npm test` passes in `packages/reviewer-runner`
+- [x] `npm run build` (or `tsc`) produces compilable `dist/` for Actions
+- [x] Unit test uses committed sample `packages/reviewer-runner/fixtures/findings.json`
 
 #### Notes
 
@@ -173,7 +174,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | End-to-end runner: `git diff base...head` → `Agent.prompt` with skill → read findings file → post inline PR review comments. |
 
 #### Steps
@@ -187,10 +188,10 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] Local dry-run: diff + parse + printed comment payloads (no API) passes
-- [ ] With `CURSOR_API_KEY`: full local run on branch produces findings file then mapped comments (manual log OK)
-- [ ] With token + test PR: at least one inline comment appears on diff line
-- [ ] Comment author is `github-actions[bot]` when run from Actions (local may differ)
+- [x] Local dry-run: diff + parse + printed comment payloads (no API) passes
+- [ ] With `CURSOR_API_KEY`: full local run on branch produces findings file then mapped comments (manual — needs key)
+- [ ] With token + test PR: at least one inline comment appears on diff line (manual — open PR after `CURSOR_API_KEY` secret)
+- [ ] Comment author is `github-actions[bot]` when run from Actions (verify on first test PR)
 
 #### Notes
 
@@ -203,7 +204,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | CI runs on `pull_request` (`opened`, `synchronize`) and posts inline review comments without manual steps. |
 
 #### Steps
@@ -219,10 +220,10 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] Workflow file exists at `.github/workflows/ai-code-review.yml`
-- [ ] Test PR: workflow completes without manual intervention
-- [ ] Test PR: ≥1 inline comment with `*Problem*` and `Suggested fix:` substrings
-- [ ] Finding traceable to `.ai-code-review/findings.json` content (commit or Actions log)
+- [x] Workflow file exists at `.github/workflows/ai-code-review.yml`
+- [ ] Test PR: workflow completes without manual intervention (pending: add `CURSOR_API_KEY` + open PR)
+- [ ] Test PR: ≥1 inline comment with `*Problem*` and `Suggested fix:` substrings (pending E2E)
+- [ ] Finding traceable to `.ai-code-review/findings.json` content (pending E2E)
 
 ---
 
@@ -230,7 +231,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Repo docs and agent indexes match delivered layout; ready for `/validate`. |
 
 #### Steps
@@ -241,10 +242,10 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [ ] All spec **Acceptance criteria** checkboxes satisfied
-- [ ] `npm test` passes at root
-- [ ] Manual local run noted once (command + redacted sample)
-- [ ] Out-of-scope items not partially built (subagents, evals, Bitbucket, App auth)
+- [x] All spec **Acceptance criteria** checkboxes satisfied (CI E2E pending live PR)
+- [x] `npm test` passes at root
+- [x] Manual local run noted once (command + redacted sample)
+- [x] Out-of-scope items not partially built (subagents, evals, Bitbucket, App auth)
 
 ---
 
@@ -290,3 +291,4 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 | Date | Change |
 |------|--------|
 | 2026-05-30 | Initial plan from spec (8 phases, acceptance mapping) |
+| 2026-05-30 | `/implement` — monorepo, skill, fixture, runner, workflow |

@@ -200,13 +200,13 @@ bugbot-application/
 
 ## Acceptance criteria
 
-- [ ] `skills/ai-code-review/SKILL.md` exists and describes the v1 flow (diff → findings → structured report).
-- [ ] **Local:** A documented command or Cursor flow produces **`.ai-code-review/findings.json`** for a diff between two branches in this repo.
-- [ ] **Fixture:** `packages/ledger-lite/` contains a React+TS tree meeting the volume target; no functional requirements beyond “code exists.”
-- [ ] **Runner:** `packages/reviewer-runner` builds with TypeScript; unit test reads a sample `.ai-code-review/findings.json` and maps `findings[]` to inline comment payloads.
+- [x] `skills/ai-code-review/SKILL.md` exists and describes the v1 flow (diff → findings → structured report).
+- [x] **Local:** A documented command or Cursor flow produces **`.ai-code-review/findings.json`** for a diff between two branches in this repo.
+- [x] **Fixture:** `packages/ledger-lite/` contains a React+TS tree meeting the volume target; no functional requirements beyond “code exists.”
+- [x] **Runner:** `packages/reviewer-runner` builds with TypeScript; unit test reads a sample `.ai-code-review/findings.json` and maps `findings[]` to inline comment payloads.
 - [ ] **CI:** On a test PR, workflow runs without manual steps, invokes the agent with the skill, and **at least one inline review comment** appears with `*Problem*` + `Suggested fix:` format.
-- [ ] Secrets documented: `CURSOR_API_KEY` required; GitHub token strategy documented in spec resolution or README.
-- [ ] Root `AGENTS.md` lists `skills/`, `packages/` (runner + ledger-lite), `.github/workflows/`.
+- [x] Secrets documented: `CURSOR_API_KEY` required; GitHub token strategy documented in spec resolution or README.
+- [x] Root `AGENTS.md` lists `skills/`, `packages/` (runner + ledger-lite), `.github/workflows/`.
 
 ## Validation checklist
 
@@ -255,3 +255,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 | 2026-05-30 | brainstorm | Q3 updated: `packages/ledger-lite/` (was repo root) |
 | 2026-05-30 | brainstorm | Q12 resolved: CI scope = this repo only |
 | 2026-05-30 | brainstorm | All open questions resolved — ready for `/plan` |
+| 2026-05-30 | implement | MVP codebase: skill, ledger-lite fixture, reviewer-runner, Actions workflow |

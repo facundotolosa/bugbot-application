@@ -18,10 +18,10 @@ Application code and runtime assets.
 
 | Path | Contents |
 |------|----------|
-| `skills/ai-code-review/` | _Planned — core review skill (v1: diff → findings → JSON report)_ |
-| `packages/reviewer-runner/` | _Planned — Cursor SDK + GitHub comment publisher for CI (npm workspace)_ |
-| `packages/ledger-lite/` | _Planned — non-functional React fixture (personal finance mock, npm workspace)_ |
-| `.github/workflows/` | _Planned — `pull_request` AI review workflow_ |
+| `skills/ai-code-review/` | Core review skill (v1: diff → `.ai-code-review/findings.json`) |
+| `packages/reviewer-runner/` | Cursor SDK + GitHub inline comment publisher (npm workspace) |
+| `packages/ledger-lite/` | Non-functional React finance dashboard fixture (mock data + utils, npm workspace) |
+| `.github/workflows/ai-code-review.yml` | `pull_request` AI review via `reviewer-runner` |
 
 ---
 
