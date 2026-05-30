@@ -8,6 +8,7 @@ Conventions, skills, and specs for SDD + TDD development. **Update this index** 
 |------|-----------|
 | [`conventions/concise-responses.md`](conventions/concise-responses.md) | You are replying to the human in chat (not writing code or specs). |
 | [`conventions/clean-code.md`](conventions/clean-code.md) | You are writing or reviewing implementation code in `src/`. |
+| [`conventions/commit-name-convention.md`](conventions/commit-name-convention.md) | You are suggesting a commit message to the human. |
 
 ### skills/
 
@@ -26,7 +27,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | Folder | About | Status |
 |--------|-------|--------|
 | [`specs/_template/`](specs/_template/) | Boilerplate for `spec.md` and `plan.md`. | — |
-| _add rows as specs are created_ | | Pending · In progress · Done |
+| [`specs/01-mvp-foundation/`](specs/01-mvp-foundation/) | MVP: `ai-code-review` skill, fixture app, `reviewer-runner`, GitHub PR comments. [plan.md](specs/01-mvp-foundation/plan.md) | Done |
 
 ## Spec workflow
 
