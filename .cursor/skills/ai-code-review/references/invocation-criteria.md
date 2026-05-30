@@ -54,4 +54,4 @@ Analyzers: security (skipped: performance)
 
 - Multi-batch `batch-{i}.json`
 - Analyzers other than `security` and `performance`
-- Known-issues filtering in the orchestrator (runner `filterFindingsForPost` only)
+- Known-issues dedup in the orchestrator or at runner post time (validator Phase 3; runner `filterFindingsForPost` is PR file scope only)
