@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { installProcessGuards } from "./process-guard.js";
+
+installProcessGuards();
+
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { runReviewAgent } from "./agent.js";

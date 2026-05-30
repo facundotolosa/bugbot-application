@@ -19,12 +19,34 @@ export function formatOrchestratorLine(text: string): string {
   return `${log.orchestratorPrefix()}${stripped}`;
 }
 
-/** Buffers streaming assistant deltas; emits one prefixed line per completed newline. */
+/** Prescribed skill stdout only — drops monologues and narration. */
+export function shouldForwardOrchestratorLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (/^(📋|📊|🔬|📥|⏭️|✅|🎯)/.test(trimmed)) {
+    return true;
+  }
+  if (/^(Analyzers:|Validator funnel:|Report written to:|Warning:)/i.test(trimmed)) {
+    return true;
+  }
+  if (/^\s{2,}\S/.test(line)) {
+    return true;
+  }
+  return false;
+}
+
+/** Buffers streaming assistant deltas; emits one styled line per completed newline. */
 export class OrchestratorStreamForwarder {
   private pending = "";
+  private readonly seenLines = new Set<string>();
+  private sectionOpened = false;
 
   reset(): void {
     this.pending = "";
+    this.seenLines.clear();
+    this.sectionOpened = false;
   }
 
   append(text: string): void {
@@ -51,10 +73,20 @@ export class OrchestratorStreamForwarder {
   }
 
   private writeLine(line: string): void {
-    if (line.trim().length === 0) {
+    if (!shouldForwardOrchestratorLine(line)) {
       return;
     }
-    process.stdout.write(`${log.orchestratorPrefix()}${line}\n`);
+    const key = line.trim();
+    if (this.seenLines.has(key)) {
+      return;
+    }
+    this.seenLines.add(key);
+
+    if (!this.sectionOpened) {
+      log.section("Orchestrator");
+      this.sectionOpened = true;
+    }
+    log.orchestratorLine(line);
   }
 }
 
@@ -62,6 +94,7 @@ const streamForwarder = new OrchestratorStreamForwarder();
 
 export function resetOrchestratorStream(): void {
   streamForwarder.reset();
+  resetDefaultTracker();
 }
 
 export function flushOrchestratorStream(): void {
@@ -119,6 +152,13 @@ export function humanSubagentDescription(
 export class SubAgentTracker {
   private readonly starts = new Map<string, { at: number; description: string }>();
   private readonly finished = new Set<string>();
+  private sectionOpened = false;
+
+  reset(): void {
+    this.starts.clear();
+    this.finished.clear();
+    this.sectionOpened = false;
+  }
 
   handleToolCall(event: Extract<SDKMessage, { type: "tool_call" }>): void {
     if (!isTaskToolCall(event.name)) {
@@ -130,6 +170,11 @@ export class SubAgentTracker {
     if (event.status === "running") {
       if (this.starts.has(event.call_id)) {
         return;
+      }
+      if (!this.sectionOpened) {
+        log.blank();
+        log.section("Sub-agents");
+        this.sectionOpened = true;
       }
       this.starts.set(event.call_id, { at: Date.now(), description: label });
       log.subAgentLaunched(label);
@@ -157,6 +202,10 @@ export class SubAgentTracker {
 }
 
 const defaultTracker = new SubAgentTracker();
+
+function resetDefaultTracker(): void {
+  defaultTracker.reset();
+}
 
 /** Stream orchestrator assistant text; derive sub-agent lifecycle from Task tool_call events. */
 export function logAgentStreamEvent(
