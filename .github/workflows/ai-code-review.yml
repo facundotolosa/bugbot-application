@@ -12,9 +12,12 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
+      # Full history required for merge-base / since-SHA ancestry checks
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PR branch tip (not merge ref); keeps git log/diff consistent with GITHUB_HEAD_SHA
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -31,6 +34,9 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          # PR merge-base and head (scope + prepare-diff)
           GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # Tracking comment + inline review commit_id (prefer head over GITHUB_SHA)
           GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # GITHUB_REPOSITORY and GITHUB_EVENT_PATH are provided by Actions by default
         run: npm run review -w reviewer-runner
