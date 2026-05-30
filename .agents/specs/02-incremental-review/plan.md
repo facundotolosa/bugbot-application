@@ -69,7 +69,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Octokit helpers to fetch issue comments, find tracking, create/update tracking, and list inline review comments for known-issues. |
 
 #### Steps
@@ -85,9 +85,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] Unit tests pass for upsert decision (create vs update) and inline mapping
-- [ ] `npm run build -w reviewer-runner` succeeds
-- [ ] No regression in existing `comments.test.ts`
+- [x] Unit tests pass for upsert decision (create vs update) and inline mapping
+- [x] `npm run build -w reviewer-runner` succeeds
+- [x] No regression in existing `comments.test.ts`
 
 ---
 
@@ -335,3 +335,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 |------|--------|
 | 2026-05-30 | Initial plan from spec (9 phases, acceptance mapping) |
 | 2026-05-30 | Phase 1 done: `tracking.ts` parse/format/select + unit tests |
+| 2026-05-30 | Phase 2 done: GitHub tracking upsert + inline listing (`github.ts`) |
