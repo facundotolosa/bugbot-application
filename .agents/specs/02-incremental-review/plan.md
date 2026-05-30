@@ -120,7 +120,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | Compute `prFiles`, `incrementalFiles`, `effectiveFiles`, and detect pure-sync / empty-scope skips before invoking the agent. |
 
 #### Steps
@@ -136,9 +136,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] Tests: intersection logic; pure sync empty log; non-empty effective → no skip
-- [ ] `shouldSkipAgent` returns distinct reasons logged by caller (`pure-sync` vs `empty-effective-scope`)
-- [ ] `npm test -w reviewer-runner` passes
+- [x] Tests: intersection logic; pure sync empty log; non-empty effective → no skip
+- [x] `shouldSkipAgent` returns distinct reasons logged by caller (`pure-sync` vs `empty-effective-scope`)
+- [x] `npm test -w reviewer-runner` passes
 
 ---
 
@@ -337,3 +337,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Phase 1 done: `tracking.ts` parse/format/select + unit tests |
 | 2026-05-30 | Phase 2 done: GitHub tracking upsert + inline listing (`github.ts`) |
 | 2026-05-30 | Phase 3 done: SHA validation + `resolveReviewMode` (`git-scope.ts`) |
+| 2026-05-30 | Phase 4 done: PR scope, skip rules, `writePrFilesList` (`git-scope.ts`) |
