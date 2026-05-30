@@ -1,16 +1,20 @@
 import type { SDKMessage } from "@cursor/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  OrchestratorStreamForwarder,
   SubAgentTracker,
+  flushOrchestratorStream,
   formatOrchestratorLine,
   forwardOrchestratorText,
   humanSubagentDescription,
   logAgentStreamEvent,
+  resetOrchestratorStream,
   stripOrchestratorMarkdown,
 } from "./agent-stream.js";
 import * as logger from "./logger.js";
 
 afterEach(() => {
+  resetOrchestratorStream();
   vi.restoreAllMocks();
 });
 
@@ -138,7 +142,48 @@ describe("logAgentStreamEvent", () => {
   });
 
   it("forwardOrchestratorText skips empty lines", () => {
-    const out = captureOutput(() => forwardOrchestratorText("\n\nline\n"));
+    const out = captureOutput(() => {
+      resetOrchestratorStream();
+      forwardOrchestratorText("\n\nline\n");
+      flushOrchestratorStream();
+    });
     expect(out.split("\n").filter((l) => l.includes("[orchestrator]")).length).toBe(1);
+  });
+
+  it("buffers streaming deltas until newline before prefixing", () => {
+    const out = captureOutput(() => {
+      resetOrchestratorStream();
+      forwardOrchestratorText("Voy a le");
+      forwardOrchestratorText("er las instrucciones\n");
+      forwardOrchestratorText("Analyzers: security, performance\n");
+      flushOrchestratorStream();
+    });
+    const orchestratorLines = out
+      .split("\n")
+      .filter((l) => l.includes("[orchestrator]"));
+    expect(orchestratorLines).toHaveLength(2);
+    expect(orchestratorLines[0]).toContain("Voy a leer las instrucciones");
+    expect(orchestratorLines[1]).toContain("Analyzers: security, performance");
+  });
+});
+
+describe("OrchestratorStreamForwarder", () => {
+  it("accumulates chunks without emitting until newline", () => {
+    const forwarder = new OrchestratorStreamForwarder();
+    const chunks: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      chunks.push(String(chunk));
+      return true;
+    });
+
+    forwarder.append("hel");
+    forwarder.append("lo");
+    expect(chunks.join("")).toBe("");
+    forwarder.append("\n");
+    expect(chunks.join("")).toContain("hello");
+    forwarder.append("world");
+    forwarder.flush();
+    expect(chunks.join("")).toContain("world");
+    vi.restoreAllMocks();
   });
 });

@@ -19,6 +19,59 @@ export function formatOrchestratorLine(text: string): string {
   return `${log.orchestratorPrefix()}${stripped}`;
 }
 
+/** Buffers streaming assistant deltas; emits one prefixed line per completed newline. */
+export class OrchestratorStreamForwarder {
+  private pending = "";
+
+  reset(): void {
+    this.pending = "";
+  }
+
+  append(text: string): void {
+    this.pending += stripOrchestratorMarkdown(text);
+    this.drainCompleteLines();
+  }
+
+  flush(): void {
+    const rest = this.pending;
+    this.pending = "";
+    if (rest.trim().length > 0) {
+      this.writeLine(rest);
+    }
+  }
+
+  private drainCompleteLines(): void {
+    let newlineAt = this.pending.indexOf("\n");
+    while (newlineAt !== -1) {
+      const line = this.pending.slice(0, newlineAt);
+      this.pending = this.pending.slice(newlineAt + 1);
+      this.writeLine(line);
+      newlineAt = this.pending.indexOf("\n");
+    }
+  }
+
+  private writeLine(line: string): void {
+    if (line.trim().length === 0) {
+      return;
+    }
+    process.stdout.write(`${log.orchestratorPrefix()}${line}\n`);
+  }
+}
+
+const streamForwarder = new OrchestratorStreamForwarder();
+
+export function resetOrchestratorStream(): void {
+  streamForwarder.reset();
+}
+
+export function flushOrchestratorStream(): void {
+  streamForwarder.flush();
+}
+
+export function forwardOrchestratorText(text: string): void {
+  streamForwarder.append(text);
+}
+
 function parseTaskArgs(args: unknown): {
   description?: string;
   subagent_type?: string;
@@ -98,15 +151,5 @@ export function logAgentStreamEvent(
       break;
     default:
       break;
-  }
-}
-
-export function forwardOrchestratorText(text: string): void {
-  const lines = text.split("\n");
-  for (const line of lines) {
-    if (line.length === 0) {
-      continue;
-    }
-    process.stdout.write(`${formatOrchestratorLine(line)}\n`);
   }
 }
