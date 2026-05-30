@@ -1,13 +1,13 @@
 # Plan: MVP — AI Code Review (skill + fixture + GitHub pipeline)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** In progress (E2E: test PR + `CURSOR_API_KEY` pending)
+**Plan status:** Done (E2E confirmed on GitHub, 2026-05-30)
 
 ## Prerequisites
 
 - [x] Spec reviewed; all open questions **Resolved** in spec (2026-05-30)
 - [x] Human approves this plan before `/implement` (via `/implement`)
-- [ ] `CURSOR_API_KEY` in GitHub Actions secrets (required for live CI agent run; workflow ready)
+- [x] `CURSOR_API_KEY` in GitHub Actions secrets (required for live CI agent run; workflow ready)
 - [x] Node.js **20+** and **npm** installed
 - [x] GitHub repo with Actions enabled (`bugbot-application` only for MVP)
 
@@ -189,9 +189,9 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 #### Verification
 
 - [x] Local dry-run: diff + parse + printed comment payloads (no API) passes
-- [ ] With `CURSOR_API_KEY`: full local run on branch produces findings file then mapped comments (manual — needs key)
-- [ ] With token + test PR: at least one inline comment appears on diff line (manual — open PR after `CURSOR_API_KEY` secret)
-- [ ] Comment author is `github-actions[bot]` when run from Actions (verify on first test PR)
+- [x] With `CURSOR_API_KEY`: full local run on branch produces findings file then mapped comments (E2E via Actions)
+- [x] With token + test PR: at least one inline comment appears on diff line (human confirmed on GitHub)
+- [x] Comment author is `github-actions[bot]` when run from Actions (human confirmed on GitHub)
 
 #### Notes
 
@@ -221,9 +221,9 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 #### Verification
 
 - [x] Workflow file exists at `.github/workflows/ai-code-review.yml`
-- [ ] Test PR: workflow completes without manual intervention (pending: add `CURSOR_API_KEY` + open PR)
-- [ ] Test PR: ≥1 inline comment with `*Problem*` and `Suggested fix:` substrings (pending E2E)
-- [ ] Finding traceable to `.ai-code-review/findings.json` content (pending E2E)
+- [x] Test PR: workflow completes without manual intervention (human confirmed on GitHub)
+- [x] Test PR: ≥1 inline comment with `*Problem*` and `Suggested fix:` substrings (human confirmed on GitHub)
+- [x] Finding traceable to `.ai-code-review/findings.json` content (human confirmed on GitHub)
 
 ---
 
@@ -242,7 +242,7 @@ _Each phase is a vertical slice where possible (TDD for runner logic). Do not st
 
 #### Verification
 
-- [x] All spec **Acceptance criteria** checkboxes satisfied (CI E2E pending live PR)
+- [x] All spec **Acceptance criteria** checkboxes satisfied (CI E2E confirmed on GitHub)
 - [x] `npm test` passes at root
 - [x] Manual local run noted once (command + redacted sample)
 - [x] Out-of-scope items not partially built (subagents, evals, Bitbucket, App auth)

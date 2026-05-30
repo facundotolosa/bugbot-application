@@ -27,7 +27,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | Folder | About | Status |
 |--------|-------|--------|
 | [`specs/_template/`](specs/_template/) | Boilerplate for `spec.md` and `plan.md`. | — |
-| [`specs/01-mvp-foundation/`](specs/01-mvp-foundation/) | MVP: `ai-code-review` skill, fixture app, `reviewer-runner`, GitHub PR comments. [plan.md](specs/01-mvp-foundation/plan.md) | In progress |
+| [`specs/01-mvp-foundation/`](specs/01-mvp-foundation/) | MVP: `ai-code-review` skill, fixture app, `reviewer-runner`, GitHub PR comments. [plan.md](specs/01-mvp-foundation/plan.md) | Done |
 
 ## Spec workflow
 
