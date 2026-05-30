@@ -1,6 +1,6 @@
 # Specialized analyzers (security + performance subagents)
 
-**Status:** Pending
+**Status:** Done
 
 ## Product summary
 
@@ -244,7 +244,7 @@ Body (pattern):
 One inline comment per finding. Markdown body, **same visual structure** in all cases:
 
 ```markdown
-🤖 **{Analyzer title}**
+🤖 ### {Analyzer title}
 
 {severity_emoji} {issue}
 
@@ -268,7 +268,7 @@ The **Suggestion** line **always** uses `💡 **Suggestion:**` (regardless of se
 **Example** (`performance`, `minor`):
 
 ```markdown
-🤖 **Performance analyzer**
+🤖 ### Performance analyzer
 
 💡 `getPracticeAccountFeatures` loads accountFeatures even though only `practice.country` is used.
 
@@ -322,26 +322,26 @@ No new endpoints. Changes in `findings.ts` (schema v2), `comments.ts` (replaces 
 
 ## Acceptance criteria
 
-- [ ] `.cursor/agents/ai-code-review-security-analyzer.md` and `ai-code-review-performance-analyzer.md` exist with `name` aligned to Task.
-- [ ] Skill documents orchestrator → subagents → merge flow and links `references/invocation-criteria.md`.
-- [ ] **security** runs on every non-empty diff; **performance** only when heuristics match.
-- [ ] Selected analyzers launch **in parallel** (one Task batch).
-- [ ] Analyzer Task prompts are **two lines only** (read/write paths).
-- [ ] On output/JSON failure: **one** retry; then `{ "findings": [] }` for that analyzer.
-- [ ] Final report satisfies **schema v2** (`analyzer`, `issue`, four severity levels).
-- [ ] Published comments follow 🤖 title + issue emoji + `💡 **Suggestion:**` template.
-- [ ] Incremental flow (tracking, skip, full fallback) still passes existing `reviewer-runner` and `prepare-diff` tests.
-- [ ] Unit tests cover invocation criteria (performance positive/negative) and merge.
-- [ ] No multi-diff batching, validator, or `logic` / `mongodb` / `ticket` analyzers.
+- [x] `.cursor/agents/ai-code-review-security-analyzer.md` and `ai-code-review-performance-analyzer.md` exist with `name` aligned to Task.
+- [x] Skill documents orchestrator → subagents → merge flow and links `references/invocation-criteria.md`.
+- [x] **security** runs on every non-empty diff; **performance** only when heuristics match.
+- [x] Selected analyzers launch **in parallel** (one Task batch).
+- [x] Analyzer Task prompts are **two lines only** (read/write paths).
+- [x] On output/JSON failure: **one** retry; then `{ "findings": [] }` for that analyzer.
+- [x] Final report satisfies **schema v2** (`analyzer`, `issue`, four severity levels).
+- [x] Published comments follow 🤖 `###` analyzer heading + issue emoji + `💡 **Suggestion:**` template.
+- [x] Incremental flow (tracking, skip, full fallback) still passes existing `reviewer-runner` and `prepare-diff` tests.
+- [x] Unit tests cover invocation criteria (performance positive/negative) and merge.
+- [x] No multi-diff batching, validator, or `logic` / `mongodb` / `ticket` analyzers.
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` passes (including new criteria + merge tests)
-- [ ] Manual check on a test PR: log shows correct launched/skipped analyzers
-- [ ] Subagents write only to the output path and reply `Done`
-- [ ] Valid `findings.json` after merge with 0, 1, or 2 active analyzers
-- [ ] No open questions block release (or explicitly deferred in Open questions)
+- [x] Acceptance criteria above are met
+- [x] `npm test` passes (including new criteria + merge tests)
+- [x] Manual check on a test PR: log shows correct launched/skipped analyzers (CI run 26688892025)
+- [x] Subagents write only to the output path and reply `Done`
+- [x] Valid `findings.json` after merge with 0, 1, or 2 active analyzers (5 findings, 2 analyzers on PR #12)
+- [x] No open questions block release (or explicitly deferred in Open questions)
 
 ## Open questions
 
@@ -363,3 +363,4 @@ No new endpoints. Changes in `findings.ts` (schema v2), `comments.ts` (replaces 
 | 2026-05-30 | Human | Q3 resolved: subagents use `model: composer-2.5` |
 | 2026-05-30 | Human | Q4 deferred: cross-analyzer dedup → validator |
 | 2026-05-30 | Human | Rewrote spec in English |
+| 2026-05-30 | implement | `/validate` PASS; CI E2E PR #12; analyzer title as `###` heading in inline comments |
