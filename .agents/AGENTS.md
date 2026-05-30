@@ -19,6 +19,7 @@ Conventions, skills, and specs for SDD + TDD development. **Update this index** 
 | [`skills/implement/SKILL.md`](skills/implement/SKILL.md) | Plan approved: `/implement` — execute phases, mark plan progress, verify each phase. |
 | [`skills/validate/SKILL.md`](skills/validate/SKILL.md) | Implementation done: `/validate` — checklist against spec before marking Done. |
 | [`skills/tdd/SKILL.md`](skills/tdd/SKILL.md) | Writing or changing behavior in code (used by `/implement`). |
+| [`skills/read-gh-ai-reviewer-logs/SKILL.md`](skills/read-gh-ai-reviewer-logs/SKILL.md) | User passes an Actions job URL — fetch filtered AI Code Review logs (`Build reviewer-runner`, `Run AI code review` only). |
 
 ### specs/
 
