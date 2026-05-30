@@ -1,4 +1,4 @@
-import type { Finding, FindingsReport } from "./findings.js";
+import type { AnalyzerKey, Finding, FindingsReport, Severity } from "./findings.js";
 
 export interface InlineReviewComment {
   path: string;
@@ -7,8 +7,28 @@ export interface InlineReviewComment {
   body: string;
 }
 
-export function formatCommentBody(problem: string, suggestion: string): string {
-  return `*Problem*\n${problem}\n\nSuggested fix: *${suggestion}*`;
+const ANALYZER_TITLES: Record<AnalyzerKey, string> = {
+  security: "Security analyzer",
+  performance: "Performance analyzer",
+};
+
+const SEVERITY_EMOJIS: Record<Severity, string> = {
+  critical: "🚨",
+  major: "⚠️",
+  minor: "💡",
+  enhancement: "✨",
+};
+
+export function formatCommentBody(finding: Finding): string {
+  const title = ANALYZER_TITLES[finding.analyzer];
+  const emoji = SEVERITY_EMOJIS[finding.severity];
+  return [
+    `🤖 **${title}**`,
+    "",
+    `${emoji} ${finding.issue}`,
+    "",
+    `💡 **Suggestion:** ${finding.suggestion}`,
+  ].join("\n");
 }
 
 export function toInlineReviewComments(report: FindingsReport): InlineReviewComment[] {
@@ -21,7 +41,7 @@ export function toInlineReviewComments(report: FindingsReport): InlineReviewComm
       path: finding.file,
       line: finding.line,
       side: "RIGHT",
-      body: formatCommentBody(finding.issue, finding.suggestion),
+      body: formatCommentBody(finding),
     });
   }
   return comments;
