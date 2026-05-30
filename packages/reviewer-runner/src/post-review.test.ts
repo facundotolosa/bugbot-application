@@ -45,8 +45,9 @@ describe("buildKnownIssuesJson", () => {
 describe("filterFindingsForPost", () => {
   it("drops findings outside prFiles but keeps findings at known-issue file-line keys", () => {
     const prFiles = new Set(["src/in-pr.ts"]);
-    const filtered = filterFindingsForPost(report, prFiles);
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map((f) => f.line).sort()).toEqual([10, 20]);
+    const { findings, droppedOutOfPr } = filterFindingsForPost(report, prFiles);
+    expect(findings).toHaveLength(2);
+    expect(findings.map((f) => f.line).sort()).toEqual([10, 20]);
+    expect(droppedOutOfPr).toBe(1);
   });
 });

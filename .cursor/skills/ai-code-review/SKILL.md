@@ -37,7 +37,7 @@ flowchart TB
 
 | Layer | Responsibility |
 |-------|----------------|
-| **You (orchestrator)** | `prepare-diff`, stdout summary, write `work/diff.json`, select analyzers, launch analyzer Tasks, merge **raw**, launch validator when non-empty, map validated output → v2, fail closed on validator errors, log funnel summary |
+| **You (orchestrator)** | `prepare-diff`, prescribed stdout blocks (see Progress visibility), write `work/diff.json`, select analyzers, launch analyzer Tasks, merge **raw**, launch validator when non-empty, map validated output → v2, fail closed on validator errors, log funnel summary |
 | **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
 | **Validator subagent** | Five-phase funnel on raw findings; read reference docs; write `validator-output.json`; reply `Done` |
 | **reviewer-runner** | Incremental scope, tracking, build `known-issues.json`, invoke agent, validate v2, **`filterFindingsForPost` = PR file scope only**, post inline comments |
@@ -60,10 +60,29 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 
 **Do not** paste a raw full-PR `git diff` as the primary input; use `prepare-diff` so scope, ignores, and metadata stay consistent with CI.
 
+## Progress visibility
+
+The runner forwards **every line you print to stdout** with an `[orchestrator]` prefix as it streams. Operators must see **what you are doing in order**, not only a dump at the end.
+
+**Print short status lines (one sentence each) at these moments — before moving on:**
+
+1. After reading the skill / at start: e.g. `I'll run the ai-code-review skill with the PR parameters from the prompt.`
+2. Right after `prepare-diff` succeeds: print **📋** and **📊** blocks immediately, then e.g. `Preparing diff complete; selecting analyzers.`
+3. After `Analyzers:` line, **before** launching Tasks: e.g. `Launching security and performance analyzer subagents in parallel.`
+4. After collecting analyzer files, **before** validator: e.g. `Collected analyzer output; running validator.` or `All analyzers returned no findings; skipping validator.`
+5. After validator (or skip): print collect/validator emoji lines, then the **consolidated close** (repeat 📋→📥 + 🎯).
+6. Final line only: `Report written to: .ai-code-review/findings.json`
+
+- Tool work stays silent (no tool names, Task prompts, or bash in stdout).
+- Optional **TodoWrite** keys: `prereq`, `metadata`, `diff`, `analyzers`, `collect`, `validate`, `report` — **IDE only**; never print TodoWrite lines to stdout.
+- `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply.
+
+**Do not print to stdout:** Task prompts, `tool_use` narration, shell one-liners, env dumps, or extra content on the final path line.
+
 ## Workflow checklist
 
 1. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
-2. Print the **mandatory diff run summary** to **stdout** (exact format below).
+2. **Immediately** print the **📋 PR Metadata** and **📊 Diff stats** blocks (templates below) — not only in the final consolidated close.
 3. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
 4. Ensure `.ai-code-review/work/` exists. **Write** `.ai-code-review/work/diff.json` with the same shape as the `prepare-diff` output (`metadata` + `files[]`).
 5. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
@@ -90,7 +109,9 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 11. **Collect validator output** — read `work/validator-output.json` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`).
 12. **Map** validated output → `.ai-code-review/findings.json` (v2 via `mapValidatorToFindingsReport`); copy `filter_summary` → `work/validator-summary.json`.
 13. Print **one stdout line**: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
-14. Confirm `.ai-code-review/findings.json` exists before finishing.
+14. Print the **consolidated final block** (repeat 📋 📊 🔬 📥 ⏭️/✅ in order, then 🎯 severity counts from **final** `.ai-code-review/findings.json`).
+15. Print **exactly one** closing line: `Report written to: .ai-code-review/findings.json` (no extra tables or timestamps on that line). If file write is impossible locally, embed JSON report block only as documented edge case.
+16. Confirm `.ai-code-review/findings.json` exists before finishing.
 
 ## `prepare-diff`
 
@@ -105,27 +126,35 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
   [--output .ai-code-review/prepare-diff.json]
 ```
 
-## Mandatory diff run summary (stdout)
+## Stdout emoji blocks (fixed templates)
 
-Print **after** `prepare-diff` and **before** launching analyzers. Values from `metadata`:
+Print values from `prepare-diff` `metadata` / work files. Machine lines `Analyzers:` and `Validator funnel:` stay **plain** (no emoji).
 
-**Incremental** (`metadata.is_incremental === true`):
+| Step | Block |
+|------|--------|
+| Metadata | `📋 PR Metadata:` — source/target branch, incremental yes/no + since SHA |
+| Diff | `📊 Diff stats:` — file count, +/- lines, excluded count; label full vs incremental |
+| Analyzers | `🔬 Analyzers:` — selected list and `(skipped: …)` when applicable |
+| Collect | `📥 Collected results:` — raw count, categories from analyzers present |
+| Validator skip | `⏭️ Validator skipped: …` when raw empty |
+| Validator done | `✅ Validator complete: {raw} raw → {final} validated` |
+| Close | Repeat 📋 📊 🔬 📥 ✅ in order, then `🎯 Review complete:` severity breakdown from **final** `findings.json` |
+
+**📊 Diff stats example (incremental):**
 
 ```text
-Incremental: yes (since <full-sha>)
-Diff stats: <n> files, +<added>/-<removed>
-Excluded: <files_excluded> files
+📊 Diff stats:
+  files: <n>  +<added>/-<removed>  excluded: <files_excluded>
+  mode: incremental (since <full-sha>)
 ```
 
-**Full review** (`metadata.is_incremental === false`):
+**📊 Diff stats example (full):**
 
 ```text
-Incremental: no (base <full-sha>)
-Diff stats: <n> files, +<added>/-<removed>
-Excluded: <files_excluded> files
+📊 Diff stats:
+  files: <n>  +<added>/-<removed>  excluded: <files_excluded>
+  mode: full (base <full-sha>)
 ```
-
-Then print `metadata.warnings` as `Warning: <message>` lines.
 
 ## Invocation criteria
 

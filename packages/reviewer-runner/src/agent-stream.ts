@@ -1,43 +1,200 @@
 import type { SDKMessage } from "@cursor/sdk";
+import * as log from "./logger.js";
 
-/** Stream agent messages to stdout for CI/local debugging. */
-export function logAgentStreamEvent(event: SDKMessage): void {
+const SUBAGENT_SLUG_LABELS: Record<string, string> = {
+  "ai-code-review-security-analyzer": "security analyzer",
+  "ai-code-review-performance-analyzer": "performance analyzer",
+  "ai-code-review-validator": "validator",
+};
+
+export function stripOrchestratorMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/```[^\n]*\n?/g, "")
+    .replace(/```/g, "");
+}
+
+export function formatOrchestratorLine(text: string): string {
+  const stripped = stripOrchestratorMarkdown(text);
+  return `${log.orchestratorPrefix()}${stripped}`;
+}
+
+/** Forward orchestrator assistant narration; drop empty lines and TodoWrite noise only. */
+export function shouldForwardOrchestratorLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (/^(- \[[ x]\] )?(prereq|metadata|diff|analyzers|collect|validate|report)\b/i.test(trimmed)) {
+    return false;
+  }
+  return true;
+}
+
+/** Buffers streaming assistant deltas; emits one styled line per completed newline. */
+export class OrchestratorStreamForwarder {
+  private pending = "";
+
+  reset(): void {
+    this.pending = "";
+  }
+
+  append(text: string): void {
+    this.pending += stripOrchestratorMarkdown(text);
+    this.drainCompleteLines();
+  }
+
+  flush(): void {
+    const rest = this.pending;
+    this.pending = "";
+    if (rest.trim().length > 0) {
+      this.writeLine(rest);
+    }
+  }
+
+  private drainCompleteLines(): void {
+    let newlineAt = this.pending.indexOf("\n");
+    while (newlineAt !== -1) {
+      const line = this.pending.slice(0, newlineAt);
+      this.pending = this.pending.slice(newlineAt + 1);
+      this.writeLine(line);
+      newlineAt = this.pending.indexOf("\n");
+    }
+  }
+
+  private writeLine(line: string): void {
+    if (!shouldForwardOrchestratorLine(line)) {
+      return;
+    }
+    log.orchestratorLine(line);
+  }
+}
+
+const streamForwarder = new OrchestratorStreamForwarder();
+
+export function resetOrchestratorStream(): void {
+  streamForwarder.reset();
+  resetDefaultTracker();
+}
+
+export function flushOrchestratorStream(): void {
+  streamForwarder.flush();
+}
+
+export function forwardOrchestratorText(text: string): void {
+  streamForwarder.append(text);
+}
+
+export function isTaskToolCall(name: string): boolean {
+  return name.toLowerCase() === "task";
+}
+
+/** Cursor SDK uses `task` tool with `subagentType.name` (camelCase). */
+export function parseTaskArgs(args: unknown): {
+  description?: string;
+  subagent_type?: string;
+} {
+  if (!args || typeof args !== "object") {
+    return {};
+  }
+  const record = args as Record<string, unknown>;
+  let subagent_type: string | undefined;
+  if (typeof record.subagent_type === "string") {
+    subagent_type = record.subagent_type;
+  } else if (record.subagentType && typeof record.subagentType === "object") {
+    const nested = record.subagentType as Record<string, unknown>;
+    if (typeof nested.name === "string") {
+      subagent_type = nested.name;
+    }
+  }
+  return {
+    description: typeof record.description === "string" ? record.description : undefined,
+    subagent_type,
+  };
+}
+
+export function humanSubagentDescription(
+  subagentType?: string,
+  description?: string,
+): string {
+  if (description?.trim()) {
+    return description.trim();
+  }
+  if (subagentType && SUBAGENT_SLUG_LABELS[subagentType]) {
+    return SUBAGENT_SLUG_LABELS[subagentType];
+  }
+  if (subagentType) {
+    return subagentType.replace(/^ai-code-review-/, "").replace(/-/g, " ");
+  }
+  return "sub-agent";
+}
+
+export class SubAgentTracker {
+  private readonly starts = new Map<string, { at: number; description: string }>();
+  private readonly finished = new Set<string>();
+
+  reset(): void {
+    this.starts.clear();
+    this.finished.clear();
+  }
+
+  handleToolCall(event: Extract<SDKMessage, { type: "tool_call" }>): void {
+    if (!isTaskToolCall(event.name)) {
+      return;
+    }
+    const { description, subagent_type: subagentType } = parseTaskArgs(event.args);
+    const label = humanSubagentDescription(subagentType, description);
+
+    if (event.status === "running") {
+      if (this.starts.has(event.call_id)) {
+        return;
+      }
+      this.starts.set(event.call_id, { at: Date.now(), description: label });
+      log.subAgentLaunched(label);
+      return;
+    }
+
+    if (event.status !== "completed" && event.status !== "error") {
+      return;
+    }
+    if (this.finished.has(event.call_id)) {
+      return;
+    }
+    this.finished.add(event.call_id);
+
+    const started = this.starts.get(event.call_id);
+    const elapsedSec = started ? (Date.now() - started.at) / 1000 : 0;
+    const finalLabel = started?.description ?? label;
+    this.starts.delete(event.call_id);
+    log.subAgentDone(
+      event.status === "error" ? "error" : "completed",
+      elapsedSec,
+      finalLabel,
+    );
+  }
+}
+
+const defaultTracker = new SubAgentTracker();
+
+function resetDefaultTracker(): void {
+  defaultTracker.reset();
+}
+
+/** Stream orchestrator assistant text; derive sub-agent lifecycle from Task tool_call events. */
+export function logAgentStreamEvent(
+  event: SDKMessage,
+  tracker: SubAgentTracker = defaultTracker,
+): void {
   switch (event.type) {
     case "assistant":
       for (const block of event.message.content) {
         if (block.type === "text" && block.text) {
-          process.stdout.write(block.text);
-        } else if (block.type === "tool_use") {
-          console.log(`\n[agent] tool_use: ${block.name}`);
+          forwardOrchestratorText(block.text);
         }
       }
       break;
     case "tool_call":
-      console.log(
-        `[agent] tool_call: ${event.name} (${event.status}) call_id=${event.call_id}`,
-      );
-      break;
-    case "thinking":
-      if (event.text) {
-        const preview =
-          event.text.length > 120 ? `${event.text.slice(0, 120)}…` : event.text;
-        console.log(`[agent] thinking: ${preview}`);
-      }
-      break;
-    case "status":
-      console.log(
-        `[agent] status: ${event.status}${event.message ? ` — ${event.message}` : ""}`,
-      );
-      break;
-    case "system":
-      console.log(
-        `[agent] system: agent_id=${event.agent_id} run_id=${event.run_id}`,
-      );
-      break;
-    case "task":
-      if (event.text || event.status) {
-        console.log(`[agent] task: ${event.status ?? ""} ${event.text ?? ""}`);
-      }
+      tracker.handleToolCall(event);
       break;
     default:
       break;
