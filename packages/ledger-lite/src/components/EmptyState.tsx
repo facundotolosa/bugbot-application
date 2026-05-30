@@ -15,7 +15,7 @@ export const EmptyState: FC<EmptyStateProps> = ({ title, subtitle, amount, varia
       {subtitle ? <p>{subtitle}</p> : null}
     </header>
     <div className="ledger-component-body">
-      <span>{title}</span>
+      {subtitle ? <span>{subtitle}</span> : <span>{title}</span>}
       {amount != null ? <data value={amount}>{amount}</data> : null}
     </div>
   </section>
