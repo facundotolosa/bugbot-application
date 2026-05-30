@@ -35,3 +35,15 @@ export {
   type PrContext,
   type PullReviewCommentLike,
 } from "./github.js";
+export {
+  createExecGitRunner,
+  isAncestor,
+  logReviewMode,
+  resolveReviewMode,
+  shaExists,
+  validateSinceSha,
+  type GitRunner,
+  type ResolveReviewModeResult,
+  type ReviewMode,
+  type ValidateSinceShaResult,
+} from "./git-scope.js";
