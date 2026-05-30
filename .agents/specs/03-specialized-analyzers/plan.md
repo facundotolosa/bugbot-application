@@ -1,7 +1,7 @@
 # Plan: Specialized analyzers (security + performance subagents)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** Done
 
 ## Prerequisites
 
@@ -254,7 +254,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Human sign-off on a real PR run; spec validation checklist complete. |
 
 #### Steps
@@ -269,9 +269,19 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] Spec **Validation checklist** items checked
-- [ ] `npm test` passes
-- [ ] Manual E2E table in Notes below filled or explicitly deferred with reason
+- [x] Spec **Validation checklist** items checked (see `/validate` report; human confirms spec Done)
+- [x] `npm test` passes
+- [x] Manual E2E: CI run [26688892025](https://github.com/facundotolosa/bugbot-application/actions/runs/26688892025/job/78661732400) — both analyzers, 5 inline comments; heading fix `###` post-review
+
+#### Manual E2E results
+
+| Step | Result |
+|------|--------|
+| 1 Docs-only PR | Deferred — current PR has `packages/` paths; both analyzers expected |
+| 2 packages/** PR | PASS — `Analyzers: security, performance`, parallel Tasks in logs |
+| 3 Incremental second push | Deferred — not exercised on this PR |
+| 4 Bad subagent retry | Deferred — both subagents succeeded first try |
+| 5 CI Actions | PASS — orchestrator + subagents + 5 posted comments |
 
 #### Notes
 
@@ -343,3 +353,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Phase 5 done: security and performance analyzer agents under `.cursor/agents/` |
 | 2026-05-30 | Phase 6 done: orchestrator SKILL.md, README, v2 sample findings |
 | 2026-05-30 | Phase 7 done: agent prompt v2/orchestrator, parseFindingsFile validation, README + AGENTS.md |
+| 2026-05-30 | Phase 8 done: CI E2E on PR #12; inline comment title uses `###` heading |
