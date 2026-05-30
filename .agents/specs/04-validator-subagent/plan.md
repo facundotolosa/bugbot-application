@@ -95,7 +95,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | Subagent definition and three reference files exist so the orchestrator can invoke a documented five-phase funnel. |
 
 #### Steps
@@ -119,10 +119,10 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] Files exist at paths above
-- [ ] Agent references all three docs by repo-relative path under `.cursor/skills/ai-code-review/references/`
-- [ ] `rg 'after_ticket_crossref|codebase-patterns' .cursor/agents/ai-code-review-validator.md .cursor/skills/ai-code-review/references/` — no matches
-- [ ] Manual: frontmatter `name` matches Task `subagent_type` `ai-code-review-validator`
+- [x] Files exist at paths above
+- [x] Agent references all three docs by repo-relative path under `.cursor/skills/ai-code-review/references/`
+- [x] `rg 'after_ticket_crossref|codebase-patterns' .cursor/agents/ai-code-review-validator.md .cursor/skills/ai-code-review/references/` — no matches
+- [x] Manual: frontmatter `name` matches Task `subagent_type` `ai-code-review-validator`
 
 #### Notes
 
@@ -134,7 +134,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | Deterministic TypeScript helpers for orchestrator/skill docs: validate validator JSON, map to v2 `findings.json`, zeroed summary when raw is empty. |
 
 #### Steps
