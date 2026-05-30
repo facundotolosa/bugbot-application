@@ -36,11 +36,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     input.prFilesPath ?? join(input.repoRoot, ".ai-code-review/pr-files.txt");
 
   const lines = [
-    `Use the ai-code-review skill at \`${SKILL_PATH}\` (read SKILL.md and follow it).`,
-    "",
-    "Requirements:",
-    "- All orchestrator stdout must be in English only.",
-    "- Print only prescribed skill blocks and machine lines (no planning or narration prose).",
+    `Use the ai-code-review skill at \`${SKILL_PATH}\` (read \`SKILL.md\` and follow it).`,
     "",
     "Parameters:",
     `  Source ref: ${input.sourceRef}`,

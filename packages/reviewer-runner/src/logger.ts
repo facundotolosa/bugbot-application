@@ -132,7 +132,7 @@ export function subAgentLaunched(description: string): void {
   const c = shouldUseColor();
   writeln(
     stdout,
-    `  ${fmt(c, CYAN, "›")} ${subAgentLabel()} ${fmt(c, BOLD, "Launched:")} ${description}`,
+    `  ${fmt(c, CYAN, "›")} [sub-agent] Launched: ${description}`,
   );
 }
 
@@ -146,36 +146,11 @@ export function subAgentDone(
   const label = state === "completed" ? "Completed" : "Failed";
   writeln(
     stdout,
-    `  ${glyph} ${subAgentLabel()} ${fmt(c, BOLD, `${label}`)} (${elapsedSec.toFixed(1)}s): ${description}`,
+    `  ${glyph} [sub-agent] ${label} (${elapsedSec.toFixed(1)}s): ${description}`,
   );
 }
 
 export function orchestratorPrefix(): string {
   const c = shouldUseColor();
   return fmt(c, DIM + CYAN, "[orchestrator] ");
-}
-
-/** Styled orchestrator stdout line (headers/machine lines bold; detail dim). */
-export function orchestratorLine(text: string): void {
-  const c = shouldUseColor();
-  const trimmed = text.trimEnd();
-  const prefix = orchestratorPrefix();
-  if (/^(📋|📊|🔬|📥|⏭️|✅|🎯)/.test(trimmed)) {
-    writeln(stdout, `${prefix}${fmt(c, BOLD, trimmed)}`);
-    return;
-  }
-  if (/^(Analyzers:|Validator funnel:|Report written to:|Warning:)/.test(trimmed)) {
-    writeln(stdout, `${prefix}${fmt(c, BOLD, trimmed)}`);
-    return;
-  }
-  if (/^  \S/.test(trimmed)) {
-    writeln(stdout, `${prefix}${fmt(c, DIM, trimmed)}`);
-    return;
-  }
-  writeln(stdout, `${prefix}${trimmed}`);
-}
-
-export function subAgentLabel(): string {
-  const c = shouldUseColor();
-  return fmt(c, BOLD, "[sub-agent]");
 }

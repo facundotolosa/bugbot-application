@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import "./process-hardening.js";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { runReviewAgent } from "./agent.js";

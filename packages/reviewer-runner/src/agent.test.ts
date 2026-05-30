@@ -18,8 +18,7 @@ describe("buildReviewPrompt", () => {
       knownIssuesPath: `${REPO}/.ai-code-review/known-issues.json`,
     });
     expect(prompt).toContain("ai-code-review skill");
-    expect(prompt).toContain("English only");
-    expect(prompt).toContain("no planning or narration");
+    expect(prompt).toContain("SKILL.md");
     expect(prompt).toContain(`Source ref: ${HEAD_SHA}`);
     expect(prompt).toContain("Target branch: main");
     expect(prompt).toContain(`Commit: ${HEAD_SHA}`);
