@@ -10,6 +10,7 @@ import {
   logAgentStreamEvent,
   parseTaskArgs,
   resetOrchestratorStream,
+  shouldForwardOrchestratorLine,
   stripOrchestratorMarkdown,
 } from "./agent-stream.js";
 import * as logger from "./logger.js";
@@ -17,6 +18,21 @@ import * as logger from "./logger.js";
 afterEach(() => {
   resetOrchestratorStream();
   vi.restoreAllMocks();
+});
+
+describe("shouldForwardOrchestratorLine", () => {
+  it("allows prescribed blocks and machine lines", () => {
+    expect(shouldForwardOrchestratorLine("📋 PR Metadata:")).toBe(true);
+    expect(shouldForwardOrchestratorLine("  source: main")).toBe(true);
+    expect(shouldForwardOrchestratorLine("Analyzers: security")).toBe(true);
+    expect(shouldForwardOrchestratorLine("Report written to: .ai-code-review/findings.json")).toBe(
+      true,
+    );
+  });
+
+  it("drops monologue narration", () => {
+    expect(shouldForwardOrchestratorLine("Voy a leer la skill paso a paso.")).toBe(false);
+  });
 });
 
 describe("stripOrchestratorMarkdown", () => {
@@ -156,16 +172,17 @@ describe("logAgentStreamEvent", () => {
     );
   });
 
-  it("forwardOrchestratorText skips empty lines", () => {
+  it("forwardOrchestratorText skips empty and non-prescribed lines", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
-      forwardOrchestratorText("\n\nline\n");
+      forwardOrchestratorText("\n\nnarration only\n");
+      forwardOrchestratorText("Analyzers: security\n");
       flushOrchestratorStream();
     });
     expect(out.split("\n").filter((l) => l.includes("[orchestrator]")).length).toBe(1);
   });
 
-  it("buffers streaming deltas until newline before prefixing", () => {
+  it("buffers streaming deltas until newline and filters monologue", () => {
     const out = captureOutput(() => {
       resetOrchestratorStream();
       forwardOrchestratorText("Voy a le");
@@ -176,9 +193,19 @@ describe("logAgentStreamEvent", () => {
     const orchestratorLines = out
       .split("\n")
       .filter((l) => l.includes("[orchestrator]"));
-    expect(orchestratorLines).toHaveLength(2);
-    expect(orchestratorLines[0]).toContain("Voy a leer las instrucciones");
-    expect(orchestratorLines[1]).toContain("Analyzers: security, performance");
+    expect(orchestratorLines).toHaveLength(1);
+    expect(orchestratorLines[0]).toContain("Analyzers: security, performance");
+    expect(out).not.toContain("Voy a leer");
+  });
+
+  it("dedupes identical orchestrator lines", () => {
+    const out = captureOutput(() => {
+      resetOrchestratorStream();
+      forwardOrchestratorText("📋 PR Metadata:\n");
+      forwardOrchestratorText("📋 PR Metadata:\n");
+      flushOrchestratorStream();
+    });
+    expect(out.split("PR Metadata:").length - 1).toBe(1);
   });
 });
 
@@ -191,14 +218,14 @@ describe("OrchestratorStreamForwarder", () => {
       return true;
     });
 
-    forwarder.append("hel");
-    forwarder.append("lo");
+    forwarder.append("Analyzers: sec");
+    forwarder.append("urity");
     expect(chunks.join("")).toBe("");
     forwarder.append("\n");
-    expect(chunks.join("")).toContain("hello");
-    forwarder.append("world");
+    expect(chunks.join("")).toContain("Analyzers: security");
+    forwarder.append("Validator funnel: 0 → 0\n");
     forwarder.flush();
-    expect(chunks.join("")).toContain("world");
+    expect(chunks.join("")).toContain("Validator funnel");
     vi.restoreAllMocks();
   });
 });

@@ -128,11 +128,15 @@ export function summary(fields: Record<string, string | number>): void {
   }
 }
 
+export function blank(): void {
+  writeln(stdout, "");
+}
+
 export function subAgentLaunched(description: string): void {
   const c = shouldUseColor();
   writeln(
     stdout,
-    `  ${fmt(c, CYAN, "›")} [sub-agent] Launched: ${description}`,
+    `  ${fmt(c, CYAN, "›")} ${fmt(c, BOLD, "[sub-agent]")} ${fmt(c, BOLD, "Launched:")} ${fmt(c, WHITE, description)}`,
   );
 }
 
@@ -146,11 +150,61 @@ export function subAgentDone(
   const label = state === "completed" ? "Completed" : "Failed";
   writeln(
     stdout,
-    `  ${glyph} [sub-agent] ${label} (${elapsedSec.toFixed(1)}s): ${description}`,
+    `  ${glyph} ${fmt(c, BOLD, "[sub-agent]")} ${fmt(c, BOLD, `${label}`)} ${fmt(c, DIM, `(${elapsedSec.toFixed(1)}s)`)}: ${fmt(c, WHITE, description)}`,
   );
 }
 
 export function orchestratorPrefix(): string {
   const c = shouldUseColor();
   return fmt(c, DIM + CYAN, "[orchestrator] ");
+}
+
+/** Styled orchestrator stdout line (block headers bold, detail lines dim label + white value). */
+export function orchestratorLine(rawLine: string): void {
+  const c = shouldUseColor();
+  const line = rawLine.trimEnd();
+  const prefix = orchestratorPrefix();
+
+  if (/^(📋|📊|🔬|📥|⏭️|✅|🎯)/.test(line.trimStart())) {
+    writeln(stdout, `${prefix}${fmt(c, BOLD + CYAN, line.trimStart())}`);
+    return;
+  }
+
+  const detail = /^(\s{2,})([a-zA-Z][^:]*):\s*(.*)$/.exec(line);
+  if (detail) {
+    const [, indent, label, value] = detail;
+    writeln(
+      stdout,
+      `${prefix}${indent}${fmt(c, DIM, `${label}:`)} ${fmt(c, WHITE, value)}`,
+    );
+    return;
+  }
+
+  if (/^Analyzers:/i.test(line)) {
+    writeln(
+      stdout,
+      `${prefix}${fmt(c, BOLD, "Analyzers:")}${fmt(c, WHITE, line.slice("Analyzers:".length))}`,
+    );
+    return;
+  }
+
+  if (/^Validator funnel:/i.test(line)) {
+    writeln(
+      stdout,
+      `${prefix}${fmt(c, BOLD, "Validator funnel:")}${fmt(c, WHITE, line.slice("Validator funnel:".length))}`,
+    );
+    return;
+  }
+
+  if (/^Warning:/i.test(line)) {
+    writeln(stdout, `${prefix}${fmt(c, YELLOW, line)}`);
+    return;
+  }
+
+  if (/^Report written to:/i.test(line)) {
+    writeln(stdout, `${prefix}${fmt(c, BOLD + GREEN, line)}`);
+    return;
+  }
+
+  writeln(stdout, `${prefix}${line}`);
 }
