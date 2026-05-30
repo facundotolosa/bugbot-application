@@ -41,12 +41,10 @@ export function shouldForwardOrchestratorLine(line: string): boolean {
 export class OrchestratorStreamForwarder {
   private pending = "";
   private readonly seenLines = new Set<string>();
-  private sectionOpened = false;
 
   reset(): void {
     this.pending = "";
     this.seenLines.clear();
-    this.sectionOpened = false;
   }
 
   append(text: string): void {
@@ -81,11 +79,6 @@ export class OrchestratorStreamForwarder {
       return;
     }
     this.seenLines.add(key);
-
-    if (!this.sectionOpened) {
-      log.section("Orchestrator");
-      this.sectionOpened = true;
-    }
     log.orchestratorLine(line);
   }
 }
@@ -152,12 +145,10 @@ export function humanSubagentDescription(
 export class SubAgentTracker {
   private readonly starts = new Map<string, { at: number; description: string }>();
   private readonly finished = new Set<string>();
-  private sectionOpened = false;
 
   reset(): void {
     this.starts.clear();
     this.finished.clear();
-    this.sectionOpened = false;
   }
 
   handleToolCall(event: Extract<SDKMessage, { type: "tool_call" }>): void {
@@ -170,11 +161,6 @@ export class SubAgentTracker {
     if (event.status === "running") {
       if (this.starts.has(event.call_id)) {
         return;
-      }
-      if (!this.sectionOpened) {
-        log.blank();
-        log.section("Sub-agents");
-        this.sectionOpened = true;
       }
       this.starts.set(event.call_id, { at: Date.now(), description: label });
       log.subAgentLaunched(label);

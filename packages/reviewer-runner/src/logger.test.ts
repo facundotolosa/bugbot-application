@@ -94,6 +94,7 @@ describe("logger output", () => {
     expect(plain).toContain("/tmp/app");
     expect(plain).toContain("› prepare");
     expect(plain).toContain("finished");
+    expect(plain).toContain("Prompt");
     expect(plain).toContain("20 chars · 2 known issue(s)");
     expect(plain).toContain("Review Summary");
     expect(plain).toContain("Launched: security analyzer");

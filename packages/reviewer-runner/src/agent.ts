@@ -36,7 +36,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     input.prFilesPath ?? join(input.repoRoot, ".ai-code-review/pr-files.txt");
 
   const lines = [
-    `Use the ai-code-review skill at \`${SKILL_PATH}\` with the following parameters:.`,
+    `Use the ai-code-review skill at \`${SKILL_PATH}\` with the following parameters:`,
     `  Source ref: ${input.sourceRef}`,
     `  Target branch: ${input.targetRef}`,
     `  Commit: ${input.headSha}`,
@@ -90,8 +90,6 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
   try {
     const run = await agent.send(prompt);
     runId = run.id;
-    log.meta("run id", run.id);
-    log.meta("agent id", agent.agentId);
 
     resetOrchestratorStream();
     for await (const event of run.stream()) {
