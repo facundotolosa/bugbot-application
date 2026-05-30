@@ -7,6 +7,9 @@ const SUBAGENT_SLUG_LABELS: Record<string, string> = {
   "ai-code-review-validator": "validator",
 };
 
+const PRESCRIBED_LINE =
+  /^(📋|📊|🔬|📥|⏭️|✅|🎯|Analyzers:|Validator funnel:|Report written to:|Warning:|  \S)/;
+
 export function stripOrchestratorMarkdown(text: string): string {
   return text
     .replace(/\*\*/g, "")
@@ -19,12 +22,23 @@ export function formatOrchestratorLine(text: string): string {
   return `${log.orchestratorPrefix()}${stripped}`;
 }
 
-/** Buffers streaming assistant deltas; emits one prefixed line per completed newline. */
+/** Only skill-prescribed stdout lines are forwarded (English blocks, machine lines, detail rows). */
+export function isPrescribedOrchestratorLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+  return PRESCRIBED_LINE.test(line);
+}
+
+/** Buffers streaming assistant deltas; emits one styled line per completed newline. */
 export class OrchestratorStreamForwarder {
   private pending = "";
+  private readonly forwardedKeys = new Set<string>();
 
   reset(): void {
     this.pending = "";
+    this.forwardedKeys.clear();
   }
 
   append(text: string): void {
@@ -51,10 +65,16 @@ export class OrchestratorStreamForwarder {
   }
 
   private writeLine(line: string): void {
-    if (line.trim().length === 0) {
+    const trimmed = line.trimEnd();
+    if (!isPrescribedOrchestratorLine(trimmed)) {
       return;
     }
-    process.stdout.write(`${log.orchestratorPrefix()}${line}\n`);
+    const key = trimmed.trim();
+    if (this.forwardedKeys.has(key)) {
+      return;
+    }
+    this.forwardedKeys.add(key);
+    log.orchestratorLine(trimmed);
   }
 }
 

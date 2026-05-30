@@ -62,11 +62,13 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 
 ## Progress visibility
 
+- **English only** on stdout (blocks, machine lines, warnings). Never print Spanish or other languages.
 - Keep chat minimal: prescribed stdout lines + tool work **in silence** (do not narrate tool names, Task prompts, or step-by-step plans).
 - Optional **TodoWrite** checklist keys (status-only updates): `prereq`, `metadata`, `diff`, `analyzers`, `collect`, `validate`, `report` — IDE-only; **never** print TodoWrite text to stdout.
 - Immediate ad-hoc warnings (`Warning:` or `⚠️`) for `metadata.warnings`, incremental fallback, analyzer retry, invalid incremental SHA — repeat them in the consolidated close block when applicable.
+- Print each emoji block **once** during the run, then repeat them **once** in the consolidated close (not three times).
 
-**Do not print to stdout:** Task prompts, `tool_use` blocks, long “Let me…” monologues, shell one-liners that leak env, or duplicate tables on the final path line.
+**Do not print to stdout:** Task prompts, `tool_use` blocks, long “Let me…” / “Voy a…” monologues, shell one-liners that leak env, or duplicate tables on the final path line.
 
 ## Workflow checklist
 
