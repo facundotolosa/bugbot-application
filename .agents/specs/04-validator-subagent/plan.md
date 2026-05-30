@@ -1,7 +1,7 @@
 # Plan: Validator subagent (findings funnel)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** In progress
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | Known-issues dedup moves to validator phase 3; runner only drops findings whose `file` is outside the PR file set. |
 
 #### Steps
