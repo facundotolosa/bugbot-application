@@ -33,3 +33,8 @@ export function parseMoneyInput(raw: string): number | null {
 export function sumAmounts(values: number[]): number {
   return values.reduce((acc, v) => acc + v, 0);
 }
+
+/** True when amount is exactly zero (fixture dashboards use this for empty totals). */
+export function isZeroAmount(amount: number): boolean {
+  return amount === 0;
+}

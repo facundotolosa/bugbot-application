@@ -1,6 +1,8 @@
 # reviewer-runner
 
-CI/local runner: `git diff` → Cursor SDK (`ai-code-review` skill) → `.ai-code-review/findings.json` → GitHub inline PR comments.
+CI/local runner: `git diff` → Cursor SDK (`ai-code-review` skill) → `.ai-code-review/findings.json` (at **git repo root**) → GitHub inline PR comments.
+
+Resolves the monorepo root via `git rev-parse` (so `npm run review -w reviewer-runner` in Actions still reads/writes the correct path). Agent stdout is streamed with `[agent]` log lines.
 
 ## Scripts
 

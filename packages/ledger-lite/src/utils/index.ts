@@ -1,4 +1,9 @@
-export { formatMoney, parseMoneyInput, sumAmounts } from "./currency";
+export {
+  formatMoney,
+  isZeroAmount,
+  parseMoneyInput,
+  sumAmounts,
+} from "./currency";
 export {
   formatShortDate,
   formatMonthKey,
