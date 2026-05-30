@@ -44,6 +44,26 @@ git diff main -- .cursor/skills/ai-code-review/examples/smoke-target.ts
 
 Expected sample output (reference): `.cursor/skills/ai-code-review/examples/findings.sample.json`.
 
+## `prepare-diff` (incremental scope)
+
+From the repo root:
+
+```bash
+npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help
+```
+
+Example (full PR scope):
+
+```bash
+npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
+  --source HEAD \
+  --target main \
+  --pr-files packages/reviewer-runner/fixtures/pr-files.txt \
+  --output /tmp/prepare-diff.json
+```
+
+Add `--since-commit <sha>` for incremental diffs when the SHA is an ancestor of `HEAD`.
+
 ## CI path
 
-`packages/reviewer-runner` runs `git diff`, calls the Cursor SDK with this skill, then reads `.ai-code-review/findings.json` and posts inline PR comments.
+`packages/reviewer-runner` invokes the Cursor SDK with this skill; the agent runs `prepare-diff` and writes `.ai-code-review/findings.json` for inline PR comments.
