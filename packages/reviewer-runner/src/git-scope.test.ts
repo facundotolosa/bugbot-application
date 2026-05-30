@@ -237,32 +237,20 @@ describe("writePrFilesList", () => {
 });
 
 describe("logReviewMode", () => {
-  it("logs incremental mode with since sha", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    logReviewMode({ mode: "incremental", sinceCommit: SINCE });
-    expect(logSpy).toHaveBeenCalledWith(`[review] mode=incremental since=${SINCE}`);
-    logSpy.mockRestore();
-  });
-
-  it("logs full mode with optional reason", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    logReviewMode({ mode: "full", reason: "no-tracking" });
-    expect(logSpy).toHaveBeenCalledWith("[review] mode=full (no-tracking)");
-    logSpy.mockRestore();
+  it("is a no-op (scope logged via orchestrator and summary)", () => {
+    expect(() => logReviewMode({ mode: "incremental", sinceCommit: SINCE })).not.toThrow();
+    expect(() => logReviewMode({ mode: "full", reason: "no-tracking" })).not.toThrow();
   });
 });
 
 describe("logReviewScope", () => {
-  it("logs incremental file counts", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    logReviewScope("incremental", {
-      prFiles: ["a.ts", "b.ts"],
-      incrementalFiles: ["a.ts"],
-      effectiveFiles: ["a.ts"],
-    });
-    expect(logSpy).toHaveBeenCalledWith(
-      "[review] scope: pr=2 incremental=1 effective=1",
-    );
-    logSpy.mockRestore();
+  it("is a no-op", () => {
+    expect(() =>
+      logReviewScope("incremental", {
+        prFiles: ["a.ts", "b.ts"],
+        incrementalFiles: ["a.ts"],
+        effectiveFiles: ["a.ts"],
+      }),
+    ).not.toThrow();
   });
 });
