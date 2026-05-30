@@ -67,7 +67,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `formatCommentBody` produces the spec markdown template; `toInlineReviewComments` uses v2 `Finding` fields. |
 
 #### Steps
@@ -90,9 +90,9 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`comments.test.ts`)
-- [ ] Fixture-driven inline comment body matches spec example structure
-- [ ] Findings without `line` still skipped for inline mapping
+- [x] `npm test -w reviewer-runner` passes (`comments.test.ts`)
+- [x] Fixture-driven inline comment body matches spec example structure
+- [x] Findings without `line` still skipped for inline mapping
 
 ---
 
@@ -337,3 +337,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 |------|--------|
 | 2026-05-30 | Initial plan from spec (8 phases, acceptance mapping) |
 | 2026-05-30 | Phase 1 done: schema v2 in `findings.ts`, fixtures and tests migrated; v1 rejected |
+| 2026-05-30 | Phase 2 done: `formatCommentBody(Finding)` with analyzer titles and severity emojis |
