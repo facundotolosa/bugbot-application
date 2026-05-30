@@ -29,8 +29,6 @@ Detect **performance** issues in PR-scoped diffs. Be specific: file path, line o
 - Caching: missing cache, stale-while-revalidate mistakes, cache stampedes in changed code
 - Resource leaks that affect throughput (connections, timers, listeners) in changed hunks
 
-Optional `category` labels (free-form v1): e.g. `N+1`, `Query`, `React`, `Bundle`, `Cache`, `HotPath`.
-
 ### Do not report (security analyzer)
 
 - Pure security vulnerabilities (injection, XSS, secrets, authz bypass)
@@ -68,8 +66,7 @@ Write **pretty-printed** JSON to the output path from the Task prompt:
       "file": "path/from/repo/root.ts",
       "line": 42,
       "issue": "Short, specific problem description.",
-      "suggestion": "Concrete fix or optimization.",
-      "category": "N+1"
+      "suggestion": "Concrete fix or optimization."
     }
   ]
 }
@@ -83,7 +80,6 @@ Write **pretty-printed** JSON to the output path from the Task prompt:
 | `line` | **Required** for each finding (1-based line on the **new** file). |
 | `issue` | Non-empty; what is wrong. |
 | `suggestion` | Non-empty; how to improve. |
-| `category` | Optional internal label; not posted to GitHub. |
 
 **Empty review:** `{ "analyzer": "performance", "findings": [] }`.
 

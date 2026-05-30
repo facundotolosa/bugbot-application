@@ -37,7 +37,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | Known-issues dedup moves to validator phase 3; runner only drops findings whose `file` is outside the PR file set. |
 
 #### Steps
@@ -52,9 +52,9 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`post-review.test.ts`, orchestration tests)
-- [ ] `filterFindingsForPost` has no `(file, line)` vs known-issues logic
-- [ ] `buildKnownIssuesJson` unchanged; runner still writes `.ai-code-review/known-issues.json` for the orchestrator/validator
+- [x] `npm test -w reviewer-runner` passes (`post-review.test.ts`, orchestration tests)
+- [x] `filterFindingsForPost` has no `(file, line)` vs known-issues logic
+- [x] `buildKnownIssuesJson` unchanged; runner still writes `.ai-code-review/known-issues.json` for the orchestrator/validator
 
 #### Notes
 
@@ -66,7 +66,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Intermediate and merged findings use only v2 fields; analyzers no longer document or emit `category`. |
 
 #### Steps
@@ -81,9 +81,9 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`merge-findings.test.ts`)
-- [ ] `rg 'category' .cursor/agents/ai-code-review-*.md .cursor/skills/ai-code-review/` shows no finding-level `category` (ledger-lite excluded)
-- [ ] `mergeAnalyzerOutputs` output still validates via `parseFindingsJson`
+- [x] `npm test -w reviewer-runner` passes (`merge-findings.test.ts`)
+- [x] `rg 'category' .cursor/agents/ai-code-review-*.md .cursor/skills/ai-code-review/` shows no finding-level `category` (ledger-lite excluded)
+- [x] `mergeAnalyzerOutputs` output still validates via `parseFindingsJson`
 
 #### Notes
 
@@ -95,7 +95,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | Subagent definition and three reference files exist so the orchestrator can invoke a documented five-phase funnel. |
 
 #### Steps
