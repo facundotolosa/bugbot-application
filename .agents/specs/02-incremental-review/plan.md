@@ -38,7 +38,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Pure functions to parse issue-comment bodies, pick the canonical tracking comment, and format an updated body per spec. |
 
 #### Steps
@@ -54,9 +54,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (new `tracking.test.ts`)
-- [ ] `formatTrackingBody` output matches spec regex-friendly lines exactly
-- [ ] `selectTrackingComment` behavior covered with ≥2 fixtures
+- [x] `npm test -w reviewer-runner` passes (new `tracking.test.ts`)
+- [x] `formatTrackingBody` output matches spec regex-friendly lines exactly
+- [x] `selectTrackingComment` behavior covered with ≥2 fixtures
 
 #### Notes
 
@@ -334,3 +334,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | Date | Change |
 |------|--------|
 | 2026-05-30 | Initial plan from spec (9 phases, acceptance mapping) |
+| 2026-05-30 | Phase 1 done: `tracking.ts` parse/format/select + unit tests |
