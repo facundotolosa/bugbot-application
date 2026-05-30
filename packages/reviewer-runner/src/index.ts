@@ -19,6 +19,16 @@ export {
   type ReviewPromptInput,
 } from "./agent.js";
 export {
+  buildKnownIssuesJson,
+  filterFindingsForPost,
+  type KnownIssuesJson,
+} from "./post-review.js";
+export {
+  executeReviewOrchestration,
+  type ReviewOrchestrationConfig,
+  type ReviewOutcome,
+} from "./orchestrate-review.js";
+export {
   TRACKING_MARKER,
   formatTrackingBody,
   parseTrackingComment,
