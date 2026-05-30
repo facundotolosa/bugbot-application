@@ -18,7 +18,7 @@ Application code and runtime assets.
 
 | Path | Contents |
 |------|----------|
-| `skills/ai-code-review/` | Core review skill (v1: diff → `.ai-code-review/findings.json`) |
+| `.cursor/skills/ai-code-review/` | Core review skill (v1: diff → `.ai-code-review/findings.json`; Cursor-registered) |
 | `packages/reviewer-runner/` | Cursor SDK + GitHub inline comment publisher (npm workspace) |
 | `packages/ledger-lite/` | Non-functional React finance dashboard fixture (mock data + utils, npm workspace) |
 | `.github/workflows/ai-code-review.yml` | `pull_request` AI review via `reviewer-runner` |

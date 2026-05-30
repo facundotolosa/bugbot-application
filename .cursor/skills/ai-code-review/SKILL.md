@@ -71,9 +71,9 @@ Single-pass code review: **unified diff → heuristic analysis → `.ai-code-rev
   "findings": [
     {
       "severity": "warning",
-      "file": "skills/ai-code-review/examples/smoke-target.ts",
-      "line": 4,
-      "problem": "Division by zero when input is 0.",
+      "file": ".cursor/skills/ai-code-review/examples/smoke-target.ts",
+      "line": 3,
+      "problem": "Division by zero when value is 0.",
       "suggestion": "Guard with `if (value === 0) return 0` or throw a clear error."
     }
   ]

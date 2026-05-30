@@ -1,6 +1,6 @@
 # BugBot Application
 
-Portfolio AI code reviewer for GitHub: skill (`skills/ai-code-review/`), fixture app (`packages/ledger-lite/`), and CI runner (`packages/reviewer-runner/`).
+Portfolio AI code reviewer for GitHub: skill (`.cursor/skills/ai-code-review/`), fixture app (`packages/ledger-lite/`), and CI runner (`packages/reviewer-runner/`).
 
 ## Spec & plan
 
@@ -9,7 +9,7 @@ Portfolio AI code reviewer for GitHub: skill (`skills/ai-code-review/`), fixture
 
 ## Local review (skill)
 
-See [skills/ai-code-review/README.md](skills/ai-code-review/README.md).
+See [.cursor/skills/ai-code-review/README.md](.cursor/skills/ai-code-review/README.md).
 
 ## CI runner
 

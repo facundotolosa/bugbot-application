@@ -164,9 +164,10 @@ bugbot-application/
 ├── .agents/
 │   ├── skills/              # SDD workflow (brainstorm, plan, …)
 │   └── specs/
-├── skills/
-│   └── ai-code-review/
-│       └── SKILL.md
+├── .cursor/
+│   └── skills/
+│       └── ai-code-review/
+│           └── SKILL.md
 ├── packages/
 │   ├── reviewer-runner/     # SDK + GitHub publisher (workspace)
 │   └── ledger-lite/         # React fixture app (workspace)
@@ -177,7 +178,7 @@ bugbot-application/
 └── AGENTS.md
 ```
 
-- **npm workspaces:** two packages — `reviewer-runner`, `ledger-lite`. Product skill at **`skills/ai-code-review/`** (not an npm package).
+- **npm workspaces:** two packages — `reviewer-runner`, `ledger-lite`. Product skill at **`.cursor/skills/ai-code-review/`** (Cursor IDE registration; not an npm package).
 - SDD skills stay in **`.agents/skills/`**.
 
 ### Implementation sequence (for `/plan` phases)
@@ -192,7 +193,7 @@ bugbot-application/
 
 | Surface | Contract |
 |---------|----------|
-| **Skill** | Writes `.ai-code-review/findings.json`; documented in `skills/ai-code-review/SKILL.md`. |
+| **Skill** | Writes `.ai-code-review/findings.json`; documented in `.cursor/skills/ai-code-review/SKILL.md`. |
 | **Report file** | `.ai-code-review/findings.json` — consumed locally and by `reviewer-runner` after agent run. |
 | **Cursor SDK** | `Agent.prompt` or `Agent.create` + `send`; `local: { cwd }` and/or `cloud` — TBD in plan. |
 | **GitHub** | Actions `pull_request` webhook payload; REST: **pull request review** with inline comments (Problem / Suggested fix body). |
@@ -200,13 +201,13 @@ bugbot-application/
 
 ## Acceptance criteria
 
-- [x] `skills/ai-code-review/SKILL.md` exists and describes the v1 flow (diff → findings → structured report).
+- [x] `.cursor/skills/ai-code-review/SKILL.md` exists and describes the v1 flow (diff → findings → structured report).
 - [x] **Local:** A documented command or Cursor flow produces **`.ai-code-review/findings.json`** for a diff between two branches in this repo.
 - [x] **Fixture:** `packages/ledger-lite/` contains a React+TS tree meeting the volume target; no functional requirements beyond “code exists.”
 - [x] **Runner:** `packages/reviewer-runner` builds with TypeScript; unit test reads a sample `.ai-code-review/findings.json` and maps `findings[]` to inline comment payloads.
 - [ ] **CI:** On a test PR, workflow runs without manual steps, invokes the agent with the skill, and **at least one inline review comment** appears with `*Problem*` + `Suggested fix:` format.
 - [x] Secrets documented: `CURSOR_API_KEY` required; GitHub token strategy documented in spec resolution or README.
-- [x] Root `AGENTS.md` lists `skills/`, `packages/` (runner + ledger-lite), `.github/workflows/`.
+- [x] Root `AGENTS.md` lists `.cursor/skills/ai-code-review/`, `packages/` (runner + ledger-lite), `.github/workflows/`.
 
 ## Validation checklist
 
@@ -222,7 +223,7 @@ bugbot-application/
 | # | Question | Status | Answer / decision |
 |---|----------|--------|-------------------|
 | 1 | **GitHub vs Bitbucket:** User message mentioned PR on Bitbucket; rest assumes GitHub. Confirm hosting. | Resolved | **GitHub only** for MVP (Bitbucket was a slip; out of scope). |
-| 2 | **Skill location:** `skills/ai-code-review/` (repo root) vs `.cursor/skills/` vs `.agents/skills/`? | Resolved | **`skills/ai-code-review/`** at repo root (product skill); `.agents/skills/` remains SDD only. |
+| 2 | **Skill location:** `skills/ai-code-review/` (repo root) vs `.cursor/skills/` vs `.agents/skills/`? | Resolved | **`.cursor/skills/ai-code-review/`** (Cursor registers project skills here for local use); `.agents/skills/` remains SDD only. |
 | 3 | **Fixture theme/name:** OK with `ledger-lite` finance dashboard, or another domain? | Resolved | **`packages/ledger-lite/`**: personal finance dashboard mock (npm workspace package). |
 | 4 | **Fixture stack:** React-only (MVP) or add NestJS stub API for volume? | Resolved | **React-only** (Vite + TS); mock APIs in `ledger-lite/src/api/`. No NestJS in MVP. |
 | 5 | **CI SDK runtime:** `local` runner in Actions checkout vs `cloud` VM? | Resolved | **`local`** in CI = agent runs on the Actions runner with repo checked out at `cwd`. Agent *can* run git / read files if the skill allows; not limited to diff-only. Prefer full git history in workflow (`fetch-depth: 0`) if exploration is needed. |
@@ -256,3 +257,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 | 2026-05-30 | brainstorm | Q12 resolved: CI scope = this repo only |
 | 2026-05-30 | brainstorm | All open questions resolved — ready for `/plan` |
 | 2026-05-30 | implement | MVP codebase: skill, ledger-lite fixture, reviewer-runner, Actions workflow |
+| 2026-05-30 | implement | Move `ai-code-review` skill to `.cursor/skills/` for IDE registration |
