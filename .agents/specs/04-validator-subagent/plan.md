@@ -134,7 +134,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | Deterministic TypeScript helpers for orchestrator/skill docs: validate validator JSON, map to v2 `findings.json`, zeroed summary when raw is empty. |
 
 #### Steps
@@ -152,9 +152,9 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`validator-output.test.ts`)
-- [ ] `mapValidatorToFindingsReport` output has no extra fields required by `Finding` type
-- [ ] `zeroedFilterSummary()` returns all counters `0`
+- [x] `npm test -w reviewer-runner` passes (`validator-output.test.ts`)
+- [x] `mapValidatorToFindingsReport` output has no extra fields required by `Finding` type
+- [x] `zeroedFilterSummary()` returns all counters `0`
 
 #### Notes
 
@@ -166,7 +166,7 @@ _Each phase is a vertical slice (TDD tracer bullets where code changes). Determi
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | Skill workflow runs validator after merge when raw findings non-empty; fail closed on validator errors; log funnel summary. |
 
 #### Steps
