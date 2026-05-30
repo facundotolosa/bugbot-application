@@ -30,8 +30,6 @@ Detect **security** issues in PR-scoped diffs. Be specific: file path, line on t
 - Insecure defaults (CORS `*`, debug flags in prod paths, disabled TLS verification)
 - Dependency or config patterns with clear security impact in the changed hunks
 
-Optional `category` labels (free-form v1): e.g. `Secret`, `Injection`, `Authz`, `XSS`, `Crypto`, `PII`.
-
 ### Do not report (performance analyzer)
 
 - Micro-optimizations, algorithmic speedups without security impact
@@ -70,8 +68,7 @@ Write **pretty-printed** JSON to the output path from the Task prompt:
       "file": "path/from/repo/root.ts",
       "line": 42,
       "issue": "Short, specific problem description.",
-      "suggestion": "Concrete fix or mitigation.",
-      "category": "Injection"
+      "suggestion": "Concrete fix or mitigation."
     }
   ]
 }
@@ -85,7 +82,6 @@ Write **pretty-printed** JSON to the output path from the Task prompt:
 | `line` | **Required** for each finding (1-based line on the **new** file). |
 | `issue` | Non-empty; what is wrong. |
 | `suggestion` | Non-empty; how to fix. |
-| `category` | Optional internal label; not posted to GitHub. |
 
 **Empty review:** `{ "analyzer": "security", "findings": [] }`.
 

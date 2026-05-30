@@ -13,7 +13,6 @@ export interface AnalyzerFinding {
   line?: number;
   issue: string;
   suggestion: string;
-  category?: string;
 }
 
 export interface AnalyzerOutput {

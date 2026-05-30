@@ -23,7 +23,7 @@ export function formatCommentBody(finding: Finding): string {
   const title = ANALYZER_TITLES[finding.analyzer];
   const emoji = SEVERITY_EMOJIS[finding.severity];
   return [
-    `🤖 ### ${title}`,
+    `### 🤖 ${title}`,
     "",
     `${emoji} ${finding.issue}`,
     "",

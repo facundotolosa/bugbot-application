@@ -20,18 +20,11 @@ export function buildKnownIssuesJson(
 export function filterFindingsForPost(
   report: FindingsReport,
   prFiles: ReadonlySet<string>,
-  knownIssues: readonly Pick<KnownIssue, "file" | "line">[],
 ): Finding[] {
-  const knownKeys = new Set(knownIssues.map((issue) => `${issue.file}:${issue.line}`));
-
   return report.findings.filter((finding) => {
     if (!prFiles.has(finding.file)) {
       return false;
     }
-    if (finding.line == null) {
-      return true;
-    }
-    const key = `${finding.file}:${finding.line}`;
-    return !knownKeys.has(key);
+    return true;
   });
 }
