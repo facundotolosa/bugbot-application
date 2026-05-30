@@ -194,7 +194,9 @@ describe("executeReviewOrchestration", () => {
   });
 
   it("dry-run loads fixture findings and logs comments without agent", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const logger = await import("./logger.js");
+    const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
+    const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     const readFindings = vi.fn().mockResolvedValue(findings);
 
     const result = await executeReviewOrchestration(baseConfig({ dryRun: true }), {
@@ -209,10 +211,12 @@ describe("executeReviewOrchestration", () => {
       throw new Error("expected completed outcome");
     }
     expect(readFindings).toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith("[review] dry-run: agent skipped");
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("--- src/a.ts:5 ---"),
+    expect(stepSpy).toHaveBeenCalledWith("dry-run: agent skipped");
+    expect(metaSpy).toHaveBeenCalledWith(
+      "preview src/a.ts:5",
+      expect.any(String),
     );
-    logSpy.mockRestore();
+    stepSpy.mockRestore();
+    metaSpy.mockRestore();
   });
 });

@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import type { FoundTrackingComment } from "./github.js";
+import * as log from "./logger.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -200,24 +201,25 @@ export async function resolveReviewMode(
 
 export function logReviewMode(result: ResolveReviewModeResult): void {
   if (result.mode === "incremental") {
-    console.log(`[review] mode=incremental since=${result.sinceCommit}`);
+    log.meta("mode", `incremental since ${result.sinceCommit}`);
     return;
   }
   if (result.reason) {
-    console.log(`[review] mode=full (${result.reason})`);
+    log.meta("mode", `full (${result.reason})`);
     return;
   }
-  console.log("[review] mode=full");
+  log.meta("mode", "full");
 }
 
 export function logReviewScope(mode: ReviewMode, scope: EffectiveScope): void {
   if (mode === "incremental") {
-    console.log(
-      `[review] scope: pr=${scope.prFiles.length} incremental=${scope.incrementalFiles.length} effective=${scope.effectiveFiles.length}`,
+    log.meta(
+      "scope",
+      `pr=${scope.prFiles.length} incremental=${scope.incrementalFiles.length} effective=${scope.effectiveFiles.length}`,
     );
     return;
   }
-  console.log(`[review] scope: pr=${scope.prFiles.length} effective=${scope.effectiveFiles.length}`);
+  log.meta("scope", `pr=${scope.prFiles.length} effective=${scope.effectiveFiles.length}`);
 }
 
 export async function listPrFiles(
@@ -282,9 +284,7 @@ export async function shouldSkipAgent(
       return { ...scope, skip: true, reason: "pure-sync" };
     }
     if (pureSync && scope.effectiveFiles.length > 0) {
-      console.warn(
-        "[review] first-parent log empty but effective scope has files; not treating as pure-sync",
-      );
+      log.warn("first-parent log empty but effective scope has files; not treating as pure-sync");
     }
   }
 

@@ -17,14 +17,18 @@ export function buildKnownIssuesJson(
   };
 }
 
+export interface FilterFindingsResult {
+  findings: Finding[];
+  droppedOutOfPr: number;
+}
+
 export function filterFindingsForPost(
   report: FindingsReport,
   prFiles: ReadonlySet<string>,
-): Finding[] {
-  return report.findings.filter((finding) => {
-    if (!prFiles.has(finding.file)) {
-      return false;
-    }
-    return true;
-  });
+): FilterFindingsResult {
+  const findings = report.findings.filter((finding) => prFiles.has(finding.file));
+  return {
+    findings,
+    droppedOutOfPr: report.findings.length - findings.length,
+  };
 }

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewPromptInput } from "./agent.js";
 import { FINDINGS_PATH } from "./agent.js";
@@ -25,6 +25,7 @@ import {
   type GitRunner,
   type ShouldSkipAgentResult,
 } from "./git-scope.js";
+import * as log from "./logger.js";
 import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
 
 export interface ReviewOrchestrationConfig {
@@ -56,7 +57,22 @@ export interface ReviewOrchestrationDeps {
 export type ReviewOutcome =
   | { status: "skipped"; reason: string; scope: ShouldSkipAgentResult }
   | { status: "skip-agent"; scope: ShouldSkipAgentResult }
-  | { status: "completed"; posted: number; scope: ShouldSkipAgentResult };
+  | {
+      status: "completed";
+      posted: number;
+      totalFindings: number;
+      droppedOutOfPr: number;
+      scope: ShouldSkipAgentResult;
+    };
+
+async function countKnownIssues(path: string): Promise<number> {
+  try {
+    const raw = JSON.parse(await readFile(path, "utf8")) as { issues?: unknown[] };
+    return Array.isArray(raw.issues) ? raw.issues.length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export async function executeReviewOrchestration(
   config: ReviewOrchestrationConfig,
@@ -111,13 +127,20 @@ export async function executeReviewOrchestration(
   }
 
   if (scope.skip) {
-    console.log(`[review] skip: ${scope.reason}`);
+    log.warn(`Skipping agent: ${scope.reason ?? "unknown"}`);
     await advanceTracking();
+    log.summary({
+      mode: mode.mode,
+      findings: "0 (skipped — no effective diff)",
+      posted: 0,
+      tracking: trackingCommentId ?? "n/a",
+    });
+    log.done("Review skipped");
     return { status: "skipped", reason: scope.reason ?? "unknown", scope };
   }
 
   if (config.skipAgent) {
-    console.log("[review] skip-agent: not invoking agent");
+    log.step("skip-agent: not invoking agent");
     await advanceTracking();
     return { status: "skip-agent", scope };
   }
@@ -126,6 +149,12 @@ export async function executeReviewOrchestration(
   await mkdir(aiDir, { recursive: true });
   const prFilesPath = join(aiDir, "pr-files.txt");
   const knownIssuesPath = join(aiDir, "known-issues.json");
+
+  log.meta("review mode", mode.mode === "incremental" ? `incremental (since ${mode.sinceCommit})` : "full");
+  log.meta("pr files", String(scope.prFiles.length));
+  log.meta("effective files", String(scope.effectiveFiles.length));
+  log.meta("pr-files.txt", prFilesPath);
+  log.meta("known-issues.json", knownIssuesPath);
 
   await writePrFilesList(scope.prFiles, prFilesPath);
 
@@ -136,6 +165,8 @@ export async function executeReviewOrchestration(
     knownIssues = mapInlineReviewToKnownIssues(inline);
   }
   await writeFile(knownIssuesPath, JSON.stringify(buildKnownIssuesJson(knownIssues), null, 2), "utf8");
+  const knownIssuesCount = await countKnownIssues(knownIssuesPath);
+  log.meta("known issues", String(knownIssuesCount));
 
   if (deps.runAgent) {
     try {
@@ -148,37 +179,59 @@ export async function executeReviewOrchestration(
         prFilesPath,
         knownIssuesPath,
         prTitle: config.prTitle,
+        knownIssuesCount,
       });
     } catch (err) {
-      console.error("[review] agent failed; tracking not advanced");
+      log.error("Agent failed; tracking comment not advanced");
       throw err;
     }
   } else if (config.dryRun) {
-    console.log("[review] dry-run: agent skipped");
+    log.step("dry-run: agent skipped");
   } else {
     throw new Error("runAgent dependency is required for agent path");
   }
 
   const report = await readFindings(config.repoRoot);
   const prFileSet = new Set(scope.prFiles);
-  const filtered = filterFindingsForPost(report, prFileSet);
+  const { findings: filtered, droppedOutOfPr } = filterFindingsForPost(report, prFileSet);
   const comments = toInlineReviewComments({ ...report, findings: filtered });
 
-  console.log(`Inline comments to post: ${comments.length}`);
+  log.meta("findings (total)", String(report.findings.length));
+  if (droppedOutOfPr > 0) {
+    log.warn(`${droppedOutOfPr} finding(s) dropped (outside PR file list)`);
+  }
+  log.step(`Inline comments to post: ${comments.length} of ${report.findings.length} issue(s)`);
 
+  let posted = 0;
   if (deps.postComments && !config.dryRun) {
     try {
       await deps.postComments(comments);
+      posted = comments.length;
+      log.ok(`Posted ${posted} inline comment(s) out of ${report.findings.length} issue(s)`);
     } catch (err) {
-      console.error("[review] GitHub post failed; tracking not advanced");
+      log.error("GitHub post failed; tracking not advanced");
       throw err;
     }
   } else if (config.dryRun) {
     for (const c of comments) {
-      console.log(`--- ${c.path}:${c.line} ---\n${c.body}\n`);
+      log.meta(`preview ${c.path}:${c.line}`, c.body.split("\n")[0] ?? "");
     }
   }
 
   await advanceTracking();
-  return { status: "completed", posted: comments.length, scope };
+  log.summary({
+    mode: mode.mode,
+    findings: report.findings.length,
+    posted,
+    dropped: droppedOutOfPr,
+    tracking: trackingCommentId ?? "created",
+  });
+  log.done("Review complete");
+  return {
+    status: "completed",
+    posted,
+    totalFindings: report.findings.length,
+    droppedOutOfPr,
+    scope,
+  };
 }

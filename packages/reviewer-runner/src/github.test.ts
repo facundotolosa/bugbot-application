@@ -111,7 +111,8 @@ describe("upsertTrackingComment", () => {
   });
 
   it("logs tracking body on dry-run without calling GitHub", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const logger = await import("./logger.js");
+    const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
     const client: GitHubClient = {
       listIssueComments: vi.fn(),
       listPullReviewComments: vi.fn(),
@@ -127,10 +128,8 @@ describe("upsertTrackingComment", () => {
 
     expect(client.createIssueComment).not.toHaveBeenCalled();
     expect(client.updateIssueComment).not.toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[review] tracking (dry-run)"),
-    );
+    expect(stepSpy).toHaveBeenCalledWith("tracking (dry-run)");
     expect(result.body).toBe(formatTrackingBody(HEAD_SHA, FIXED_AT));
-    logSpy.mockRestore();
+    stepSpy.mockRestore();
   });
 });

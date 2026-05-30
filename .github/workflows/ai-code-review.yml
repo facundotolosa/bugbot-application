@@ -34,9 +34,18 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          FORCE_COLOR: "1"
           # PR merge-base and head (scope + prepare-diff)
           GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           # Tracking comment + inline review commit_id (prefer head over GITHUB_SHA)
           GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           # GITHUB_REPOSITORY and GITHUB_EVENT_PATH are provided by Actions by default
         run: npm run review -w reviewer-runner
+
+      - name: Upload AI review run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-review-run-artifacts
+          path: .ai-code-review/run-artifacts/**
+          if-no-files-found: ignore

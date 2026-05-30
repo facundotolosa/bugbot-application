@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import type { InlineReviewComment } from "./comments.js";
+import * as log from "./logger.js";
 import { formatTrackingBody, parseTrackingComment, selectTrackingComment } from "./tracking.js";
 
 export interface PrContext {
@@ -184,7 +185,8 @@ export async function upsertTrackingComment(
   const body = formatTrackingBody(headSha, at);
 
   if (options.dryRun) {
-    console.log(`[review] tracking (dry-run):\n${body}`);
+    log.step("tracking (dry-run)");
+    log.meta("body", body);
     return { commentId: existingCommentId ?? 0, body };
   }
 
@@ -192,10 +194,12 @@ export async function upsertTrackingComment(
 
   if (existingCommentId != null) {
     await api.updateIssueComment(ctx, existingCommentId, body);
+    log.ok(`Updated tracking comment #${existingCommentId} at ${headSha.slice(0, 7)}`);
     return { commentId: existingCommentId, body };
   }
 
   const created = await api.createIssueComment(ctx, body);
+  log.ok(`Created tracking comment #${created.id} at ${headSha.slice(0, 7)}`);
   return { commentId: created.id, body };
 }
 
@@ -205,7 +209,7 @@ export async function postInlineReview(
   comments: InlineReviewComment[],
 ): Promise<void> {
   if (comments.length === 0) {
-    console.log("No inline comments to post.");
+    log.step("No inline comments to post");
     return;
   }
   const octokit = new Octokit({ auth: token });

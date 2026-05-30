@@ -32,7 +32,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | [`specs/02-incremental-review/`](specs/02-incremental-review/) | Incremental PR reviews: tracking comment, scoped diffs, skip rules, dedup. [plan.md](specs/02-incremental-review/plan.md) | Done |
 | [`specs/03-specialized-analyzers/`](specs/03-specialized-analyzers/) | Orchestrator + parallel security/performance subagents, invocation criteria, merge to findings v2 + enriched inline comments. [plan.md](specs/03-specialized-analyzers/plan.md) | Done |
 | [`specs/04-validator-subagent/`](specs/04-validator-subagent/) | Validator subagent: 5-phase funnel between analyzer merge and findings v2; runner PR-only post filter. [plan.md](specs/04-validator-subagent/plan.md) | Done |
-| [`specs/05-pipeline-observability/`](specs/05-pipeline-observability/) | Pipeline observability: wrapper logger, orchestrator progress blocks, SDK stream prefix, run artifacts for CI/local. [plan.md](specs/05-pipeline-observability/plan.md) | In progress |
+| [`specs/05-pipeline-observability/`](specs/05-pipeline-observability/) | Pipeline observability: wrapper logger, orchestrator progress blocks, SDK stream prefix, run artifacts for CI/local. [plan.md](specs/05-pipeline-observability/plan.md) | Implemented (pending `/validate`) |
 
 ## Spec workflow
 
