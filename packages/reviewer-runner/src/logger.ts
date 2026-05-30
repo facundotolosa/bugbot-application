@@ -230,5 +230,5 @@ export function orchestratorLine(rawLine: string): void {
     return;
   }
 
-  writeln(stdout, `${prefix}${line}`);
+  writeln(stdout, `${prefix}${fmt(c, WHITE, line.trimStart())}`);
 }

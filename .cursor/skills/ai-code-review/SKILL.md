@@ -62,16 +62,27 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 
 ## Progress visibility
 
-- Keep chat minimal: prescribed stdout lines + tool work **in silence** (do not narrate tool names, Task prompts, or step-by-step plans).
-- Optional **TodoWrite** checklist keys (status-only updates): `prereq`, `metadata`, `diff`, `analyzers`, `collect`, `validate`, `report` — IDE-only; **never** print TodoWrite text to stdout.
-- Immediate ad-hoc warnings (`Warning:` or `⚠️`) for `metadata.warnings`, incremental fallback, analyzer retry, invalid incremental SHA — repeat them in the consolidated close block when applicable.
+The runner forwards **every line you print to stdout** with an `[orchestrator]` prefix as it streams. Operators must see **what you are doing in order**, not only a dump at the end.
 
-**Do not print to stdout:** Task prompts, `tool_use` blocks, long “Let me…” monologues, shell one-liners that leak env, or duplicate tables on the final path line.
+**Print short status lines (one sentence each) at these moments — before moving on:**
+
+1. After reading the skill / at start: e.g. `I'll run the ai-code-review skill with the PR parameters from the prompt.`
+2. Right after `prepare-diff` succeeds: print **📋** and **📊** blocks immediately, then e.g. `Preparing diff complete; selecting analyzers.`
+3. After `Analyzers:` line, **before** launching Tasks: e.g. `Launching security and performance analyzer subagents in parallel.`
+4. After collecting analyzer files, **before** validator: e.g. `Collected analyzer output; running validator.` or `All analyzers returned no findings; skipping validator.`
+5. After validator (or skip): print collect/validator emoji lines, then the **consolidated close** (repeat 📋→📥 + 🎯).
+6. Final line only: `Report written to: .ai-code-review/findings.json`
+
+- Tool work stays silent (no tool names, Task prompts, or bash in stdout).
+- Optional **TodoWrite** keys: `prereq`, `metadata`, `diff`, `analyzers`, `collect`, `validate`, `report` — **IDE only**; never print TodoWrite lines to stdout.
+- `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply.
+
+**Do not print to stdout:** Task prompts, `tool_use` narration, shell one-liners, env dumps, or extra content on the final path line.
 
 ## Workflow checklist
 
 1. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
-2. Print the **📋 PR Metadata** and **📊 Diff stats** blocks (templates below).
+2. **Immediately** print the **📋 PR Metadata** and **📊 Diff stats** blocks (templates below) — not only in the final consolidated close.
 3. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
 4. Ensure `.ai-code-review/work/` exists. **Write** `.ai-code-review/work/diff.json` with the same shape as the `prepare-diff` output (`metadata` + `files[]`).
 5. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
