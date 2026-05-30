@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "findings": [
+    {
+      "severity": "warning",
+      "file": "skills/ai-code-review/examples/smoke-target.ts",
+      "line": 3,
+      "problem": "Division by zero when value is 0.",
+      "suggestion": "Guard with `if (value === 0) return 0` or throw a clear error."
+    },
+    {
+      "severity": "info",
+      "file": "skills/ai-code-review/examples/smoke-target.ts",
+      "problem": "Missing line number — should be skipped for inline comments.",
+      "suggestion": "Add a line field when the issue maps to a diff hunk."
+    }
+  ]
+}
