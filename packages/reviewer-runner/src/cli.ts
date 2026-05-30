@@ -91,7 +91,7 @@ async function main() {
 
   let githubDeps;
   if (token && repoFull && eventPath) {
-    const ctx = await loadPrContextFromEvent(eventPath, repoFull, headSha);
+    const ctx = await loadPrContextFromEvent(eventPath, repoFull, gitHead);
     githubDeps = { token, ctx, client: createGitHubClient(token) };
   }
 
