@@ -18,10 +18,10 @@ Application code and runtime assets.
 
 | Path | Contents |
 |------|----------|
-| `src/` | _TBD — TypeScript implementation_ |
-| `evals/` | _TBD — review quality evals_ |
-| `tests/` | _TBD — integration tests if not colocated_ |
-| `.github/` | _TBD — Actions, templates_ |
+| `skills/ai-code-review/` | _Planned — core review skill (v1: diff → findings → JSON report)_ |
+| `packages/reviewer-runner/` | _Planned — Cursor SDK + GitHub comment publisher for CI (npm workspace)_ |
+| `packages/ledger-lite/` | _Planned — non-functional React fixture (personal finance mock, npm workspace)_ |
+| `.github/workflows/` | _Planned — `pull_request` AI review workflow_ |
 
 ---
 
