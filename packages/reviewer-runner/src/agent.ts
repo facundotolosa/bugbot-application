@@ -36,9 +36,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     input.prFilesPath ?? join(input.repoRoot, ".ai-code-review/pr-files.txt");
 
   const lines = [
-    `Use the ai-code-review skill at \`${SKILL_PATH}\` (read \`SKILL.md\` and follow it).`,
-    "",
-    "Parameters:",
+    `Use the ai-code-review skill at \`${SKILL_PATH}\` with the following parameters:.`,
     `  Source ref: ${input.sourceRef}`,
     `  Target branch: ${input.targetRef}`,
     `  Commit: ${input.headSha}`,
