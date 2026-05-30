@@ -97,7 +97,7 @@ describe("executeReviewOrchestration", () => {
     const result = await executeReviewOrchestration(baseConfig(), {
       git: gitRunner({
         firstParentLog: vi.fn().mockResolvedValue(""),
-        listIncrementalFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
+        listIncrementalFiles: vi.fn().mockResolvedValue([]),
         listPrFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
       }),
       github: { token: "t", ctx, client },

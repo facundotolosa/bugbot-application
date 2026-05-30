@@ -157,9 +157,11 @@ describe("computeEffectiveScope", () => {
 });
 
 describe("shouldSkipAgent", () => {
-  it("skips with pure-sync when first-parent log is empty", async () => {
+  it("skips with pure-sync when first-parent log is empty and effective scope is empty", async () => {
     const runner = mockRunner({
       firstParentLog: vi.fn().mockResolvedValue(""),
+      listPrFiles: vi.fn().mockResolvedValue([]),
+      listIncrementalFiles: vi.fn().mockResolvedValue([]),
     });
     const result = await shouldSkipAgent({
       mode: "incremental",
@@ -170,6 +172,23 @@ describe("shouldSkipAgent", () => {
       runner,
     });
     expect(result).toMatchObject({ skip: true, reason: "pure-sync" });
+  });
+
+  it("does not pure-sync skip when effective files exist despite empty first-parent log", async () => {
+    const runner = mockRunner({
+      firstParentLog: vi.fn().mockResolvedValue(""),
+      listPrFiles: vi.fn().mockResolvedValue(["a.ts"]),
+      listIncrementalFiles: vi.fn().mockResolvedValue(["a.ts"]),
+    });
+    const result = await shouldSkipAgent({
+      mode: "incremental",
+      sinceCommit: SINCE,
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(result.skip).toBe(false);
   });
 
   it("skips with empty-effective-scope when intersection is empty", async () => {

@@ -55,8 +55,7 @@ async function main() {
 
   const envShas = resolveShasFromEnv();
   const base = args.base || envShas?.base || "";
-  const head = args.head || envShas?.head || "HEAD";
-  const headSha = process.env.GITHUB_HEAD_SHA ?? head;
+  const gitHead = process.env.GITHUB_HEAD_SHA ?? envShas?.head ?? args.head ?? "HEAD";
 
   if (!base) {
     console.error("Missing --base or GITHUB_BASE_SHA");
@@ -74,8 +73,8 @@ async function main() {
   const config = {
     repoRoot,
     base,
-    head,
-    headSha,
+    head: gitHead,
+    headSha: gitHead,
     targetRef,
     prTitle,
     dryRun: args.dryRun,
