@@ -1,15 +1,15 @@
 ---
 name: ai-code-review
-description: Orchestrate PR-scoped diff review via security/performance subagents; write schema v2 findings to .ai-code-review/findings.json. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
+description: Orchestrate PR-scoped diff review via security/performance subagents and validator funnel; write schema v2 findings to .ai-code-review/findings.json. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
 ---
 
 # AI Code Review (orchestrator)
 
 You are the **orchestrator**. You do **not** perform heuristic analysis yourself. You coordinate:
 
-**`prepare-diff` → work artifacts → invocation criteria → parallel analyzer Tasks → merge → `.ai-code-review/findings.json` (v2)**
+**`prepare-diff` → work artifacts → invocation criteria → parallel analyzer Tasks → merge raw → validator Task → `.ai-code-review/findings.json` (v2)**
 
-Subagent intelligence lives in `.cursor/agents/ai-code-review-{security,performance}-analyzer.md`. Your Task prompts to analyzers are **two lines only** (read path + write path).
+Subagent intelligence lives in `.cursor/agents/ai-code-review-{security,performance,validator}.md`. Analyzer Task prompts are **two lines only** (read path + write path). The validator Task prompt is **three lines only** (raw findings, known issues, output path).
 
 ## Architecture
 
@@ -19,7 +19,8 @@ flowchart TB
   IC[invocation criteria]
   SEC[security-analyzer Task]
   PERF[performance-analyzer Task]
-  MERGE[merge findings]
+  RAW[merge raw findings]
+  VAL[validator Task]
   OUT[findings.json v2]
 
   PD --> IC
@@ -27,18 +28,21 @@ flowchart TB
   PD -->|work/diff.json| PERF
   IC --> SEC
   IC --> PERF
-  SEC --> MERGE
-  PERF --> MERGE
-  MERGE --> OUT
+  SEC --> RAW
+  PERF --> RAW
+  RAW -->|findings.length > 0| VAL
+  RAW -->|empty| OUT
+  VAL --> OUT
 ```
 
 | Layer | Responsibility |
 |-------|----------------|
-| **You (orchestrator)** | `prepare-diff`, stdout summary, write `work/diff.json`, select analyzers, launch Tasks, collect outputs, merge, write final file |
+| **You (orchestrator)** | `prepare-diff`, stdout summary, write `work/diff.json`, select analyzers, launch analyzer Tasks, merge **raw**, launch validator when non-empty, map validated output → v2, fail closed on validator errors, log funnel summary |
 | **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
-| **reviewer-runner** | Incremental scope, tracking, known-issues filter, validate v2, post inline comments |
+| **Validator subagent** | Five-phase funnel on raw findings; read reference docs; write `validator-output.json`; reply `Done` |
+| **reviewer-runner** | Incremental scope, tracking, build `known-issues.json`, invoke agent, validate v2, **`filterFindingsForPost` = PR file scope only**, post inline comments |
 
-You do **not** filter severity, dedupe findings, or run a validator step.
+You do **not** filter severity, dedupe findings, or run verification yourself — the validator owns the funnel after merge.
 
 ## Inputs
 
@@ -79,8 +83,14 @@ You do **not** filter severity, dedupe findings, or run a validator step.
    - Performance skipped: `Analyzers: security (skipped: performance)`
 7. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers.
 8. **Collect** each analyzer output file (see file contract). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
-9. **Merge** into schema v2 (same semantics as `scripts/merge-findings.ts` — concatenate, no cross-analyzer dedup). For skipped analyzers, use empty `findings`.
-10. **Overwrite** `.ai-code-review/findings.json` at repo root. Confirm the file exists before finishing.
+9. **Merge raw** — concatenate analyzer outputs (no cross-analyzer dedup) and write `.ai-code-review/work/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
+10. **Validator path:**
+    - If `raw_findings.length === 0`: write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `work/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
+    - Else: ensure `known-issues.json` exists (runner supplies path in prompt). Launch **one** validator Task (**no retry**).
+11. **Collect validator output** — read `work/validator-output.json` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`).
+12. **Map** validated output → `.ai-code-review/findings.json` (v2 via `mapValidatorToFindingsReport`); copy `filter_summary` → `work/validator-summary.json`.
+13. Print **one stdout line**: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
+14. Confirm `.ai-code-review/findings.json` exists before finishing.
 
 ## `prepare-diff`
 
@@ -134,7 +144,11 @@ Full rules: [references/invocation-criteria.md](references/invocation-criteria.m
 | `work/diff.json` | Orchestrator → analyzers (copy of prepare-diff payload) |
 | `work/security-findings.json` | Security subagent output |
 | `work/performance-findings.json` | Performance subagent output |
-| `findings.json` | Final v2 report for `reviewer-runner` |
+| `work/raw-findings.json` | Merged analyzer findings pre-validation |
+| `known-issues.json` | Runner-built; input to validator only |
+| `work/validator-output.json` | Validator subagent output |
+| `work/validator-summary.json` | Copy of `filter_summary` for logs/CI |
+| `findings.json` | Final v2 report post-validator |
 
 ## Analyzer Tasks
 
@@ -163,26 +177,69 @@ Write findings to: .ai-code-review/work/performance-findings.json
 
 **Do not** trust Task return text for findings. Only read output files; validate JSON.
 
-### Collect and retry
+### Collect and retry (analyzers only)
 
 1. Read output path after Task completes.
 2. If missing or invalid JSON → retry **once** with the **same** two-line prompt.
 3. Second failure → treat as `{ "analyzer": "<key>", "findings": [] }`.
 
-### Merge
+### Merge raw
 
-Build outputs in order: security (if run), then performance (if run). Skipped analyzers contribute `{ "findings": [] }`.
-
-Optional helper (same logic as `scripts/merge-findings.ts`):
+Build outputs in order: security (if run), then performance (if run). Skipped analyzers contribute `{ "findings": [] }`. Write result to `work/raw-findings.json`.
 
 ```bash
 npx tsx -e "
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { mergeAnalyzerOutputs } from './.cursor/skills/ai-code-review/scripts/merge-findings.ts';
 const read = (p) => { try { return JSON.parse(readFileSync(p,'utf8')); } catch { return null; } };
 const sec = read('.ai-code-review/work/security-findings.json') ?? { analyzer: 'security', findings: [] };
 const perf = read('.ai-code-review/work/performance-findings.json') ?? { analyzer: 'performance', findings: [] };
-writeFileSync('.ai-code-review/findings.json', JSON.stringify(mergeAnalyzerOutputs([sec, perf]), null, 2));
+const raw = mergeAnalyzerOutputs([sec, perf]);
+mkdirSync('.ai-code-review/work', { recursive: true });
+writeFileSync('.ai-code-review/work/raw-findings.json', JSON.stringify(raw, null, 2));
+"
+```
+
+## Validator Task
+
+Launch **only** when `raw-findings.json` has `findings.length > 0`. **No retry** on failure.
+
+| Validator | `subagent_type` | Output path |
+|-----------|-----------------|-------------|
+| validator | `ai-code-review-validator` | `.ai-code-review/work/validator-output.json` |
+
+### Task prompt (exactly three lines — data only)
+
+```text
+Read findings from: .ai-code-review/work/raw-findings.json
+Read known issues from: .ai-code-review/known-issues.json
+Write output to: .ai-code-review/work/validator-output.json
+```
+
+### Collect validator output
+
+1. Read `work/validator-output.json` after Task completes.
+2. Parse with `parseValidatorOutput` (see helper below).
+3. If missing or invalid → **abort** the orchestration run (non-zero exit). Do **not** write `findings.json` from raw merge. Do **not** retry the validator Task.
+
+### Map to final report
+
+```bash
+npx tsx -e "
+import { readFileSync, writeFileSync } from 'node:fs';
+import { parseValidatorOutput, mapValidatorToFindingsReport, zeroedFilterSummary } from './.cursor/skills/ai-code-review/scripts/validator-output.ts';
+const rawPath = '.ai-code-review/work/raw-findings.json';
+const raw = JSON.parse(readFileSync(rawPath,'utf8'));
+if (!raw.findings?.length) {
+  writeFileSync('.ai-code-review/findings.json', JSON.stringify({ version: '2', findings: [] }, null, 2));
+  writeFileSync('.ai-code-review/work/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
+  console.log('Validator funnel: 0 → 0');
+} else {
+  const out = parseValidatorOutput(JSON.parse(readFileSync('.ai-code-review/work/validator-output.json','utf8')));
+  writeFileSync('.ai-code-review/findings.json', JSON.stringify(mapValidatorToFindingsReport(out), null, 2));
+  writeFileSync('.ai-code-review/work/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
+  console.log('Validator funnel: ' + out.filter_summary.raw_input + ' → ' + out.filter_summary.final_output);
+}
 "
 ```
 
@@ -223,7 +280,12 @@ Example: [examples/findings.sample.json](examples/findings.sample.json)
 
 ## Known issues
 
-If the runner supplies known-issues JSON, pass it as context only. **Do not** filter or dedupe in the orchestrator or subagents — the runner applies `filterFindingsForPost` after reading `findings.json`.
+The runner builds `.ai-code-review/known-issues.json` from existing PR inline comments. Pass the path to the validator Task prompt only.
+
+- **Do not** filter or dedupe in the orchestrator or analyzer subagents.
+- **Do not** dedupe at merge — cross-analyzer dedup is validator Phase 1.
+- Known-issue skip is validator Phase 3.
+- The runner's `filterFindingsForPost` drops findings whose `file` is **outside the PR file list** only (not known-issues dedup at post time).
 
 ## GitHub posting (runner-owned)
 
@@ -232,8 +294,10 @@ The runner formats inline comments (analyzer title + severity emoji + suggestion
 ## Out of scope
 
 - Multi-batch `batch-{i}.json` for large PRs
-- Validator agent (semantic dedup, category filter)
 - Analyzers other than `security` and `performance`
+- Automatic **retry** of validator Task (analyzers: one retry only)
 - `evals/` harness
+- Workflow artifact upload for `filter_summary` (file + stdout only in v1)
 - Posting GitHub comments directly
 - External tracking state (runner owns PR tracking comment)
+- Ticket cross-reference, `codebase-patterns.md`, `category` on findings
