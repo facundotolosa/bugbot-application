@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FoundTrackingComment } from "./github.js";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   type GitRunner,
+  computeEffectiveScope,
+  intersectFiles,
   logReviewMode,
   resolveReviewMode,
+  shouldSkipAgent,
   validateSinceSha,
+  writePrFilesList,
 } from "./git-scope.js";
 
 const SINCE = "a".repeat(40);
@@ -25,6 +32,9 @@ function mockRunner(overrides: Partial<GitRunner> = {}): GitRunner {
     isAncestor: vi.fn().mockResolvedValue(true),
     fetchOriginSha: vi.fn().mockResolvedValue(undefined),
     fetchDeepen: vi.fn().mockResolvedValue(undefined),
+    listPrFiles: vi.fn().mockResolvedValue(["src/a.ts", "src/b.ts"]),
+    listIncrementalFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
+    firstParentLog: vi.fn().mockResolvedValue("abc1234 feat: change\n"),
     ...overrides,
   };
 }
@@ -100,6 +110,109 @@ describe("resolveReviewMode", () => {
     expect(result.mode).toBe("full");
     expect(result.sinceCommit).toBeUndefined();
     expect(result.reason).toBe("since-sha-not-ancestor");
+  });
+});
+
+describe("intersectFiles", () => {
+  it("keeps only paths present in both pr and incremental sets", () => {
+    expect(intersectFiles(["a.ts", "b.ts", "c.ts"], ["b.ts", "d.ts"])).toEqual(["b.ts"]);
+  });
+});
+
+describe("computeEffectiveScope", () => {
+  it("intersects pr and incremental files in incremental mode", async () => {
+    const runner = mockRunner({
+      listPrFiles: vi.fn().mockResolvedValue(["a.ts", "b.ts"]),
+      listIncrementalFiles: vi.fn().mockResolvedValue(["b.ts", "c.ts"]),
+    });
+    const scope = await computeEffectiveScope({
+      mode: "incremental",
+      sinceCommit: SINCE,
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(scope).toEqual({
+      prFiles: ["a.ts", "b.ts"],
+      incrementalFiles: ["b.ts", "c.ts"],
+      effectiveFiles: ["b.ts"],
+    });
+  });
+
+  it("uses pr files as effective scope in full mode", async () => {
+    const runner = mockRunner({
+      listPrFiles: vi.fn().mockResolvedValue(["a.ts"]),
+    });
+    const scope = await computeEffectiveScope({
+      mode: "full",
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(scope.effectiveFiles).toEqual(["a.ts"]);
+  });
+});
+
+describe("shouldSkipAgent", () => {
+  it("skips with pure-sync when first-parent log is empty", async () => {
+    const runner = mockRunner({
+      firstParentLog: vi.fn().mockResolvedValue(""),
+    });
+    const result = await shouldSkipAgent({
+      mode: "incremental",
+      sinceCommit: SINCE,
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(result).toMatchObject({ skip: true, reason: "pure-sync" });
+  });
+
+  it("skips with empty-effective-scope when intersection is empty", async () => {
+    const runner = mockRunner({
+      listPrFiles: vi.fn().mockResolvedValue(["a.ts"]),
+      listIncrementalFiles: vi.fn().mockResolvedValue(["b.ts"]),
+      firstParentLog: vi.fn().mockResolvedValue("abc feat\n"),
+    });
+    const result = await shouldSkipAgent({
+      mode: "incremental",
+      sinceCommit: SINCE,
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(result).toMatchObject({ skip: true, reason: "empty-effective-scope" });
+  });
+
+  it("does not skip when effective files exist", async () => {
+    const runner = mockRunner();
+    const result = await shouldSkipAgent({
+      mode: "incremental",
+      sinceCommit: SINCE,
+      base: "base",
+      head: HEAD,
+      cwd: CWD,
+      runner,
+    });
+    expect(result.skip).toBe(false);
+    expect(result.effectiveFiles.length).toBeGreaterThan(0);
+  });
+});
+
+describe("writePrFilesList", () => {
+  it("writes newline-separated paths", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pr-files-"));
+    const filePath = join(dir, "pr-files.txt");
+    try {
+      await writePrFilesList(["src/a.ts", "src/b.ts"], filePath);
+      expect(await readFile(filePath, "utf8")).toBe("src/a.ts\nsrc/b.ts\n");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
 

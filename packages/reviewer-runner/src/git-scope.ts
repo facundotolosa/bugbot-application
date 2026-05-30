@@ -1,16 +1,41 @@
 import { execFile } from "node:child_process";
+import { writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import type { FoundTrackingComment } from "./github.js";
 
 const execFileAsync = promisify(execFile);
 
 export type ReviewMode = "full" | "incremental";
+export type SkipReason = "pure-sync" | "empty-effective-scope";
 
 export interface GitRunner {
   shaExists(sha: string, cwd: string): Promise<boolean>;
   isAncestor(ancestor: string, head: string, cwd: string): Promise<boolean>;
   fetchOriginSha(sha: string, cwd: string): Promise<void>;
   fetchDeepen(cwd: string): Promise<void>;
+  listPrFiles(base: string, head: string, cwd: string): Promise<string[]>;
+  listIncrementalFiles(since: string, head: string, cwd: string): Promise<string[]>;
+  firstParentLog(since: string, head: string, cwd: string): Promise<string>;
+}
+
+export interface EffectiveScope {
+  prFiles: string[];
+  incrementalFiles: string[];
+  effectiveFiles: string[];
+}
+
+export interface ShouldSkipAgentInput {
+  mode: ReviewMode;
+  sinceCommit?: string;
+  base: string;
+  head: string;
+  cwd: string;
+  runner?: GitRunner;
+}
+
+export interface ShouldSkipAgentResult extends EffectiveScope {
+  skip: boolean;
+  reason?: SkipReason;
 }
 
 export interface ValidateSinceShaResult {
@@ -31,6 +56,18 @@ export interface ResolveReviewModeResult {
   reason?: string;
 }
 
+function parseNameOnlyOutput(stdout: string): string[] {
+  return stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+async function gitStdout(args: string[], cwd: string): Promise<string> {
+  const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 10 * 1024 * 1024 });
+  return stdout;
+}
+
 async function gitExitOk(args: string[], cwd: string): Promise<boolean> {
   try {
     await execFileAsync("git", args, { cwd });
@@ -38,6 +75,11 @@ async function gitExitOk(args: string[], cwd: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export function intersectFiles(prFiles: string[], incrementalFiles: string[]): string[] {
+  const incremental = new Set(incrementalFiles);
+  return prFiles.filter((file) => incremental.has(file));
 }
 
 export function createExecGitRunner(): GitRunner {
@@ -53,6 +95,20 @@ export function createExecGitRunner(): GitRunner {
     },
     async fetchDeepen(cwd) {
       await execFileAsync("git", ["fetch", "--deepen=200"], { cwd });
+    },
+    async listPrFiles(base, head, cwd) {
+      const stdout = await gitStdout(["diff", "--name-only", `${base}...${head}`], cwd);
+      return parseNameOnlyOutput(stdout);
+    },
+    async listIncrementalFiles(since, head, cwd) {
+      const stdout = await gitStdout(["diff", "--name-only", `${since}..${head}`], cwd);
+      return parseNameOnlyOutput(stdout);
+    },
+    async firstParentLog(since, head, cwd) {
+      return gitStdout(
+        ["log", "--no-merges", "--first-parent", `${since}..${head}`, "--oneline"],
+        cwd,
+      );
     },
   };
 }
@@ -149,4 +205,78 @@ export function logReviewMode(result: ResolveReviewModeResult): void {
     return;
   }
   console.log("[review] mode=full");
+}
+
+export async function listPrFiles(
+  base: string,
+  head: string,
+  cwd: string,
+  runner: GitRunner = createExecGitRunner(),
+): Promise<string[]> {
+  return runner.listPrFiles(base, head, cwd);
+}
+
+export async function listIncrementalFiles(
+  since: string,
+  head: string,
+  cwd: string,
+  runner: GitRunner = createExecGitRunner(),
+): Promise<string[]> {
+  return runner.listIncrementalFiles(since, head, cwd);
+}
+
+export async function isPureSync(
+  since: string,
+  head: string,
+  cwd: string,
+  runner: GitRunner = createExecGitRunner(),
+): Promise<boolean> {
+  const log = await runner.firstParentLog(since, head, cwd);
+  return log.trim() === "";
+}
+
+export async function computeEffectiveScope(
+  input: ShouldSkipAgentInput,
+): Promise<EffectiveScope> {
+  const runner = input.runner ?? createExecGitRunner();
+  const prFiles = await runner.listPrFiles(input.base, input.head, input.cwd);
+
+  if (input.mode === "incremental" && input.sinceCommit) {
+    const incrementalFiles = await runner.listIncrementalFiles(
+      input.sinceCommit,
+      input.head,
+      input.cwd,
+    );
+    return {
+      prFiles,
+      incrementalFiles,
+      effectiveFiles: intersectFiles(prFiles, incrementalFiles),
+    };
+  }
+
+  return { prFiles, incrementalFiles: prFiles, effectiveFiles: prFiles };
+}
+
+export async function shouldSkipAgent(
+  input: ShouldSkipAgentInput,
+): Promise<ShouldSkipAgentResult> {
+  const runner = input.runner ?? createExecGitRunner();
+  const scope = await computeEffectiveScope({ ...input, runner });
+
+  if (input.mode === "incremental" && input.sinceCommit) {
+    if (await isPureSync(input.sinceCommit, input.head, input.cwd, runner)) {
+      return { ...scope, skip: true, reason: "pure-sync" };
+    }
+  }
+
+  if (scope.effectiveFiles.length === 0) {
+    return { ...scope, skip: true, reason: "empty-effective-scope" };
+  }
+
+  return { ...scope, skip: false };
+}
+
+export async function writePrFilesList(files: string[], filePath: string): Promise<void> {
+  const body = files.length > 0 ? `${files.join("\n")}\n` : "";
+  await writeFile(filePath, body, "utf8");
 }
