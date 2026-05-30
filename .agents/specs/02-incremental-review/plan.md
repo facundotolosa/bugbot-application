@@ -182,7 +182,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Skill instructs agent to run `prepare-diff`, print mandatory diff summary, analyze, write findings; runner prompt passes CI context without embedding full diff. |
 
 #### Steps
@@ -201,10 +201,10 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] SKILL.md documents summary block with examples for incremental and full
-- [ ] Prompt includes paths for known-issues + pr-files when built by runner (Phase 7)
-- [ ] Manual/local: skill doc is copy-pasteable for `/ai-code-review` + `Since commit`
-- [ ] No spec contradictions (grep skill for “runner owns diff”)
+- [x] SKILL.md documents summary block with examples for incremental and full
+- [x] Prompt includes paths for known-issues + pr-files when built by runner (Phase 7)
+- [x] Manual/local: skill doc is copy-pasteable for `/ai-code-review` + `Since commit`
+- [x] No spec contradictions (grep skill for “runner owns diff”)
 
 ---
 
@@ -339,3 +339,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Phase 3 done: SHA validation + `resolveReviewMode` (`git-scope.ts`) |
 | 2026-05-30 | Phase 4 done: PR scope, skip rules, `writePrFilesList` (`git-scope.ts`) |
 | 2026-05-30 | Phase 5 done: `prepare-diff.ts` + tests + README |
+| 2026-05-30 | Phase 6 done: SKILL + agent prompt + README incremental contract |
