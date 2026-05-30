@@ -8,6 +8,7 @@ Conventions, skills, and specs for SDD + TDD development. **Update this index** 
 |------|-----------|
 | [`conventions/concise-responses.md`](conventions/concise-responses.md) | You are replying to the human in chat (not writing code or specs). |
 | [`conventions/clean-code.md`](conventions/clean-code.md) | You are writing or reviewing implementation code in `src/`. |
+| [`conventions/commit-name-convention.md`](conventions/commit-name-convention.md) | You are suggesting a commit message to the human. |
 
 ### skills/
 

@@ -50,14 +50,7 @@ If the human asks to implement multiple phases in one session, still **stop afte
 
 ## Commit message
 
-After **each** phase (not only at the end), suggest **one** commit message:
-
-- Brief, concise, **English**
-- Imperative mood; use a conventional prefix when it fits (`feat`, `fix`, `chore`, …) and scope when useful
-- Focus on **why** / what the phase delivered, not a file list
-- Do **not** run `git commit` unless the human asks
-
-Example: `feat(reviewer-runner): add GitHub inline comment publisher`
+After **each** phase (not only at the end), suggest **one** commit message following [`.agents/conventions/commit-name-convention.md`](../../conventions/commit-name-convention.md).
 
 When all phases are `done`, run `/validate`; if PASS, you may suggest a final commit only if there are still uncommitted changes from validation fixes.
 
