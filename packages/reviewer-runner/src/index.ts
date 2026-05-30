@@ -11,6 +11,14 @@ export {
 } from "./comments.js";
 export { getUnifiedDiff } from "./diff.js";
 export {
+  buildReviewPrompt,
+  ensureReviewInputFiles,
+  runReviewAgent,
+  FINDINGS_PATH,
+  PREPARE_DIFF_SCRIPT,
+  type ReviewPromptInput,
+} from "./agent.js";
+export {
   TRACKING_MARKER,
   formatTrackingBody,
   parseTrackingComment,
