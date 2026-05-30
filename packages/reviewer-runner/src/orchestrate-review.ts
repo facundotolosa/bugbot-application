@@ -34,6 +34,7 @@ export interface ReviewOrchestrationConfig {
   head: string;
   headSha: string;
   targetRef: string;
+  sourceBranch?: string;
   prTitle?: string;
   dryRun: boolean;
   skipAgent: boolean;
@@ -178,6 +179,7 @@ export async function executeReviewOrchestration(
         sinceCommit: mode.sinceCommit,
         prFilesPath,
         knownIssuesPath,
+        sourceBranch: config.sourceBranch,
         prTitle: config.prTitle,
         knownIssuesCount,
       });

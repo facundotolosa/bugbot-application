@@ -6,39 +6,39 @@ const HEAD_SHA = "c".repeat(40);
 const SINCE = "a".repeat(40);
 
 describe("buildReviewPrompt", () => {
-  it("points at prepare-diff and omits inlined unified diff", () => {
+  it("uses a short skill invocation with file parameters", () => {
     const prompt = buildReviewPrompt({
       repoRoot: REPO,
       sourceRef: HEAD_SHA,
       targetRef: "main",
       headSha: HEAD_SHA,
+      sourceBranch: "feature/foo",
+      sinceCommit: SINCE,
       prFilesPath: `${REPO}/.ai-code-review/pr-files.txt`,
       knownIssuesPath: `${REPO}/.ai-code-review/known-issues.json`,
     });
-    expect(prompt).toContain("prepare-diff.ts");
-    expect(prompt).toContain("pr-files.txt");
-    expect(prompt).toContain("known-issues.json");
-    expect(prompt).toContain("📊 Diff stats");
-    expect(prompt).toContain("Report written to: .ai-code-review/findings.json");
-    expect(prompt).toContain("orchestrator");
-    expect(prompt).toContain("subagents");
-    expect(prompt).toContain('schema v2');
-    expect(prompt).toContain("work/diff.json");
-    expect(prompt).not.toContain("```diff");
-    expect(prompt).not.toMatch(/runner owns diff/i);
-    expect(prompt).toContain("Do not perform heuristic analysis");
+    expect(prompt).toContain("ai-code-review skill");
+    expect(prompt).toContain("SKILL.md");
+    expect(prompt).toContain(`Source ref: ${HEAD_SHA}`);
+    expect(prompt).toContain("Target branch: main");
+    expect(prompt).toContain(`Commit: ${HEAD_SHA}`);
+    expect(prompt).toContain(`Source branch: feature/foo`);
+    expect(prompt).toContain(`Since commit: ${SINCE}`);
+    expect(prompt).toContain(`Report file: ${REPO}/.ai-code-review/findings.json`);
+    expect(prompt).toContain(`Known issues file: ${REPO}/.ai-code-review/known-issues.json`);
+    expect(prompt).toContain(`PR files file: ${REPO}/.ai-code-review/pr-files.txt`);
+    expect(prompt).not.toContain("prepare-diff.ts");
+    expect(prompt).not.toContain("## Required steps");
   });
 
-  it("includes since commit and incremental prepare-diff flag", () => {
+  it("omits optional since commit and source branch when absent", () => {
     const prompt = buildReviewPrompt({
       repoRoot: REPO,
       sourceRef: HEAD_SHA,
       targetRef: "main",
       headSha: HEAD_SHA,
-      sinceCommit: SINCE,
-      prFilesPath: `${REPO}/.ai-code-review/pr-files.txt`,
     });
-    expect(prompt).toContain(`Since commit: ${SINCE}`);
-    expect(prompt).toContain(`--since-commit ${SINCE}`);
+    expect(prompt).not.toContain("Since commit:");
+    expect(prompt).not.toContain("Source branch:");
   });
 });

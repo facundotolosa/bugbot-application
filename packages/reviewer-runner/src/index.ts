@@ -17,7 +17,7 @@ export {
   ensureReviewInputFiles,
   runReviewAgent,
   FINDINGS_PATH,
-  PREPARE_DIFF_SCRIPT,
+  SKILL_PATH,
   type ReviewPromptInput,
 } from "./agent.js";
 export {

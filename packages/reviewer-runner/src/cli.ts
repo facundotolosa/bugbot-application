@@ -34,6 +34,7 @@ function parseArgs(argv: string[]) {
 
 async function loadPrMetadata(eventPath?: string): Promise<{
   targetRef: string;
+  sourceBranch?: string;
   prTitle?: string;
   prNumber?: number;
 }> {
@@ -41,10 +42,16 @@ async function loadPrMetadata(eventPath?: string): Promise<{
     return { targetRef: "main" };
   }
   const event = JSON.parse(await readFile(eventPath, "utf8")) as {
-    pull_request?: { base?: { ref?: string }; title?: string; number?: number };
+    pull_request?: {
+      base?: { ref?: string };
+      head?: { ref?: string };
+      title?: string;
+      number?: number;
+    };
   };
   return {
     targetRef: event.pull_request?.base?.ref ?? "main",
+    sourceBranch: event.pull_request?.head?.ref,
     prTitle: event.pull_request?.title,
     prNumber: event.pull_request?.number,
   };
@@ -68,8 +75,13 @@ async function main() {
   log.header("AI Code Review");
   log.meta("repo root", repoRoot);
 
-  const { targetRef, prTitle, prNumber } = await loadPrMetadata(process.env.GITHUB_EVENT_PATH);
+  const { targetRef, sourceBranch, prTitle, prNumber } = await loadPrMetadata(
+    process.env.GITHUB_EVENT_PATH,
+  );
   log.meta("target branch", targetRef);
+  if (sourceBranch) {
+    log.meta("source branch", sourceBranch);
+  }
   log.meta("base SHA", base);
   log.meta("head SHA", gitHead);
   if (prNumber != null) {
@@ -95,6 +107,7 @@ async function main() {
     head: gitHead,
     headSha: gitHead,
     targetRef,
+    sourceBranch,
     prTitle,
     dryRun: args.dryRun,
     skipAgent: args.skipAgent,
