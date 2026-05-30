@@ -126,6 +126,124 @@ export function parseTaskArgs(args: unknown): {
   };
 }
 
+function basenamePath(path: string): string {
+  const parts = path.replace(/\\/g, "/").split("/");
+  return parts[parts.length - 1] ?? path;
+}
+
+/** Human step from orchestrator SDK tool_call (not sub-agent Tasks). */
+export function describeOrchestratorToolProgress(
+  toolName: string,
+  args: unknown,
+): string | null {
+  if (!args || typeof args !== "object") {
+    return null;
+  }
+  const record = args as Record<string, unknown>;
+  const name = toolName.toLowerCase();
+
+  if (name === "read") {
+    const path = typeof record.path === "string" ? record.path : "";
+    const base = basenamePath(path);
+    if (base.includes("SKILL.md")) {
+      return "Reading ai-code-review skill";
+    }
+    if (base.includes("prepare-diff.json")) {
+      return "Reading prepare-diff output";
+    }
+    if (base.includes("raw-findings.json")) {
+      return "Reading raw analyzer findings";
+    }
+    if (base.includes("validator-output.json")) {
+      return "Reading validator output";
+    }
+    if (base.includes("security-findings") || base.includes("performance-findings")) {
+      return `Reading ${base}`;
+    }
+    if (base) {
+      return `Reading ${base}`;
+    }
+    return "Reading file";
+  }
+
+  if (name === "shell") {
+    const cmd = typeof record.command === "string" ? record.command : "";
+    if (cmd.includes("prepare-diff")) {
+      return "Running prepare-diff";
+    }
+    if (cmd.includes("merge-findings") || cmd.includes("mergeAnalyzerOutputs")) {
+      return "Merging analyzer outputs";
+    }
+    if (
+      cmd.includes("validator-output") ||
+      cmd.includes("mapValidatorToFindingsReport") ||
+      cmd.includes("parseValidatorOutput")
+    ) {
+      return "Running validator funnel";
+    }
+    if (cmd.includes("work/diff.json") || cmd.includes("diff.json")) {
+      return "Writing work/diff.json";
+    }
+    if (cmd.includes("raw-findings.json")) {
+      return "Writing raw findings";
+    }
+    if (cmd.includes("findings.json")) {
+      return "Writing findings.json";
+    }
+    if (cmd.includes("select-analyzers") || cmd.includes("selectAnalyzers")) {
+      return "Selecting analyzers";
+    }
+    return "Running orchestrator script";
+  }
+
+  if (name === "write" || name === "edit") {
+    const path =
+      typeof record.path === "string"
+        ? record.path
+        : typeof record.file_path === "string"
+          ? record.file_path
+          : "";
+    const base = basenamePath(path);
+    if (base.includes("diff.json")) {
+      return "Writing work/diff.json";
+    }
+    if (base.includes("findings.json")) {
+      return "Writing findings.json";
+    }
+    if (base) {
+      return `Writing ${base}`;
+    }
+  }
+
+  return null;
+}
+
+export class OrchestratorProgressTracker {
+  private readonly running = new Set<string>();
+
+  reset(): void {
+    this.running.clear();
+  }
+
+  handleToolCall(event: Extract<SDKMessage, { type: "tool_call" }>): void {
+    if (isTaskToolCall(event.name)) {
+      return;
+    }
+    if (event.status !== "running") {
+      return;
+    }
+    if (this.running.has(event.call_id)) {
+      return;
+    }
+    this.running.add(event.call_id);
+
+    const message = describeOrchestratorToolProgress(event.name, event.args);
+    if (message) {
+      log.step(message);
+    }
+  }
+}
+
 export function humanSubagentDescription(
   subagentType?: string,
   description?: string,
@@ -188,15 +306,18 @@ export class SubAgentTracker {
 }
 
 const defaultTracker = new SubAgentTracker();
+const defaultProgressTracker = new OrchestratorProgressTracker();
 
 function resetDefaultTracker(): void {
   defaultTracker.reset();
+  defaultProgressTracker.reset();
 }
 
 /** Stream orchestrator assistant text; derive sub-agent lifecycle from Task tool_call events. */
 export function logAgentStreamEvent(
   event: SDKMessage,
   tracker: SubAgentTracker = defaultTracker,
+  progressTracker: OrchestratorProgressTracker = defaultProgressTracker,
 ): void {
   switch (event.type) {
     case "assistant":
@@ -207,6 +328,7 @@ export function logAgentStreamEvent(
       }
       break;
     case "tool_call":
+      progressTracker.handleToolCall(event);
       tracker.handleToolCall(event);
       break;
     default:

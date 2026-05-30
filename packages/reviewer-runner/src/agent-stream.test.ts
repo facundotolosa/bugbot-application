@@ -1,8 +1,10 @@
 import type { SDKMessage } from "@cursor/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  OrchestratorProgressTracker,
   OrchestratorStreamForwarder,
   SubAgentTracker,
+  describeOrchestratorToolProgress,
   flushOrchestratorStream,
   formatOrchestratorLine,
   forwardOrchestratorText,
@@ -56,6 +58,60 @@ describe("humanSubagentDescription", () => {
     expect(humanSubagentDescription("ai-code-review-security-analyzer")).toBe(
       "security analyzer",
     );
+  });
+});
+
+describe("describeOrchestratorToolProgress", () => {
+  it("maps read and shell tools to pipeline steps", () => {
+    expect(
+      describeOrchestratorToolProgress("read", {
+        path: "/repo/.cursor/skills/ai-code-review/SKILL.md",
+      }),
+    ).toBe("Reading ai-code-review skill");
+    expect(
+      describeOrchestratorToolProgress("shell", {
+        command: "npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts",
+      }),
+    ).toBe("Running prepare-diff");
+    expect(
+      describeOrchestratorToolProgress("shell", {
+        command: "mergeAnalyzerOutputs",
+      }),
+    ).toBe("Merging analyzer outputs");
+  });
+
+  it("returns null for unknown tools", () => {
+    expect(describeOrchestratorToolProgress("grep", {})).toBeNull();
+  });
+});
+
+describe("OrchestratorProgressTracker", () => {
+  it("logs step once per running tool_call", () => {
+    const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
+    const tracker = new OrchestratorProgressTracker();
+
+    tracker.handleToolCall({
+      type: "tool_call",
+      agent_id: "a",
+      run_id: "r",
+      call_id: "c1",
+      name: "read",
+      status: "running",
+      args: { path: "/repo/.ai-code-review/prepare-diff.json" },
+    });
+    tracker.handleToolCall({
+      type: "tool_call",
+      agent_id: "a",
+      run_id: "r",
+      call_id: "c1",
+      name: "read",
+      status: "running",
+      args: { path: "/repo/.ai-code-review/prepare-diff.json" },
+    });
+
+    expect(stepSpy).toHaveBeenCalledTimes(1);
+    expect(stepSpy).toHaveBeenCalledWith("Reading prepare-diff output");
+    stepSpy.mockRestore();
   });
 });
 
