@@ -5,22 +5,35 @@ import { toInlineReviewComments } from "./comments.js";
 import { getUnifiedDiff, resolveShasFromEnv } from "./diff.js";
 import { FINDINGS_PATH, runReviewAgent } from "./agent.js";
 import { loadPrContextFromEvent, postInlineReview } from "./github.js";
+import { resolveRepoRoot } from "./repo-root.js";
 
 function parseArgs(argv: string[]) {
-  const args = { dryRun: false, base: "", head: "HEAD", cwd: process.cwd() };
+  const args = {
+    dryRun: false,
+    base: "",
+    head: "HEAD",
+    cwd: "",
+    cwdExplicit: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--dry-run") args.dryRun = true;
     else if (a === "--base" && argv[i + 1]) args.base = argv[++i];
     else if (a === "--head" && argv[i + 1]) args.head = argv[++i];
-    else if (a === "--cwd" && argv[i + 1]) args.cwd = resolve(argv[++i]);
+    else if (a === "--cwd" && argv[i + 1]) {
+      args.cwd = resolve(argv[++i]);
+      args.cwdExplicit = true;
+    }
   }
   return args;
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const cwd = args.cwd;
+  const repoRoot = args.cwdExplicit
+    ? args.cwd
+    : await resolveRepoRoot(args.cwd || process.cwd());
+
   const envShas = resolveShasFromEnv();
   const base = args.base || envShas?.base || "";
   const head = args.head || envShas?.head || "HEAD";
@@ -30,7 +43,9 @@ async function main() {
     process.exit(1);
   }
 
-  const diff = await getUnifiedDiff(base, head, cwd);
+  console.log(`[review] git repo root: ${repoRoot}`);
+
+  const diff = await getUnifiedDiff(base, head, repoRoot);
   console.log(`Diff length: ${diff.length} bytes`);
 
   if (!args.dryRun) {
@@ -47,15 +62,15 @@ async function main() {
       ) as { pull_request?: { title?: string } };
       prTitle = event.pull_request?.title;
     }
-    await runReviewAgent({ cwd, diff, apiKey, prTitle });
+    await runReviewAgent({ repoRoot, diff, apiKey, prTitle });
   }
 
-  const findingsPath = resolve(cwd, FINDINGS_PATH);
+  const findingsPath = resolve(repoRoot, FINDINGS_PATH);
   let report;
   if (args.dryRun && !process.env.CURSOR_API_KEY) {
     const { readFile } = await import("node:fs/promises");
     const sample = resolve(
-      cwd,
+      repoRoot,
       "packages/reviewer-runner/fixtures/findings.json",
     );
     const { parseFindingsJson } = await import("./findings.js");
