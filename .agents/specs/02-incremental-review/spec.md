@@ -22,6 +22,7 @@ State lives **on the PR** (no external database). Inline findings are **deduplic
 | 8 | **Post-review** | Filter findings to `prFiles`; post only new inline comments; update tracking per **advance rules**. |
 | 9 | **`reviewer-runner` + workflow** | Extend existing package and `ai-code-review.yml` (`opened`, `synchronize`); `fetch-depth: 0` retained. |
 | 10 | **Tests** | Unit tests for tracking parse/write, scope/skip rules, SHA validation (mocked git where needed). |
+| 11 | **Diff run summary logging** | Agent running the skill **always** emits a fixed multi-line summary after `prepare-diff` (incremental mode, stats, exclusions). |
 
 ### Out of scope
 
@@ -41,7 +42,7 @@ State lives **on the PR** (no external database). Inline findings are **deduplic
 |-------|----------------|
 | **GitHub Actions workflow** | Trigger on PR `opened` / `synchronize`; checkout with full history; env SHAs (`GITHUB_BASE_SHA`, `GITHUB_HEAD_SHA`, head commit for tracking). |
 | **`reviewer-runner` (orchestration)** | Fetch PR comments; find/update tracking; validate since-SHA; compute scope and skip; build known-issues + PR file list; invoke agent; filter/post inline comments; update tracking per **advance rules**. |
-| **`ai-code-review` skill + `prepare-diff`** | Produce agent-facing diff and metadata; run analysis; write `.ai-code-review/findings.json`; warn on full-review fallback when incremental was requested. |
+| **`ai-code-review` skill + `prepare-diff`** | Produce agent-facing diff and metadata; **emit mandatory diff run summary** to logs; run analysis; write `.ai-code-review/findings.json`; warn on full-review fallback when incremental was requested. |
 
 Review logic stays in the skill; the runner owns **integration, scope, tracking, dedup, and posting**.
 
@@ -145,6 +146,33 @@ Script lives under the skill (e.g. `.cursor/skills/ai-code-review/scripts/prepar
 
 **Implementation note:** v1 script is **rewritten** under the skill (TypeScript, repo conventions); use prior art only for behavior, not a file-for-file port.
 
+### Diff run summary (mandatory logging)
+
+After **`prepare-diff`** completes and **before** analyzing the diff, the **agent executing the skill** must print the following block to **stdout** (visible in Cursor and in CI via streamed agent logs). Values come from `prepare-diff` metadata (`is_incremental`, `since_commit`, `diff_base`, `total_files`, `total_lines_added`, `total_lines_removed`, `files_excluded`). This is **not** optional.
+
+**Incremental run** (`metadata.is_incremental === true`):
+
+```text
+Incremental: yes (since <full-sha>)
+Diff stats: <n> files, +<added>/-<removed>
+Excluded: <files_excluded> files
+```
+
+**Full review** (`metadata.is_incremental === false`):
+
+```text
+Incremental: no (base <full-sha>)
+Diff stats: <n> files, +<added>/-<removed>
+Excluded: <files_excluded> files
+```
+
+- `<full-sha>` for incremental = `since_commit`; for full = `diff_base` (merge-base or fallback base).
+- Counts reflect **reviewable** files after PR-scope and ignore filters (same set passed to analysis).
+- If `prepare-diff` emitted warnings (e.g. full-review fallback), log them **immediately after** this block as separate lines prefixed with `Warning:`.
+- **`reviewer-runner`:** does not replace this block; may add its own `[review]` lines for orchestration (mode, skip). On **agent skip** paths, runner logs skip reason instead; the summary block is not required because the agent did not run.
+
+**Skill checklist addition:** run `prepare-diff` → print summary block → analyze → write `findings.json`.
+
 #### Ignore patterns (v1) — resolved
 
 Hardcoded regex list in `prepare-diff` (no `.ai-review-ignore` in v1). Categories:
@@ -244,6 +272,7 @@ Incremental **local** testing is via **`/ai-code-review` + `Since commit`**, not
 - [ ] Existing inline comment at `(file, line)` is not posted again for the same finding location.
 - [ ] Findings outside `prFiles` are never posted.
 - [ ] `prepare-diff` metadata documents incremental vs fallback; fallback logs warning when incremental was expected.
+- [ ] Every agent run that reaches analysis logs the **diff run summary** block (`Incremental:`, `Diff stats:`, `Excluded:`) with values matching `prepare-diff` metadata.
 - [ ] Unit tests cover tracking parse/selection, skip rules, and SHA validation edge cases.
 - [ ] On agent failure, tracking SHA is unchanged; a subsequent push re-attempts review from the last successful `Analyzed up to`.
 
@@ -253,6 +282,7 @@ Incremental **local** testing is via **`/ai-code-review` + `Since commit`**, not
 - [ ] `npm test` in `reviewer-runner` passes (new tests included)
 - [ ] Manual test on a real PR: open → push new commit → push merge-from-base only → verify tracking text after each run
 - [ ] Tracking comment updates on `synchronize` without duplicating multiple tracking comments (single canonical comment updated)
+- [ ] CI / local agent logs include the diff run summary block for at least one incremental and one full run (manual spot-check)
 - [ ] No open questions block release (or deferred in Open questions with owner)
 
 ## Open questions
@@ -279,3 +309,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 | 2026-05-30 | Human+Agent | Q4 resolved: known-issues `message` = full comment body, no truncation |
 | 2026-05-30 | Human+Agent | Q5 resolved: local incremental via `/ai-code-review` + `Since commit` only |
 | 2026-05-30 | Human+Agent | Q6 resolved: advance tracking on skip/success only; no advance on agent failure |
+| 2026-05-30 | Human | Mandatory diff run summary logging after `prepare-diff` (agent stdout) |
