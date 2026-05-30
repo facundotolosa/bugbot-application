@@ -18,3 +18,20 @@ export {
   type ParsedTracking,
   type TrackingCommentLike,
 } from "./tracking.js";
+export {
+  createGitHubClient,
+  findTrackingComment,
+  listInlineReviewComments,
+  listIssueComments,
+  loadPrContextFromEvent,
+  mapInlineReviewToKnownIssues,
+  parseRepository,
+  postInlineReview,
+  upsertTrackingComment,
+  type FoundTrackingComment,
+  type GitHubClient,
+  type IssueCommentLike,
+  type KnownIssue,
+  type PrContext,
+  type PullReviewCommentLike,
+} from "./github.js";
