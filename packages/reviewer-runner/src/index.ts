@@ -10,3 +10,11 @@ export {
   type InlineReviewComment,
 } from "./comments.js";
 export { getUnifiedDiff } from "./diff.js";
+export {
+  TRACKING_MARKER,
+  formatTrackingBody,
+  parseTrackingComment,
+  selectTrackingComment,
+  type ParsedTracking,
+  type TrackingCommentLike,
+} from "./tracking.js";
