@@ -246,7 +246,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | CI env documented and aligned; human can validate on a real PR per spec checklist. |
 
 #### Steps
@@ -260,8 +260,8 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] Workflow file unchanged in triggers/permissions except comments/env clarity
-- [ ] Spec **Validation checklist** manual items documented in PR or plan Notes with dates
+- [x] Workflow file unchanged in triggers/permissions except comments/env clarity
+- [x] Spec **Validation checklist** manual items documented in PR or plan Notes with dates
 - [ ] CI log spot-check: diff summary block on incremental + full run (human)
 - [ ] Single canonical tracking comment (no duplicates after multiple pushes)
 
@@ -323,6 +323,21 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 ## Notes
 
+### Manual E2E (human — pending)
+
+Run on a test PR before `/validate` sign-off:
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | Open PR (first review) | Full review; tracking comment created with head SHA |
+| 2 | Push new commit on PR branch | Incremental review; tracking `Analyzed up to` updated in place |
+| 3 | Push merge-from-base only | Agent skipped (`pure-sync`); tracking still advanced |
+| 4 | Rebase/squash branch | Next run: full review fallback; tracking updated |
+| 5 | CI logs | Agent prints `Incremental:` / `Diff stats:` / `Excluded:` block (incremental + full runs) |
+| 6 | Duplicate inline | Same `(file, line)` not re-posted |
+
+_Recorded: 2026-05-30 — checklist added at Phase 8; outcomes to be filled after human run._
+
 - **Spec gaps:** None blocking; open questions table fully **Resolved**.
 - **MVP delta:** Runner currently injects full `git diff` in prompt and uses `GITHUB_SHA` for review `commit_id` — Phase 7 must switch to head SHA + skill-driven `prepare-diff` (spec § API / events).
 - **TDD:** Phases 1–5 and 7 use tracer bullets; avoid writing all tests then all implementation.
@@ -341,3 +356,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Phase 5 done: `prepare-diff.ts` + tests + README |
 | 2026-05-30 | Phase 6 done: SKILL + agent prompt + README incremental contract |
 | 2026-05-30 | Phase 7 done: orchestration, post filters, CLI wiring |
+| 2026-05-30 | Phase 8 done: workflow comments, README, AGENTS.md, manual E2E checklist in Notes |
