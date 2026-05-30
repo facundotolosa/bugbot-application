@@ -132,7 +132,7 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `mergeAnalyzerOutputs` concatenates intermediate JSON into a single v2 `FindingsReport` with no cross-analyzer dedup. |
 
 #### Steps
@@ -151,8 +151,8 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes merge tests
-- [ ] Merged output validates via Phase 1 `parseFindingsJson`
+- [x] `npm test -w reviewer-runner` passes merge tests
+- [x] Merged output validates via Phase 1 `parseFindingsJson`
 
 ---
 
@@ -339,3 +339,4 @@ _Each phase is a vertical slice (TDD tracer bullets). Deterministic logic lives 
 | 2026-05-30 | Phase 1 done: schema v2 in `findings.ts`, fixtures and tests migrated; v1 rejected |
 | 2026-05-30 | Phase 2 done: `formatCommentBody(Finding)` with analyzer titles and severity emojis |
 | 2026-05-30 | Phase 3 done: `select-analyzers.ts`, tests, `references/invocation-criteria.md` |
+| 2026-05-30 | Phase 4 done: `merge-findings.ts` concatenates analyzer outputs to v2 report |
