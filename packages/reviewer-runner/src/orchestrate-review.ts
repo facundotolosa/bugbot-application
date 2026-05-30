@@ -18,6 +18,7 @@ import {
 import {
   createExecGitRunner,
   logReviewMode,
+  logReviewScope,
   resolveReviewMode,
   shouldSkipAgent,
   writePrFilesList,
@@ -94,6 +95,7 @@ export async function executeReviewOrchestration(
     cwd: config.repoRoot,
     runner: git,
   });
+  logReviewScope(mode.mode, scope);
 
   async function advanceTracking(): Promise<void> {
     if (!gh) {
@@ -120,12 +122,6 @@ export async function executeReviewOrchestration(
     return { status: "skip-agent", scope };
   }
 
-  if (config.dryRun && !deps.runAgent) {
-    console.log("[review] dry-run: agent skipped");
-    await advanceTracking();
-    return { status: "skip-agent", scope };
-  }
-
   const aiDir = join(config.repoRoot, ".ai-code-review");
   await mkdir(aiDir, { recursive: true });
   const prFilesPath = join(aiDir, "pr-files.txt");
@@ -141,24 +137,26 @@ export async function executeReviewOrchestration(
   }
   await writeFile(knownIssuesPath, JSON.stringify(buildKnownIssuesJson(knownIssues), null, 2), "utf8");
 
-  if (!deps.runAgent) {
+  if (deps.runAgent) {
+    try {
+      await deps.runAgent({
+        repoRoot: config.repoRoot,
+        sourceRef: config.headSha,
+        targetRef: config.targetRef,
+        headSha: config.headSha,
+        sinceCommit: mode.sinceCommit,
+        prFilesPath,
+        knownIssuesPath,
+        prTitle: config.prTitle,
+      });
+    } catch (err) {
+      console.error("[review] agent failed; tracking not advanced");
+      throw err;
+    }
+  } else if (config.dryRun) {
+    console.log("[review] dry-run: agent skipped");
+  } else {
     throw new Error("runAgent dependency is required for agent path");
-  }
-
-  try {
-    await deps.runAgent({
-      repoRoot: config.repoRoot,
-      sourceRef: config.headSha,
-      targetRef: config.targetRef,
-      headSha: config.headSha,
-      sinceCommit: mode.sinceCommit,
-      prFilesPath,
-      knownIssuesPath,
-      prTitle: config.prTitle,
-    });
-  } catch (err) {
-    console.error("[review] agent failed; tracking not advanced");
-    throw err;
   }
 
   const report = await readFindings(config.repoRoot);

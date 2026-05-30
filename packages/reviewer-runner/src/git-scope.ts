@@ -97,7 +97,10 @@ export function createExecGitRunner(): GitRunner {
       await execFileAsync("git", ["fetch", "--deepen=200"], { cwd });
     },
     async listPrFiles(base, head, cwd) {
-      const stdout = await gitStdout(["diff", "--name-only", `${base}...${head}`], cwd);
+      const stdout = await gitStdout(
+        ["diff", "--name-only", "--diff-filter=ACMR", `${base}...${head}`],
+        cwd,
+      );
       return parseNameOnlyOutput(stdout);
     },
     async listIncrementalFiles(since, head, cwd) {
@@ -205,6 +208,16 @@ export function logReviewMode(result: ResolveReviewModeResult): void {
     return;
   }
   console.log("[review] mode=full");
+}
+
+export function logReviewScope(mode: ReviewMode, scope: EffectiveScope): void {
+  if (mode === "incremental") {
+    console.log(
+      `[review] scope: pr=${scope.prFiles.length} incremental=${scope.incrementalFiles.length} effective=${scope.effectiveFiles.length}`,
+    );
+    return;
+  }
+  console.log(`[review] scope: pr=${scope.prFiles.length} effective=${scope.effectiveFiles.length}`);
 }
 
 export async function listPrFiles(

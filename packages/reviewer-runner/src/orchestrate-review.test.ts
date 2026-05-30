@@ -187,4 +187,27 @@ describe("executeReviewOrchestration", () => {
     );
     expect(client.createIssueComment).toHaveBeenCalled();
   });
+
+  it("dry-run loads fixture findings and logs comments without agent", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const readFindings = vi.fn().mockResolvedValue(findings);
+
+    const result = await executeReviewOrchestration(baseConfig({ dryRun: true }), {
+      git: gitRunner({
+        firstParentLog: vi.fn().mockResolvedValue("abc1234 feat: work\n"),
+      }),
+      readFindings,
+    });
+
+    expect(result.status).toBe("completed");
+    if (result.status !== "completed") {
+      throw new Error("expected completed outcome");
+    }
+    expect(readFindings).toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith("[review] dry-run: agent skipped");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("--- src/a.ts:5 ---"),
+    );
+    logSpy.mockRestore();
+  });
 });
