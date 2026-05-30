@@ -95,7 +95,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Determine `full` vs `incremental` from tracking SHA with `git cat-file`, `merge-base --is-ancestor`, and optional fetch retry. |
 
 #### Steps
@@ -110,9 +110,9 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 #### Verification
 
-- [ ] Tests cover: no tracking → full; valid ancestor → incremental; invalid/missing SHA → full
-- [ ] Fetch-retry path tested with mock (second `isAncestor` succeeds)
-- [ ] `npm test -w reviewer-runner` passes
+- [x] Tests cover: no tracking → full; valid ancestor → incremental; invalid/missing SHA → full
+- [x] Fetch-retry path tested with mock (second `isAncestor` succeeds)
+- [x] `npm test -w reviewer-runner` passes
 
 ---
 
@@ -120,7 +120,7 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | Compute `prFiles`, `incrementalFiles`, `effectiveFiles`, and detect pure-sync / empty-scope skips before invoking the agent. |
 
 #### Steps
@@ -336,3 +336,4 @@ _Each phase is a vertical slice (TDD tracer bullets in `reviewer-runner`; one be
 | 2026-05-30 | Initial plan from spec (9 phases, acceptance mapping) |
 | 2026-05-30 | Phase 1 done: `tracking.ts` parse/format/select + unit tests |
 | 2026-05-30 | Phase 2 done: GitHub tracking upsert + inline listing (`github.ts`) |
+| 2026-05-30 | Phase 3 done: SHA validation + `resolveReviewMode` (`git-scope.ts`) |
