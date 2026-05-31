@@ -8,7 +8,7 @@ Author background: See `cv.md`.
 
 ## Stack (default — confirm in active spec)
 
-TypeScript (Node 20+) · GitHub App + webhooks · agent-friendly LLM API (vendor-agnostic core) · Vitest · `evals/` for golden cases + metrics
+TypeScript (Node 20+) · GitHub Actions (`pull_request` trigger) · Cursor SDK · Vitest · `evals/` for golden cases + metrics
 
 ## Context for agents → [`.agents/AGENTS.md`](.agents/AGENTS.md)
 
