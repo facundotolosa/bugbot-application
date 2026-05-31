@@ -129,9 +129,40 @@ console.log(sessionDir);
 | **Progress lines + emoji blocks** | Assistant message text (this section) |
 | **IDE step checklist** | TodoWrite only (Step 0) — never paste todo lines into narration |
 
+### Narration pacing (mandatory)
+
+Operators must see progress **as each phase starts**, not a silent run followed by a recap. **Do not** run the full pipeline in one assistant turn and print mid-run lines only when closing.
+
+**Rules:**
+
+1. **Narration before tools** — In every turn that invokes tools, put the phase’s canonical line(s) at the **top** of the assistant message, then call **only** the tools for that phase.
+2. **One major phase per turn** — Do not combine tool batches from different rows of the pacing table below in the same assistant turn.
+3. **Mid-run lines are not closing content** — Lines such as `Diff ready…`, `Launching…`, `Collected…`, and `Running validator…` must **already** have been sent in earlier turns. The **final** turn contains **only** the consolidated 📋–🎯 block and `Report written to:` (no replay of mid-run lines).
+
+| Turn | Narration first (in this order) | Tools allowed in this turn **only** |
+|------|----------------------------------|-------------------------------------|
+| A | Start line | TodoWrite Step 0; session `session-manifest.json`; `prepare-diff` |
+| B | `Diff ready; selecting analyzers.`; `Warning:` lines when incremental fallback applies; `Analyzers: …` | TodoWrite metadata/diff; write session `diff.json`; select analyzers |
+| C | `Launching selected analyzer sub-agents in parallel.` (or subset) | Analyzer Task(s) — parallel batch OK |
+| D | `Collected analyzer output; merging raw findings.` | Read analyzer outputs; merge `raw-findings.json` |
+| E | `Running validator on raw findings.` **or** `All analyzers returned no findings; skipping validator.` | Validator Task **or** write empty `findings.json` + zeroed summary |
+| F | Consolidated 📋 → 📊 → 🔬 → 📥 → ⏭️/✅ → 🎯; then `Report written to:` | Map validator → v2; snapshot session; TodoWrite `report` completed — **no** `prepare-diff`, analyzer Tasks, or validator Task |
+
+Turns **A–E** use **plain** one-sentence lines only (no 📋 📊 🔬 📥 ⏭️/✅). Turn **F** is the **only** turn that may emit emoji blocks.
+
+**Forbidden (common failure modes):**
+
+| Anti-pattern | Why it fails |
+|--------------|--------------|
+| **Deferred narration dump** | Emitting `Diff ready…`, `Launching…`, `Collected…`, and/or `Running validator…` in the **same** message as the consolidated block **after** all tools finished |
+| **Single-turn full pipeline** | Turns A–E collapsed into one turn (session → prepare-diff → Tasks → merge → validator → `findings.json`) with narration only at the end |
+| **Recap before close** | Re-printing mid-run lines immediately before 📋 📊 🔬 📥 (duplicates stream noise) |
+
+If the IDE batches text with tools into one bubble, **still** use turns A–F so streaming can forward each line when that turn is emitted.
+
 **During the run:** emit only **plain one-sentence** English lines (no emoji blocks) before each phase — see table below.
 
-**Once at the end:** emit the **consolidated final block** (all 📋 📊 🔬 📥 ⏭️/✅ + 🎯) in a **single** assistant message, then **exactly one** `Report written to:` line — **stop**. Do **not** print 📋 📊 🔬 📥 ⏭️/✅ earlier in the run. Do **not** add recap paragraphs, `---`, JSON snippets, or session path dumps after 🎯.
+**Once at the end (turn F only):** emit the **consolidated final block** (all 📋 📊 🔬 📥 ⏭️/✅ + 🎯) in a **single** assistant message, then **exactly one** `Report written to:` line — **stop**. Do **not** print 📋 📊 🔬 📥 ⏭️/✅ earlier in the run. Do **not** add recap paragraphs, `---`, JSON snippets, or session path dumps after 🎯.
 
 | When | Line (exact wording) |
 |------|------------------------|
@@ -155,14 +186,16 @@ console.log(sessionDir);
 
 ## Workflow checklist
 
-1. **Step 0:** TodoWrite init (see above).
-2. **Session:** Create or reuse session dir; write `session-manifest.json`.
-3. **Todo:** `prereq` in_progress (from step 0).
-4. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
-5. **Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
-6. Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — those belong only in the consolidated final block).
-7. If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
-8. **Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
+Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** — end the assistant message (with narration) before starting the next turn’s tools.
+
+1. **Turn A — Step 0:** TodoWrite init (see above).
+2. **Turn A — Session:** Create or reuse session dir; write `session-manifest.json`.
+3. **Turn A — Todo:** `prereq` in_progress (from step 0).
+4. **Turn A:** Run `prepare-diff` (see below); read JSON from stdout or `--output` file — **stop**; do not start analyzer Tasks in this turn.
+5. **Turn B — Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
+6. **Turn B:** Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — turn **F** only).
+7. **Turn B:** If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
+8. **Turn B — Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
 9. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
 
    ```bash
@@ -179,24 +212,24 @@ console.log(sessionDir);
 
    Read `selected-analyzers.json` for the list; **do not** paste that JSON into narration.
 
-10. **Log analyzers** in narration (exactly one line):
+10. **Turn B — Log analyzers** in narration (exactly one line):
     - Both: `Analyzers: security, performance`
     - Performance skipped: `Analyzers: security (skipped: performance)`
-11. Emit `Launching selected analyzer sub-agents in parallel.` (or name subset) in assistant text — then **Todo:** `diff` completed; `analyzers` in_progress.
-12. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Keep `analyzers` in_progress until step 13 starts.
-13. **Todo:** `analyzers` completed; `collect` in_progress. Emit `Collected analyzer output; merging raw findings.` in assistant text before merge.
-14. **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
-15. **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
-16. **Validator path:**
+11. **Turn B end / Turn C start:** Emit `Launching selected analyzer sub-agents in parallel.` (or name subset) — then **Todo:** `diff` completed; `analyzers` in_progress. **End turn B** before analyzer Tasks unless `Launching…` is the last line of turn B and Tasks are turn C only.
+12. **Turn C:** **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Do **not** merge raw or run validator in this turn. Keep `analyzers` in_progress until step 13 starts.
+13. **Turn D — Todo:** `analyzers` completed; `collect` in_progress. Emit `Collected analyzer output; merging raw findings.` in assistant text before merge.
+14. **Turn D:** **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
+15. **Turn D:** **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
+16. **Turn E — Validator path:**
     - If `raw_findings.length === 0`: emit `All analyzers returned no findings; skipping validator.` in assistant text; write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `.ai-code-review/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
     - Else: emit `Running validator on raw findings.` in assistant text; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
-17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
-18. **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
-19. **Todo:** `validate` completed; `report` in_progress.
-20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator.
-21. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json` — then **end orchestrator narration** (no recap, `---`, or file dumps).
-22. **Todo:** `report` completed.
-23. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
+17. **Turn E:** **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
+18. **Turn E:** **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
+19. **Turn F — Todo:** `validate` completed; `report` in_progress.
+20. **Turn F:** Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator. **Do not** repeat mid-run lines from turns B–E.
+21. **Turn F:** Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json` — then **end orchestrator narration** (no recap, `---`, or file dumps).
+22. **Turn F — Todo:** `report` completed.
+23. **Turn F:** **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 
 ## `prepare-diff`
 
@@ -215,7 +248,7 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
 
 Emit in **assistant message text** (not Shell), **once** in the consolidated final block after `findings.json` exists. Use values from `prepare-diff` `metadata` / session files. Machine line `Analyzers:` (during run) stays **plain** (no emoji).
 
-**Anti-pattern:** emitting 📋 📊 after `prepare-diff`, or 🔬 📥 ✅ before the consolidated block — causes duplicate blocks in the IDE/CI stream.
+**Anti-patterns:** emitting 📋 📊 after `prepare-diff`; 🔬 📥 ✅ before turn **F**; [deferred narration dump](#narration-pacing-mandatory) (mid-run lines only at close); [single-turn full pipeline](#narration-pacing-mandatory).
 
 | Block | Template |
 |-------|----------|

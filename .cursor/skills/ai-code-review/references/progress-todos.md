@@ -43,6 +43,8 @@ Mandatory **TodoWrite** checklist for local orchestration.
 
 ## Anti-patterns
 
+- **Deferred narration dump** — printing `Diff ready…`, `Launching…`, `Collected…`, or `Running validator…` only in the closing message with the 📋–🎯 block (see [SKILL.md Narration pacing](../SKILL.md#narration-pacing-mandatory))
+- **Single-turn full pipeline** — session + prepare-diff + analyzer Tasks + validator + `findings.json` without ending the assistant turn between pacing rows A–F
 - Paraphrased `content` on Step 0 init (e.g. “Verify inputs and create session directory” instead of `1- Prerequisites check`)
 - Reading this file before Step 0 if it delays the first `TodoWrite` call (use SKILL.md JSON first)
 - Extra todo items beyond the seven above
