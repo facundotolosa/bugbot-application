@@ -1,24 +1,22 @@
 {
   "metadata": {
     "is_incremental": false,
-    "diff_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
-    "merge_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
+    "diff_base": "c5aaa77ece6f49a40ebe869d1f1985655dffbede",
+    "merge_base": "c5aaa77ece6f49a40ebe869d1f1985655dffbede",
     "pr_size": "small",
     "total_files": 1,
-    "total_lines_added": 4,
-    "total_lines_removed": 0,
-    "files_excluded": 114,
-    "excluded_patterns_matched": {
-      "out-of-pr": 114
-    },
+    "total_lines_added": 2,
+    "total_lines_removed": 1,
+    "files_excluded": 0,
+    "excluded_patterns_matched": {},
     "warnings": []
   },
   "files": [
     {
-      "path": "evals/fixtures/leaked-key/src/auth.ts",
-      "diff": "diff --git a/evals/fixtures/leaked-key/src/auth.ts b/evals/fixtures/leaked-key/src/auth.ts\nnew file mode 100644\nindex 0000000..62eccb7\n--- /dev/null\n+++ b/evals/fixtures/leaked-key/src/auth.ts\n@@ -0,0 +1,4 @@\n+export function getApiKey(): string {\n+  const API_KEY = \"sk-live-hardcoded-secret-abc123\";\n+  return API_KEY;\n+}\n",
-      "lines_added": 4,
-      "lines_removed": 0
+      "path": "src/auth.ts",
+      "diff": "diff --git a/src/auth.ts b/src/auth.ts\nindex e099011..62eccb7 100644\n--- a/src/auth.ts\n+++ b/src/auth.ts\n@@ -1,3 +1,4 @@\n export function getApiKey(): string {\n-  return process.env.API_KEY ?? \"\";\n+  const API_KEY = \"sk-live-hardcoded-secret-abc123\";\n+  return API_KEY;\n }\n",
+      "lines_added": 2,
+      "lines_removed": 1
     }
   ]
 }
