@@ -15,7 +15,7 @@ import {
   validateSinceSha,
   writePrFilesList,
 } from "./git-scope.js";
-import { REVIEW_CONFIG_RELATIVE } from "./review-scope.js";
+import { REVIEW_CONFIG_RELATIVE } from "../../../.cursor/skills/ai-code-review/scripts/review-scope.js";
 
 const SINCE = "a".repeat(40);
 const HEAD = "b".repeat(40);
