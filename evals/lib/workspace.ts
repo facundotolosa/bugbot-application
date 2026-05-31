@@ -2,17 +2,25 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { EVALS_ROOT, getOutDir } from "../config.js";
-import { PATHS, WORK_DIR } from "./invocation.js";
+import { reviewRunInputPaths } from "./invocation.js";
+import { createEvalSession, type SessionManifest } from "./session.js";
+import { createReviewRunDir } from "../../packages/reviewer-runner/src/review-run-dir.js";
 
-const INPUT_DEST: Record<string, string> = {
-  "diff.json": PATHS.diff,
-  "security-findings.json": PATHS.securityFindings,
-  "performance-findings.json": PATHS.performanceFindings,
-  "raw-findings.json": PATHS.rawFindings,
-  "validator-output.json": PATHS.validatorOutput,
-  "known-issues.json": PATHS.knownIssues,
-  "findings.json": PATHS.findings,
-  "pr-files.txt": ".ai-code-review/pr-files.txt",
+const inputDest = (
+  manifest: SessionManifest,
+  reviewRunDir: string,
+): Record<string, string> => {
+  const runPaths = reviewRunInputPaths(reviewRunDir);
+  return {
+    "diff.json": manifest.diff,
+    "security-findings.json": manifest.security,
+    "performance-findings.json": manifest.performance,
+    "raw-findings.json": manifest.raw,
+    "validator-output.json": manifest.validatorOut,
+    "known-issues.json": runPaths.knownIssues,
+    "findings.json": runPaths.findings,
+    "pr-files.txt": runPaths.prFiles,
+  };
 };
 
 /** Copied into case `inputs/` only for `--refresh-inputs`; not seeded into the workspace. */
@@ -28,6 +36,9 @@ export type SeedWorkspaceOptions = {
 
 export type SeededWorkspace = {
   cwd: string;
+  reviewRunDir: string;
+  sessionDir: string;
+  manifest: SessionManifest;
   cleanup: () => Promise<void>;
 };
 
@@ -73,18 +84,23 @@ export async function seedWorkspace(
   const cwd = await fs.mkdtemp(path.join(parent, `${options.caseId}-`));
   await copyDir(fixtureSource, cwd);
 
-  await fs.mkdir(path.join(cwd, WORK_DIR), { recursive: true });
+  const session = await createEvalSession();
+  const reviewRunDir = await createReviewRunDir(cwd);
+  process.env.AI_CODE_REVIEW_RUN_DIR = reviewRunDir;
+  const destMap = inputDest(session.manifest, reviewRunDir);
 
   const inputsDir = path.join(options.caseDir, "inputs");
   if (await pathExists(inputsDir)) {
     const files = await fs.readdir(inputsDir);
     for (const file of files) {
       if (INPUT_SKIP.has(file)) continue;
-      const destRel = INPUT_DEST[file];
+      const destRel = destMap[file];
       if (!destRel) {
         throw new Error(`Unknown input file "${file}" in ${inputsDir}`);
       }
-      const dest = path.join(cwd, destRel);
+      const dest = path.isAbsolute(destRel)
+        ? destRel
+        : path.join(cwd, destRel);
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.copyFile(path.join(inputsDir, file), dest);
     }
@@ -92,7 +108,11 @@ export async function seedWorkspace(
 
   return {
     cwd,
+    reviewRunDir,
+    sessionDir: session.sessionDir,
+    manifest: session.manifest,
     cleanup: async () => {
+      await session.cleanup();
       await fs.rm(cwd, { recursive: true, force: true });
     },
   };

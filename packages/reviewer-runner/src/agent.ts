@@ -9,14 +9,23 @@ import {
 } from "./agent-stream.js";
 import { parseFindingsFile } from "./findings.js";
 import * as log from "./logger.js";
+import {
+  createReviewRunDir,
+  findingsPathInRun,
+  findingsReportRelativePath,
+  REVIEW_RUN_FILES,
+  runArtifactsDirInRun,
+} from "./review-run-dir.js";
 import { writeRunArtifacts } from "./run-artifacts.js";
 
+/** @deprecated Use findings path inside a timestamped review run directory. */
 const FINDINGS_PATH = ".ai-code-review/findings.json";
 const SKILL_PATH = ".cursor/skills/ai-code-review/SKILL.md";
 const MODEL_ID = "composer-2.5";
 
 export interface ReviewPromptInput {
   repoRoot: string;
+  reviewRunDir: string;
   sourceRef: string;
   targetRef: string;
   headSha: string;
@@ -24,22 +33,22 @@ export interface ReviewPromptInput {
   sinceCommit?: string;
   knownIssuesPath?: string;
   prFilesPath?: string;
-  prTitle?: string;
   knownIssuesCount?: number;
 }
 
 export function buildReviewPrompt(input: ReviewPromptInput): string {
-  const reportFile = join(input.repoRoot, FINDINGS_PATH);
+  const reportFile = findingsPathInRun(input.reviewRunDir);
   const knownIssuesFile =
-    input.knownIssuesPath ?? join(input.repoRoot, ".ai-code-review/known-issues.json");
+    input.knownIssuesPath ?? join(input.reviewRunDir, REVIEW_RUN_FILES.knownIssues);
   const prFilesFile =
-    input.prFilesPath ?? join(input.repoRoot, ".ai-code-review/pr-files.txt");
+    input.prFilesPath ?? join(input.reviewRunDir, REVIEW_RUN_FILES.prFiles);
 
   const lines = [
     `Use the ai-code-review skill at \`${SKILL_PATH}\` with the following parameters:`,
     `  Source ref: ${input.sourceRef}`,
     `  Target branch: ${input.targetRef}`,
     `  Commit: ${input.headSha}`,
+    `  Review output directory: ${input.reviewRunDir}`,
   ];
 
   if (input.sourceBranch) {
@@ -53,24 +62,28 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     `  Report file: ${reportFile}`,
     `  Known issues file: ${knownIssuesFile}`,
     `  PR files file: ${prFilesFile}`,
+    `  Execution context: CI`,
   );
-
-  if (input.prTitle) {
-    lines.push("", `PR title: ${input.prTitle}`);
-  }
 
   return lines.join("\n");
 }
 
-export interface RunReviewAgentOptions extends ReviewPromptInput {
+export interface RunReviewAgentOptions extends Omit<ReviewPromptInput, "reviewRunDir"> {
   apiKey: string;
+  /** When omitted, a new timestamped directory is created under `.ai-code-review/`. */
+  reviewRunDir?: string;
   /** When set (e.g. E2E evals), sent to the agent instead of `buildReviewPrompt(options)`. */
   prompt?: string;
 }
 
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<void> {
-  const findingsPath = join(options.repoRoot, FINDINGS_PATH);
-  const prompt = options.prompt ?? buildReviewPrompt(options);
+  const reviewRunDir =
+    options.reviewRunDir ?? (await createReviewRunDir(options.repoRoot));
+  const findingsPath = findingsPathInRun(reviewRunDir);
+  const reportRelative = findingsReportRelativePath(reviewRunDir, options.repoRoot);
+  const prompt =
+    options.prompt ??
+    buildReviewPrompt({ ...options, reviewRunDir });
   const knownIssues = options.knownIssuesCount ?? 0;
 
   log.prompt(prompt, { chars: prompt.length, knownIssues });
@@ -112,7 +125,7 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
     throw err;
   } finally {
     const endedAt = new Date().toISOString();
-    const artifactsDir = join(options.repoRoot, ".ai-code-review/run-artifacts");
+    const artifactsDir = runArtifactsDirInRun(reviewRunDir);
     await mkdir(artifactsDir, { recursive: true }).catch(() => {});
     try {
       await writeRunArtifacts(artifactsDir, {
@@ -134,8 +147,8 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Agent did not write valid ${FINDINGS_PATH} at repo root (${findingsPath}): ${message}. ` +
-        "Check [orchestrator] lines above and .ai-code-review/run-artifacts/ for the full trace.",
+      `Agent did not write valid findings at ${reportRelative} (${findingsPath}): ${message}. ` +
+        "Check [orchestrator] lines above and the review run run-artifacts/ directory for the full trace.",
     );
   }
 }
@@ -144,20 +157,19 @@ export async function ensureReviewInputFiles(
   repoRoot: string,
   base: string,
   head: string,
-): Promise<{ prFilesPath: string; knownIssuesPath: string }> {
+): Promise<{ reviewRunDir: string; prFilesPath: string; knownIssuesPath: string }> {
   const { listPrFiles, writePrFilesList } = await import("./git-scope.js");
-  const aiDir = join(repoRoot, ".ai-code-review");
-  await mkdir(aiDir, { recursive: true });
+  const reviewRunDir = await createReviewRunDir(repoRoot);
 
-  const prFilesPath = join(aiDir, "pr-files.txt");
-  const knownIssuesPath = join(aiDir, "known-issues.json");
+  const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
+  const knownIssuesPath = join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
 
   const prFiles = await listPrFiles(base, head, repoRoot);
   await writePrFilesList(prFiles, prFilesPath);
   const { writeFile } = await import("node:fs/promises");
   await writeFile(knownIssuesPath, JSON.stringify({ issues: [] }, null, 2), "utf8");
 
-  return { prFilesPath, knownIssuesPath };
+  return { reviewRunDir, prFilesPath, knownIssuesPath };
 }
 
 export { FINDINGS_PATH, SKILL_PATH };

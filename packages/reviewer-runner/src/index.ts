@@ -13,6 +13,16 @@ export {
 } from "./comments.js";
 export { getUnifiedDiff } from "./diff.js";
 export {
+  createReviewRunDir,
+  findingsPathInRun,
+  findingsReportRelativePath,
+  findingsMarkdownReportRelativePath,
+  formatReviewRunTimestamp,
+  reviewRunRelativeDir,
+  REVIEW_RUN_FILES,
+  AI_CODE_REVIEW_DIR,
+} from "./review-run-dir.js";
+export {
   buildReviewPrompt,
   ensureReviewInputFiles,
   runReviewAgent,

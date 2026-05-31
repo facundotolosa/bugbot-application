@@ -2,7 +2,6 @@ import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PATHS } from "./invocation.js";
 import { seedWorkspace } from "./workspace.js";
 
 const WS_CASE = join(import.meta.dirname, "__fixtures__", "ws-case");
@@ -19,7 +18,7 @@ describe("seedWorkspace", () => {
     cleanups.length = 0;
   });
 
-  it("copies fixture tree and frozen inputs into work paths", async () => {
+  it("copies fixture tree and frozen inputs into session paths", async () => {
     const ws = await seedWorkspace({
       caseDir: WS_CASE,
       caseId: "ws-case",
@@ -29,8 +28,9 @@ describe("seedWorkspace", () => {
     cleanups.push(ws.cleanup);
 
     await access(join(ws.cwd, "src/app.ts"));
-    const diff = await readFile(join(ws.cwd, PATHS.diff), "utf8");
+    const diff = await readFile(ws.manifest.diff, "utf8");
     expect(JSON.parse(diff)).toHaveProperty("files");
+    expect(process.env.AI_CODE_REVIEW_SESSION_DIR).toBe(ws.sessionDir);
   });
 
   it("ignores diff-refs.json (refresh metadata only)", async () => {
@@ -42,6 +42,6 @@ describe("seedWorkspace", () => {
     });
     cleanups.push(ws.cleanup);
 
-    await access(join(ws.cwd, PATHS.diff));
+    await access(ws.manifest.diff);
   });
 });

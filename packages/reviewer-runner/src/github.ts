@@ -194,12 +194,10 @@ export async function upsertTrackingComment(
 
   if (existingCommentId != null) {
     await api.updateIssueComment(ctx, existingCommentId, body);
-    log.ok(`Updated tracking comment #${existingCommentId} at ${headSha.slice(0, 7)}`);
     return { commentId: existingCommentId, body };
   }
 
   const created = await api.createIssueComment(ctx, body);
-  log.ok(`Created tracking comment #${created.id} at ${headSha.slice(0, 7)}`);
   return { commentId: created.id, body };
 }
 
@@ -209,7 +207,6 @@ export async function postInlineReview(
   comments: InlineReviewComment[],
 ): Promise<void> {
   if (comments.length === 0) {
-    log.step("No inline comments to post");
     return;
   }
   const octokit = new Octokit({ auth: token });

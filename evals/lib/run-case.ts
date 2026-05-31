@@ -180,6 +180,7 @@ export async function runGoldenCase(
       if (isValidator) {
         const component = await runValidatorHarness({
           cwd: workspace.cwd,
+          reviewRunDir: workspace.reviewRunDir,
           apiKey: options.apiKey,
         });
 

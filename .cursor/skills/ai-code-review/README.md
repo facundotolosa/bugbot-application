@@ -20,13 +20,15 @@
    > Follow the ai-code-review skill.
    > Source: `HEAD` · Target: `main`
    > PR files list: `/tmp/pr-files.txt`
-   > Run `prepare-diff`, print the diff summary, select analyzers, run security/performance subagents in parallel, merge, and write `.ai-code-review/findings.json` (v2).
+   > Run `prepare-diff`, print the diff summary, select analyzers, run security/performance subagents in parallel, merge, and write findings v2 under `.ai-code-review/<timestamp>/`.
 
-4. Confirm artifacts:
+4. Confirm durable outputs (IPC lives under `$TMPDIR/ai-code-review-*` during the run):
 
    ```bash
-   ls .ai-code-review/work/
-   cat .ai-code-review/findings.json | jq .
+   ls .ai-code-review/
+   cat .ai-code-review/*/findings.json | jq .
+   cat .ai-code-review/*/findings.md   # human-readable, local only; latest run
+   ls .ai-code-review/*/run-artifacts/session/ 2>/dev/null || true
    ```
 
 ## Incremental review (local only)
@@ -39,14 +41,15 @@ Pass a valid ancestor SHA:
 
 If the SHA is not an ancestor of `HEAD`, `prepare-diff` falls back to full review — print `Warning:` lines after the summary block.
 
-## Work directory
+## Artifacts
 
 | Path | Purpose |
 |------|---------|
-| `.ai-code-review/work/diff.json` | Diff input for analyzer subagents |
-| `.ai-code-review/work/security-findings.json` | Security analyzer output |
-| `.ai-code-review/work/performance-findings.json` | Performance analyzer output |
-| `.ai-code-review/findings.json` | Merged v2 report for the runner |
+| `$TMPDIR/ai-code-review-*/` | Ephemeral session IPC (diff, analyzer outputs, raw, validator) |
+| `.ai-code-review/<timestamp>/findings.json` | Final v2 report (one folder per run) |
+| `.ai-code-review/<timestamp>/findings.md` | Human-readable report (local IDE only; non-empty severity sections only) |
+| `.ai-code-review/<timestamp>/validator-summary.json` | Validator funnel summary |
+| `.ai-code-review/<timestamp>/run-artifacts/session/` | Post-run snapshot of session IPC |
 
 ## Analyzer subagents
 
@@ -54,17 +57,7 @@ Definitions: `.cursor/agents/ai-code-review-security-analyzer.md`, `ai-code-revi
 
 Invocation rules: [references/invocation-criteria.md](references/invocation-criteria.md).
 
-Deterministic helpers (optional):
-
-```bash
-# List selected analyzers from work/diff.json
-npx tsx -e "
-import { readFileSync } from 'node:fs';
-import { selectAnalyzers } from './.cursor/skills/ai-code-review/scripts/select-analyzers.ts';
-const d = JSON.parse(readFileSync('.ai-code-review/work/diff.json','utf8'));
-console.log(selectAnalyzers(d.files ?? []));
-"
-```
+Progress todos (IDE): [references/progress-todos.md](references/progress-todos.md).
 
 ## Smoke target
 
@@ -82,4 +75,4 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help
 
 ## CI path
 
-`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `.ai-code-review/findings.json` (v2) and posts formatted inline comments.
+`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `{reviewRunDir}/findings.json` (v2) and posts formatted inline comments. CI uploads `.ai-code-review/**/run-artifacts/**` (`include-hidden-files: true` — the parent dir is dot-prefixed) as the `ai-review-run-artifacts` artifact.

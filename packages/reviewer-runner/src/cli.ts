@@ -43,7 +43,6 @@ function parseArgs(argv: string[]) {
 async function loadPrMetadata(eventPath?: string): Promise<{
   targetRef: string;
   sourceBranch?: string;
-  prTitle?: string;
   prNumber?: number;
 }> {
   if (!eventPath) {
@@ -53,14 +52,12 @@ async function loadPrMetadata(eventPath?: string): Promise<{
     pull_request?: {
       base?: { ref?: string };
       head?: { ref?: string };
-      title?: string;
       number?: number;
     };
   };
   return {
     targetRef: event.pull_request?.base?.ref ?? "main",
     sourceBranch: event.pull_request?.head?.ref,
-    prTitle: event.pull_request?.title,
     prNumber: event.pull_request?.number,
   };
 }
@@ -82,7 +79,7 @@ async function main() {
 
   log.header("AI Code Review");
 
-  const { targetRef, sourceBranch, prTitle } = await loadPrMetadata(
+  const { targetRef, sourceBranch } = await loadPrMetadata(
     process.env.GITHUB_EVENT_PATH,
   );
 
@@ -97,7 +94,6 @@ async function main() {
     headSha: gitHead,
     targetRef,
     sourceBranch,
-    prTitle,
     dryRun: args.dryRun,
     skipAgent: args.skipAgent,
   };

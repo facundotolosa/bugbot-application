@@ -1,7 +1,11 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewPromptInput } from "./agent.js";
-import { FINDINGS_PATH } from "./agent.js";
+import {
+  createReviewRunDir,
+  findingsPathInRun,
+  REVIEW_RUN_FILES,
+} from "./review-run-dir.js";
 import { toInlineReviewComments, type InlineReviewComment } from "./comments.js";
 import { parseFindingsFile, type FindingsReport } from "./findings.js";
 import {
@@ -26,6 +30,13 @@ import {
 import * as log from "./logger.js";
 import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
 
+function formatTrackingRef(commentId: number | undefined): string | undefined {
+  if (commentId == null) {
+    return undefined;
+  }
+  return `#${commentId}`;
+}
+
 export interface ReviewOrchestrationConfig {
   repoRoot: string;
   base: string;
@@ -33,7 +44,6 @@ export interface ReviewOrchestrationConfig {
   headSha: string;
   targetRef: string;
   sourceBranch?: string;
-  prTitle?: string;
   dryRun: boolean;
   skipAgent: boolean;
 }
@@ -79,9 +89,15 @@ export async function executeReviewOrchestration(
 ): Promise<ReviewOutcome> {
   const git = deps.git ?? createExecGitRunner();
   const now = deps.now ?? (() => new Date());
+  let reviewRunDir = "";
   const readFindings =
     deps.readFindings ??
-    ((repoRoot: string) => parseFindingsFile(join(repoRoot, FINDINGS_PATH)));
+    ((repoRoot: string) => {
+      const path = reviewRunDir
+        ? findingsPathInRun(reviewRunDir)
+        : findingsPathInRun(join(repoRoot, ".ai-code-review", "missing-run"));
+      return parseFindingsFile(path);
+    });
 
   let tracking: FoundTrackingComment | null = null;
   let trackingCommentId: number | undefined;
@@ -124,13 +140,12 @@ export async function executeReviewOrchestration(
   if (scope.skip) {
     log.warn(`Skipping agent: ${scope.reason ?? "unknown"}`);
     await advanceTracking();
-    log.summary({
+    log.reviewOutcome("skipped", {
       mode: mode.mode,
-      findings: "0 (skipped — no effective diff)",
+      findings: 0,
       posted: 0,
-      tracking: trackingCommentId ?? "n/a",
+      tracking: formatTrackingRef(trackingCommentId),
     });
-    log.done("Review skipped");
     return { status: "skipped", reason: scope.reason ?? "unknown", scope };
   }
 
@@ -140,10 +155,9 @@ export async function executeReviewOrchestration(
     return { status: "skip-agent", scope };
   }
 
-  const aiDir = join(config.repoRoot, ".ai-code-review");
-  await mkdir(aiDir, { recursive: true });
-  const prFilesPath = join(aiDir, "pr-files.txt");
-  const knownIssuesPath = join(aiDir, "known-issues.json");
+  reviewRunDir = await createReviewRunDir(config.repoRoot, now());
+  const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
+  const knownIssuesPath = join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
 
   await writePrFilesList(scope.prFiles, prFilesPath);
 
@@ -160,6 +174,7 @@ export async function executeReviewOrchestration(
     try {
       await deps.runAgent({
         repoRoot: config.repoRoot,
+        reviewRunDir,
         sourceRef: config.headSha,
         targetRef: config.targetRef,
         headSha: config.headSha,
@@ -167,7 +182,6 @@ export async function executeReviewOrchestration(
         prFilesPath,
         knownIssuesPath,
         sourceBranch: config.sourceBranch,
-        prTitle: config.prTitle,
         knownIssuesCount,
       });
     } catch (err) {
@@ -185,18 +199,15 @@ export async function executeReviewOrchestration(
   const { findings: filtered, droppedOutOfPr } = filterFindingsForPost(report, prFileSet);
   const comments = toInlineReviewComments({ ...report, findings: filtered });
 
-  log.meta("findings (total)", String(report.findings.length));
   if (droppedOutOfPr > 0) {
     log.warn(`${droppedOutOfPr} finding(s) dropped (outside PR file list)`);
   }
-  log.step(`Inline comments to post: ${comments.length} of ${report.findings.length} issue(s)`);
 
   let posted = 0;
   if (deps.postComments && !config.dryRun) {
     try {
       await deps.postComments(comments);
       posted = comments.length;
-      log.ok(`Posted ${posted} inline comment(s) out of ${report.findings.length} issue(s)`);
     } catch (err) {
       log.error("GitHub post failed; tracking not advanced");
       throw err;
@@ -208,14 +219,13 @@ export async function executeReviewOrchestration(
   }
 
   await advanceTracking();
-  log.summary({
+  log.reviewOutcome("complete", {
     mode: mode.mode,
     findings: report.findings.length,
     posted,
-    dropped: droppedOutOfPr,
-    tracking: trackingCommentId ?? "created",
+    dropped: droppedOutOfPr > 0 ? droppedOutOfPr : undefined,
+    tracking: formatTrackingRef(trackingCommentId),
   });
-  log.done("Review complete");
   return {
     status: "completed",
     posted,

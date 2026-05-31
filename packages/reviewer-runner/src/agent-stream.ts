@@ -1,6 +1,10 @@
 import type { SDKMessage } from "@cursor/sdk";
 import * as log from "./logger.js";
 
+/** Canonical skill start line — drop paraphrased duplicates from agent narration. */
+export const ORCHESTRATOR_START_LINE =
+  "I'll run the ai-code-review skill with the PR parameters from the prompt.";
+
 const SUBAGENT_SLUG_LABELS: Record<string, string> = {
   "ai-code-review-security-analyzer": "security analyzer",
   "ai-code-review-performance-analyzer": "performance analyzer",
@@ -19,6 +23,10 @@ export function formatOrchestratorLine(text: string): string {
   return `${log.orchestratorPrefix()}${stripped}`;
 }
 
+export function isReviewCompleteLine(line: string): boolean {
+  return /^🎯\s*Review complete:/u.test(line.trim());
+}
+
 /** Forward orchestrator assistant narration; drop empty lines and TodoWrite noise only. */
 export function shouldForwardOrchestratorLine(line: string): boolean {
   const trimmed = line.trim();
@@ -28,15 +36,47 @@ export function shouldForwardOrchestratorLine(line: string): boolean {
   if (/^(- \[[ x]\] )?(prereq|metadata|diff|analyzers|collect|validate|report)\b/i.test(trimmed)) {
     return false;
   }
+  // Markdown findings tables render poorly in CI logs; details belong in findings.json.
+  if (/^\|.*\|$/.test(trimmed)) {
+    return false;
+  }
+  // Funnel counts are in the ✅ block; filter_summary is in validator-summary.json.
+  if (/^Validator funnel:/i.test(trimmed)) {
+    return false;
+  }
+  if (/ai-code-review skill/i.test(trimmed) && trimmed !== ORCHESTRATOR_START_LINE) {
+    return false;
+  }
+  if (/^-{3,}\s*$/.test(trimmed)) {
+    return false;
+  }
+  if (/^Final report:/i.test(trimmed) || /Session artifacts were saved/i.test(trimmed)) {
+    return false;
+  }
   return true;
+}
+
+type OrchestratorNarrationPhase = "open" | "after_review_complete" | "closed";
+
+function shouldForwardInPhase(line: string, phase: OrchestratorNarrationPhase): boolean {
+  const trimmed = line.trim();
+  if (phase === "closed") {
+    return false;
+  }
+  if (phase === "after_review_complete") {
+    return /^Report written to:/i.test(trimmed);
+  }
+  return shouldForwardOrchestratorLine(line);
 }
 
 /** Buffers streaming assistant deltas; emits one styled line per completed newline. */
 export class OrchestratorStreamForwarder {
   private pending = "";
+  private phase: OrchestratorNarrationPhase = "open";
 
   reset(): void {
     this.pending = "";
+    this.phase = "open";
   }
 
   append(text: string): void {
@@ -63,10 +103,16 @@ export class OrchestratorStreamForwarder {
   }
 
   private writeLine(line: string): void {
-    if (!shouldForwardOrchestratorLine(line)) {
+    if (!shouldForwardInPhase(line, this.phase)) {
       return;
     }
     log.orchestratorLine(line);
+    const trimmed = line.trim();
+    if (isReviewCompleteLine(trimmed)) {
+      this.phase = "after_review_complete";
+    } else if (/^Report written to:/i.test(trimmed)) {
+      this.phase = "closed";
+    }
   }
 }
 

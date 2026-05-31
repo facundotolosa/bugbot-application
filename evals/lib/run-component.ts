@@ -1,5 +1,6 @@
 import { access, readFile } from "node:fs/promises";
-import path from "node:path";
+import { join } from "node:path";
+import { REVIEW_RUN_FILES } from "../../packages/reviewer-runner/src/review-run-dir.js";
 
 import { Agent } from "@cursor/sdk";
 
@@ -10,14 +11,14 @@ import type {
   ValidatorOutput,
 } from "../../.cursor/skills/ai-code-review/scripts/validator-output.ts";
 import {
-  PATHS,
-  PERFORMANCE_TASK_LINES,
-  SECURITY_TASK_LINES,
+  buildComponentHarnessPrompt,
+  performanceTaskPrompt,
+  securityTaskPrompt,
   SETTING_SOURCES,
   SUBAGENT_TYPES,
-  VALIDATOR_TASK_LINES,
-  buildComponentHarnessPrompt,
+  validatorTaskPrompt,
 } from "./invocation.js";
+import { buildSessionManifest, resolveEvalSessionDir } from "./session.js";
 import {
   structuralGateFromText,
   type StructuralGateResult,
@@ -56,31 +57,20 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-function analyzerConfig(analyzer: AnalyzerKey): {
-  subagentType: string;
-  taskLines: readonly string[];
-  outputRel: string;
-} {
-  if (analyzer === "security") {
-    return {
-      subagentType: SUBAGENT_TYPES.security,
-      taskLines: SECURITY_TASK_LINES,
-      outputRel: PATHS.securityFindings,
-    };
-  }
-  return {
-    subagentType: SUBAGENT_TYPES.performance,
-    taskLines: PERFORMANCE_TASK_LINES,
-    outputRel: PATHS.performanceFindings,
-  };
+function analyzerOutputPath(
+  sessionDir: string,
+  analyzer: AnalyzerKey,
+): string {
+  const m = buildSessionManifest(sessionDir);
+  return analyzer === "security" ? m.security : m.performance;
 }
 
 export async function readAnalyzerOutput(
   cwd: string,
   analyzer: AnalyzerKey,
 ): Promise<string | null> {
-  const rel = analyzerConfig(analyzer).outputRel;
-  const filePath = path.join(cwd, rel);
+  const sessionDir = resolveEvalSessionDir(cwd);
+  const filePath = analyzerOutputPath(sessionDir, analyzer);
   if (!(await fileExists(filePath))) {
     return null;
   }
@@ -102,7 +92,6 @@ async function runHarnessAgent(options: {
     apiKey: options.apiKey,
     model: { id: getEvalModelId() },
     local: {
-      // Monorepo root so `.cursor/agents/*.md` load via settingSources; Task paths are absolute.
       cwd: REPO_ROOT,
       settingSources: [...SETTING_SOURCES],
     },
@@ -119,7 +108,8 @@ async function runHarnessAgent(options: {
 }
 
 export async function readValidatorOutput(cwd: string): Promise<string | null> {
-  const filePath = path.join(cwd, PATHS.validatorOutput);
+  const sessionDir = resolveEvalSessionDir(cwd);
+  const filePath = buildSessionManifest(sessionDir).validatorOut;
   if (!(await fileExists(filePath))) {
     return null;
   }
@@ -134,16 +124,18 @@ export function validateValidatorOutputText(
 
 export async function runValidatorHarness(options: {
   cwd: string;
+  reviewRunDir: string;
   apiKey: string;
   dryRun?: boolean;
 }): Promise<ValidatorComponentResult> {
-  const taskPrompt = VALIDATOR_TASK_LINES.join("\n");
+  const sessionDir = resolveEvalSessionDir(options.cwd);
+  const knownIssuesPath = join(options.reviewRunDir, REVIEW_RUN_FILES.knownIssues);
+  const taskPrompt = validatorTaskPrompt(sessionDir, knownIssuesPath);
   const harnessPrompt = buildComponentHarnessPrompt(
     SUBAGENT_TYPES.validator,
-    VALIDATOR_TASK_LINES,
-    { workspaceRoot: options.cwd },
+    taskPrompt,
   );
-  const outputPath = path.join(options.cwd, PATHS.validatorOutput);
+  const outputPath = buildSessionManifest(sessionDir).validatorOut;
 
   const tryReadValid = async (): Promise<StructuralGateResult | null> => {
     const text = await readValidatorOutput(options.cwd);
@@ -167,13 +159,13 @@ export async function runValidatorHarness(options: {
 
   if (!gate?.validatorOutput) {
     throw new Error(
-      `Validator output missing or invalid at ${PATHS.validatorOutput} (no retry)`,
+      `Validator output missing or invalid at ${outputPath} (no retry)`,
     );
   }
 
   const outputText = await readValidatorOutput(options.cwd);
   if (!outputText) {
-    throw new Error(`Validator output unreadable at ${PATHS.validatorOutput}`);
+    throw new Error(`Validator output unreadable at ${outputPath}`);
   }
 
   return {
@@ -192,15 +184,20 @@ export async function runAnalyzerHarness(options: {
   cwd: string;
   analyzer: AnalyzerKey;
   apiKey: string;
-  /** When true, skip Agent and only validate existing output (tests). */
   dryRun?: boolean;
 }): Promise<AnalyzerComponentResult> {
-  const { subagentType, taskLines, outputRel } = analyzerConfig(options.analyzer);
-  const taskPrompt = taskLines.join("\n");
-  const harnessPrompt = buildComponentHarnessPrompt(subagentType, taskLines, {
-    workspaceRoot: options.cwd,
-  });
-  const outputPath = path.join(options.cwd, outputRel);
+  const sessionDir = resolveEvalSessionDir(options.cwd);
+  const taskPrompt =
+    options.analyzer === "security"
+      ? securityTaskPrompt(sessionDir)
+      : performanceTaskPrompt(sessionDir);
+  const harnessPrompt = buildComponentHarnessPrompt(
+    options.analyzer === "security"
+      ? SUBAGENT_TYPES.security
+      : SUBAGENT_TYPES.performance,
+    taskPrompt,
+  );
+  const outputPath = analyzerOutputPath(sessionDir, options.analyzer);
 
   let retry = false;
 
@@ -236,7 +233,7 @@ export async function runAnalyzerHarness(options: {
 
   if (!outputText) {
     throw new Error(
-      `Analyzer output missing or invalid at ${outputRel}${retry ? " (after retry)" : ""}`,
+      `Analyzer output missing or invalid at ${outputPath}${retry ? " (after retry)" : ""}`,
     );
   }
 
