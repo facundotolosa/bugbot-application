@@ -27,4 +27,10 @@ describe("stripSdkBootstrapNoise", () => {
       "› Launching Cursor agent…\n";
     expect(stripSdkBootstrapNoise(chunk)).toBe("› Launching Cursor agent…\n");
   });
+
+  it("drops bootstrap lines with ANSI color codes", () => {
+    const chunk =
+      "\x1b[34m15:18:14.871 INFO\x1b[0m LocalCursorRulesService load completed meta={durationMs: 46}\n";
+    expect(stripSdkBootstrapNoise(chunk)).toBeNull();
+  });
 });

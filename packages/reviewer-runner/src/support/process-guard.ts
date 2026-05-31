@@ -1,4 +1,5 @@
 import { setMaxListeners } from "node:events";
+import { stripAnsi } from "./logger.js";
 
 export const MAX_LISTENERS_WARNING =
   /MaxListenersExceededWarning[\s\S]*AbortSignal/;
@@ -7,15 +8,19 @@ export const MAX_LISTENERS_WARNING =
 export const SDK_INFO_LOAD_LINE =
   /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?\s+INFO\s+\S+\s+load completed\b/;
 
+function normalizeNoiseLine(line: string): string {
+  return stripAnsi(line).trim();
+}
+
 export function shouldSuppressProcessNoise(text: string): boolean {
   if (MAX_LISTENERS_WARNING.test(text)) {
     return true;
   }
-  const lines = text.split("\n").filter((line) => line.trim().length > 0);
+  const lines = text.split("\n").filter((line) => normalizeNoiseLine(line).length > 0);
   if (lines.length === 0) {
     return false;
   }
-  return lines.every((line) => SDK_INFO_LOAD_LINE.test(line.trim()));
+  return lines.every((line) => SDK_INFO_LOAD_LINE.test(normalizeNoiseLine(line)));
 }
 
 /**
@@ -30,7 +35,7 @@ export function stripSdkBootstrapNoise(text: string): string | null {
   const kept: string[] = [];
   let stripped = false;
   for (const line of lines) {
-    if (SDK_INFO_LOAD_LINE.test(line.trim())) {
+    if (SDK_INFO_LOAD_LINE.test(normalizeNoiseLine(line))) {
       stripped = true;
       continue;
     }

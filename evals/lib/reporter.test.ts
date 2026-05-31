@@ -40,7 +40,7 @@ describe("EvalReporter", () => {
 
     const out = text();
     expect(out).toContain("Eval run 2026-05-31T12-00-00-000Z · 2 cases");
-    expect(out).toContain("analyzer-security");
+    expect(out).toContain("analyzer-security:");
     expect(out).toContain("○ leaked-key");
     expect(out).toContain("e2e");
     expect(out).toContain("○ ledger-pipeline");
@@ -123,8 +123,7 @@ describe("EvalReporter", () => {
     expect(out).toContain("Tests:  1 passed | 1 failed | 2 total");
     expect(out).toContain("Time:");
     expect(out).toContain("Judge:  2/2 · Retries: 1");
-    expect(out).toContain("By suite:");
-    expect(out).toContain("analyzer-security");
+    expect(out).not.toContain("By suite:");
     expect(out).toContain("Artifacts: evals/out/2026-05-31T12-00-00-000Z/");
   });
 
@@ -192,6 +191,24 @@ describe("EvalReporter", () => {
     expect(out).not.toContain("✗ leaked-key");
   });
 
+  it("redraws the TTY tree in place with cursor-up on updates", () => {
+    vi.stubEnv("NO_COLOR", "1");
+    const { stream, text } = createCaptureStream(true);
+    const reporter = new EvalReporter({
+      output: stream,
+      isTTY: true,
+      isCI: false,
+      useColor: false,
+    });
+
+    reporter.startRun("run-1", [CASES[0]!]);
+    reporter.startCase("analyzer-security", "leaked-key");
+
+    const out = text();
+    expect(out).toMatch(/\x1b\[\d+A/);
+    expect(out.match(/\x1b\[2K/g)?.length).toBeGreaterThan(1);
+  });
+
   it("does not duplicate the pending tree on non-TTY updates", () => {
     vi.stubEnv("NO_COLOR", "1");
     const { stream, text } = createCaptureStream();
@@ -209,7 +226,7 @@ describe("EvalReporter", () => {
     });
 
     const out = text();
-    expect(out.match(/analyzer-security/g)?.length).toBe(1);
+    expect(out.match(/analyzer-security:/g)?.length).toBe(1);
     expect(out).toContain("○ leaked-key");
     expect(out).toContain("✓ leaked-key (1.0s) judge=yes");
   });

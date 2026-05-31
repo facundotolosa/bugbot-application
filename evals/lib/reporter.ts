@@ -2,6 +2,7 @@ import type { DiscoveredCase } from "./discover-cases.js";
 import type { CaseRunResult } from "./run-case.js";
 import type { EvalRunSummary } from "./summary.js";
 import {
+  bold,
   green,
   red,
   shouldUseColor,
@@ -134,17 +135,6 @@ export class EvalReporter {
       `  Judge:  ${summary.judgeUsed}/${summary.total} · Retries: ${summary.retries}`,
     );
 
-    const suites = Object.keys(summary.bySuite);
-    if (suites.length > 0) {
-      this.writeLine("");
-      this.writeLine("  By suite:");
-      for (const suite of suites) {
-        const bucket = summary.bySuite[suite]!;
-        const label = suite.padEnd(22);
-        this.writeLine(`    ${label}${bucket.passed}/${bucket.total}`);
-      }
-    }
-
     this.writeLine("");
     this.writeLine(`Artifacts: evals/out/${runId}/`);
   }
@@ -162,7 +152,7 @@ export class EvalReporter {
     this.spinnerTimer = setInterval(() => {
       this.spinnerFrame = (this.spinnerFrame + 1) % SPINNER_FRAMES.length;
       if (this.runningKey) {
-        const [suite, caseId] = this.runningKey.split("/") as [string, string];
+        const { suite, caseId } = parseCaseKey(this.runningKey);
         this.renderCaseUpdate(suite, caseId);
       }
     }, 80);
@@ -177,24 +167,15 @@ export class EvalReporter {
 
   private renderTree(): void {
     const lines = this.buildTreeLines();
-
-    if (this.isTTY && this.treeLineCount > 0) {
-      this.moveCursorUp(this.treeLineCount);
-    }
-
-    for (const line of lines) {
-      this.writeLine(line);
-    }
-
-    this.treeLineCount = lines.length;
+    this.writeTreeBlock(lines);
   }
 
   private renderCaseUpdate(suite: string, caseId: string): void {
     if (!this.isTTY) {
-      this.writeLine(this.formatCaseLine(suite, caseId));
+      this.writeRawLine(this.formatCaseLine(suite, caseId));
       const result = this.results.get(caseKey(suite, caseId));
       if (result?.error) {
-        this.writeLine(`      ${result.error}`);
+        this.writeRawLine(`      ${result.error}`);
       }
       return;
     }
@@ -206,7 +187,7 @@ export class EvalReporter {
     const lines: string[] = [];
 
     for (const group of this.groups) {
-      lines.push(`  ${group.suite}`);
+      lines.push(this.formatSuiteLine(group.suite));
       for (const discovered of group.cases) {
         lines.push(this.formatCaseLine(discovered.suite, discovered.caseId));
         const result = this.results.get(caseKey(discovered.suite, discovered.caseId));
@@ -217,6 +198,11 @@ export class EvalReporter {
     }
 
     return lines;
+  }
+
+  private formatSuiteLine(suite: string): string {
+    const label = `${suite}:`;
+    return this.useColor ? `  ${bold(label, true)}` : `  ${label}`;
   }
 
   private formatCaseLine(suite: string, caseId: string): string {
@@ -253,15 +239,42 @@ export class EvalReporter {
     return "…";
   }
 
-  private moveCursorUp(count: number): void {
-    this.output.write(`\x1b[${count}A`);
+  /** Header/summary lines — never reuse tree redraw helpers. */
+  private writeLine(line: string): void {
+    this.writeRawLine(line);
   }
 
-  private writeLine(line: string): void {
-    if (this.isTTY && this.treeLineCount > 0) {
-      this.output.write("\x1b[2K\r");
-    }
+  private writeRawLine(line: string): void {
     this.output.write(`${line}\n`);
   }
 
+  private writeTreeBlock(lines: string[]): void {
+    if (lines.length === 0) {
+      this.treeLineCount = 0;
+      return;
+    }
+
+    if (this.isTTY) {
+      if (this.treeLineCount > 0) {
+        this.output.write(`\x1b[${this.treeLineCount}A`);
+      }
+      this.output.write(
+        lines.map((line) => `\x1b[2K\r${line}`).join("\n") + "\n",
+      );
+    } else {
+      for (const line of lines) {
+        this.writeRawLine(line);
+      }
+    }
+
+    this.treeLineCount = lines.length;
+  }
+}
+
+function parseCaseKey(key: CaseKey): { suite: string; caseId: string } {
+  const slash = key.indexOf("/");
+  return {
+    suite: key.slice(0, slash),
+    caseId: key.slice(slash + 1),
+  };
 }
