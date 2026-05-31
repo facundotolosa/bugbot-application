@@ -1,0 +1,13 @@
+{
+  "suite": "e2e",
+  "must_find": [
+    {
+      "file": "packages/ledger-lite/src/api/client.ts",
+      "match": "hardcoded|secret|PLAID|sk_live",
+      "severity_min": "major"
+    }
+  ],
+  "judge": {
+    "rubric": "Final findings.json must report the hardcoded Plaid client secret introduced in packages/ledger-lite/src/api/client.ts."
+  }
+}

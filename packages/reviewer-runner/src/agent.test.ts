@@ -42,3 +42,19 @@ describe("buildReviewPrompt", () => {
     expect(prompt).not.toContain("Source branch:");
   });
 });
+
+describe("runReviewAgent prompt option", () => {
+  it("RunReviewAgentOptions accepts a custom prompt override", () => {
+    const custom = "E2E eval constraints: FULL review only";
+    const options = {
+      apiKey: "test-key",
+      repoRoot: REPO,
+      sourceRef: HEAD_SHA,
+      targetRef: "main",
+      headSha: HEAD_SHA,
+      prompt: custom,
+    };
+    expect(options.prompt).toBe(custom);
+    expect(buildReviewPrompt(options)).not.toContain("E2E eval constraints");
+  });
+});

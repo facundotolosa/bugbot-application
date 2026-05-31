@@ -72,6 +72,8 @@ npm run review -- --dry-run --skip-agent --base origin/main --head HEAD
 
 ## Environment
 
+Local runs load **`CURSOR_API_KEY` from the repository root `.env`** (copy `.env.example`). Legacy `packages/reviewer-runner/.env` is still supported during migration.
+
 | Variable | When |
 |----------|------|
 | `CURSOR_API_KEY` | Agent run |

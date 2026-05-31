@@ -1,0 +1,15 @@
+{
+  "suite": "analyzer-security",
+  "must_find": [
+    {
+      "file": "src/auth.ts",
+      "line_near": 2,
+      "line_tolerance": 3,
+      "match": "hardcoded secret|api key|API_KEY",
+      "severity_min": "major"
+    }
+  ],
+  "judge": {
+    "rubric": "Must report a hardcoded API key or secret in src/auth.ts in the changed code."
+  }
+}

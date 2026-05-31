@@ -64,11 +64,13 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
 
 export interface RunReviewAgentOptions extends ReviewPromptInput {
   apiKey: string;
+  /** When set (e.g. E2E evals), sent to the agent instead of `buildReviewPrompt(options)`. */
+  prompt?: string;
 }
 
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<void> {
   const findingsPath = join(options.repoRoot, FINDINGS_PATH);
-  const prompt = buildReviewPrompt(options);
+  const prompt = options.prompt ?? buildReviewPrompt(options);
   const knownIssues = options.knownIssuesCount ?? 0;
 
   log.prompt(prompt, { chars: prompt.length, knownIssues });
