@@ -142,7 +142,7 @@ console.log(sessionDir);
 | After analyzer files read | `Collected analyzer output; merging raw findings.` |
 | Before validator Task | `Running validator on raw findings.` |
 | Raw empty, skip validator | `All analyzers returned no findings; skipping validator.` |
-| After `findings.json` written | **Consolidated final block** (see [Orchestrator narration blocks](#orchestrator-narration-blocks-fixed-templates)) + `Validator funnel: …` |
+| After `findings.json` written | **Consolidated final block** (see [Orchestrator narration blocks](#orchestrator-narration-blocks-fixed-templates)) |
 | Final | `Report written to: .ai-code-review/findings.json` |
 
 - Tool work stays silent in narration (no tool names, Task prompts, or bash).
@@ -150,7 +150,7 @@ console.log(sessionDir);
 
 **Do not use Shell/Bash solely to emit progress lines** (`echo`, `node -e` with `console.log`, etc.) — operators and CI will not see them as orchestrator progress.
 
-**Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), or extra content on the final path line.
+**Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), findings tables/lists (severity/file/line/issue), `Validator funnel:` (already in the ✅ block), or extra content on the final path line.
 
 ## Workflow checklist
 
@@ -192,11 +192,10 @@ console.log(sessionDir);
 17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
 18. **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
 19. **Todo:** `validate` completed; `report` in_progress.
-20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below; include findings table or list when non-empty.
-21. Emit **one** machine line: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
-22. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json`
-23. **Todo:** `report` completed.
-24. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
+20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`).
+21. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json`
+22. **Todo:** `report` completed.
+23. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 
 ## `prepare-diff`
 
@@ -213,7 +212,7 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
 
 ## Orchestrator narration blocks (fixed templates)
 
-Emit in **assistant message text** (not Shell), **once** in the consolidated final block after `findings.json` exists. Use values from `prepare-diff` `metadata` / session files. Machine lines `Analyzers:` (during run) and `Validator funnel:` (after the block) stay **plain** (no emoji).
+Emit in **assistant message text** (not Shell), **once** in the consolidated final block after `findings.json` exists. Use values from `prepare-diff` `metadata` / session files. Machine line `Analyzers:` (during run) stays **plain** (no emoji).
 
 **Anti-pattern:** emitting 📋 📊 after `prepare-diff`, or 🔬 📥 ✅ before the consolidated block — causes duplicate blocks in the IDE/CI stream.
 
@@ -225,9 +224,9 @@ Emit in **assistant message text** (not Shell), **once** in the consolidated fin
 | Collect | `📥 Collected results:` — raw count, categories from analyzers present |
 | Validator skip | `⏭️ Validator skipped: …` when raw empty (use instead of ✅) |
 | Validator done | `✅ Validator complete: {raw} raw → {final} validated` |
-| Close | `🎯 Review complete:` severity breakdown from **final** `findings.json` |
+| Close | `🎯 Review complete:` severity **counts only** from **final** `findings.json` (no per-finding table or list) |
 
-**Consolidated final block order:** 📋 → 📊 → 🔬 → 📥 → (⏭️ **or** ✅) → 🎯 — then `Validator funnel:` → `Report written to:`.
+**Consolidated final block order:** 📋 → 📊 → 🔬 → 📥 → (⏭️ **or** ✅) → 🎯 — then `Report written to:`.
 
 ## Invocation criteria
 
@@ -347,13 +346,11 @@ const raw = JSON.parse(readFileSync(m.raw,'utf8'));
 if (!raw.findings?.length) {
   writeFileSync('.ai-code-review/findings.json', JSON.stringify({ version: '2', findings: [] }, null, 2));
   writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
-  console.log('Validator funnel: 0 → 0');
 } else {
   const out = parseValidatorOutput(JSON.parse(readFileSync(m.validatorOut,'utf8')));
   writeFileSync('.ai-code-review/findings.json', JSON.stringify(mapValidatorToFindingsReport(out), null, 2));
   writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
   writeFileSync(m.validatorSummary, JSON.stringify(out.filter_summary, null, 2));
-  console.log('Validator funnel: ' + out.filter_summary.raw_input + ' → ' + out.filter_summary.final_output);
 }
 "
 ```

@@ -34,6 +34,20 @@ describe("shouldForwardOrchestratorLine", () => {
     expect(shouldForwardOrchestratorLine("")).toBe(false);
     expect(shouldForwardOrchestratorLine("- [x] analyzers")).toBe(false);
   });
+
+  it("drops Validator funnel line (duplicates ✅ block)", () => {
+    expect(shouldForwardOrchestratorLine("Validator funnel: 5 → 3")).toBe(false);
+  });
+
+  it("drops markdown table rows (findings belong in findings.json)", () => {
+    expect(
+      shouldForwardOrchestratorLine("| Severity | File | Line | Issue |"),
+    ).toBe(false);
+    expect(shouldForwardOrchestratorLine("| minor | evals/lib/run-e2e.ts | 181 | leak |")).toBe(
+      false,
+    );
+    expect(shouldForwardOrchestratorLine("|----------|------|------|-------|")).toBe(false);
+  });
 });
 
 describe("stripOrchestratorMarkdown", () => {
