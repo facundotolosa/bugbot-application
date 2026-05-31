@@ -33,7 +33,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | [`specs/03-specialized-analyzers/`](specs/03-specialized-analyzers/) | Orchestrator + parallel security/performance subagents, invocation criteria, merge to findings v2 + enriched inline comments. [plan.md](specs/03-specialized-analyzers/plan.md) | Done |
 | [`specs/04-validator-subagent/`](specs/04-validator-subagent/) | Validator subagent: 5-phase funnel between analyzer merge and findings v2; runner PR-only post filter. [plan.md](specs/04-validator-subagent/plan.md) | Done |
 | [`specs/05-pipeline-observability/`](specs/05-pipeline-observability/) | Pipeline observability: wrapper logger, orchestrator progress blocks, SDK stream prefix, run artifacts for CI/local. [plan.md](specs/05-pipeline-observability/plan.md) | Implemented (pending `/validate`) |
-| [`specs/06-evals-harness/`](specs/06-evals-harness/) | `evals/` golden cases: E2E orchestrator, analyzer + validator component evals, invocation parity with production Task prompts. | Pending |
+| [`specs/06-evals-harness/`](specs/06-evals-harness/) | `evals/` golden cases: E2E orchestrator, analyzer + validator component evals, invocation parity with production Task prompts. [plan.md](specs/06-evals-harness/plan.md) | In progress |
 
 ## Spec workflow
 
