@@ -131,7 +131,7 @@ console.log(sessionDir);
 
 **During the run:** emit only **plain one-sentence** English lines (no emoji blocks) before each phase — see table below.
 
-**Once at the end:** emit the **consolidated final block** (all 📋 📊 🔬 📥 ⏭️/✅ + 🎯) in a **single** assistant message, immediately before `Report written to:`. Do **not** print 📋 📊 🔬 📥 ⏭️/✅ earlier in the run.
+**Once at the end:** emit the **consolidated final block** (all 📋 📊 🔬 📥 ⏭️/✅ + 🎯) in a **single** assistant message, then **exactly one** `Report written to:` line — **stop**. Do **not** print 📋 📊 🔬 📥 ⏭️/✅ earlier in the run. Do **not** add recap paragraphs, `---`, JSON snippets, or session path dumps after 🎯.
 
 | When | Line (exact wording) |
 |------|------------------------|
@@ -149,7 +149,9 @@ console.log(sessionDir);
 
 **Do not use Shell/Bash solely to emit progress lines** (`echo`, `node -e` with `console.log`, etc.) — operators and CI will not see them as orchestrator progress.
 
-**Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), findings tables/lists (severity/file/line/issue), `Validator funnel:` (already in the ✅ block), or extra content on the final path line.
+**Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), findings tables/lists (severity/file/line/issue), `Validator funnel:` (already in the ✅ block), horizontal rules (`---`), post-close recaps (“The incremental diff…”, “Both analyzers…”, “Final report: …”), or extra content on the final path line.
+
+**After `🎯 Review complete:`** — at most **one** more line (`Report written to: .ai-code-review/findings.json`). No other assistant text.
 
 ## Workflow checklist
 
@@ -191,8 +193,8 @@ console.log(sessionDir);
 17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
 18. **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
 19. **Todo:** `validate` completed; `report` in_progress.
-20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`).
-21. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json`
+20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator.
+21. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json` — then **end orchestrator narration** (no recap, `---`, or file dumps).
 22. **Todo:** `report` completed.
 23. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 

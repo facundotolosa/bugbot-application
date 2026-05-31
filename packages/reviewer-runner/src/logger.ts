@@ -201,8 +201,17 @@ export function orchestratorPrefix(): string {
   return fmt(c, BOLD + CYAN, "[orchestrator] ");
 }
 
-const ORCHESTRATOR_EMOJI_BLOCK =
-  /^([📋📊🔬📥⏭️⏩✅🎯])\s+([^:]+):\s*(.*)$/u;
+function parseEmojiOrchestratorBlock(
+  line: string,
+): { emoji: string; title: string; body: string } | null {
+  const match = /^((?:\p{Extended_Pictographic}\uFE0F?)+)\s+([^:]+):\s*(.*)$/u.exec(
+    line.trimStart(),
+  );
+  if (!match) {
+    return null;
+  }
+  return { emoji: match[1], title: match[2].trim(), body: match[3] };
+}
 
 /** Styled orchestrator stdout line — only `[orchestrator]` is colored; titles bold, body plain. */
 export function orchestratorLine(rawLine: string): void {
@@ -210,9 +219,9 @@ export function orchestratorLine(rawLine: string): void {
   const line = rawLine.trimEnd();
   const prefix = orchestratorPrefix();
 
-  const emojiBlock = ORCHESTRATOR_EMOJI_BLOCK.exec(line.trimStart());
+  const emojiBlock = parseEmojiOrchestratorBlock(line);
   if (emojiBlock) {
-    const [, emoji, title, body] = emojiBlock;
+    const { emoji, title, body } = emojiBlock;
     const titlePart = fmt(c, BOLD, `${title}:`);
     const suffix = body.length > 0 ? ` ${body}` : "";
     writeln(stdout, `${prefix}${emoji} ${titlePart}${suffix}`);
