@@ -1,0 +1,12 @@
+{
+  "analyzer": "security",
+  "findings": [
+    {
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 75,
+      "issue": "Hardcoded API key",
+      "suggestion": "Use env vars"
+    }
+  ]
+}

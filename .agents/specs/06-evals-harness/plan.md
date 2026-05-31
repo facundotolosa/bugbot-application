@@ -99,7 +99,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Deterministic case setup + structural validation + LLM-as-judge for every `must_find` / `must_not_find`. |
 
 #### Steps
@@ -120,9 +120,9 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `npm test -w evals` passes workspace + schema tests
-- [ ] With mocked judge (test double), `assertCase` returns pass/fail from rubric result shape
-- [ ] Structural gate rejects malformed JSON without invoking judge
+- [x] `npm test -w evals` passes workspace + schema tests
+- [x] With mocked judge (test double), `assertCase` returns pass/fail from rubric result shape
+- [x] Structural gate rejects malformed JSON without invoking judge
 
 #### Notes
 
@@ -302,3 +302,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Plan approved; status Done; prerequisite checked |
 | 2026-05-31 | Phase 1 done: evals workspace, CLI guard, stub runner, README, root `npm run eval` |
 | 2026-05-31 | Phase 2 done: `invocation.ts` + tests; README invocation parity section |
+| 2026-05-31 | Phase 3 done: expect schema, workspace seeding, structural gates, judge + assert-case |

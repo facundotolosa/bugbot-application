@@ -1,0 +1,13 @@
+{
+  "version": "2",
+  "findings": [
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 75,
+      "issue": "Hardcoded API key in source",
+      "suggestion": "Load from environment or secret manager"
+    }
+  ]
+}
