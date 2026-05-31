@@ -5,9 +5,17 @@ import { EVALS_ROOT } from "./config.js";
 import { parseCliArgs, requireCursorApiKey } from "./lib/cli.js";
 import { discoverCases } from "./lib/discover-cases.js";
 import { runGoldenCase } from "./lib/run-case.js";
+import { buildEvalRunSummary, formatEvalRunSummary } from "./lib/summary.js";
 
 function createRunId(): string {
   return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function formatSuiteFilter(options: ReturnType<typeof parseCliArgs>): string {
+  if (options.suites.length > 0) {
+    return options.suites.join(",");
+  }
+  return options.suite ?? "*";
 }
 
 async function main(): Promise<void> {
@@ -19,18 +27,22 @@ async function main(): Promise<void> {
   const cases = await discoverCases(options);
 
   if (cases.length === 0) {
-    const filter =
-      options.suite || options.caseId
-        ? ` (filters: suite=${options.suite ?? "*"}, case=${options.caseId ?? "*"})`
-        : "";
     console.log(
-      `No golden cases found${filter}. Add cases under evals/cases/<suite>/<case-id>/ with expect.json.`,
+      `No golden cases found (filters: suite=${formatSuiteFilter(options)}, case=${options.caseId ?? "*"}).`,
+    );
+    console.log(
+      "Add cases under evals/cases/<suite>/<case-id>/ with expect.json.",
     );
     process.exit(0);
   }
 
   const runId = createRunId();
-  console.log(`Eval run ${runId} — ${cases.length} case(s)\n`);
+  console.log(`Eval run ${runId}`);
+  console.log(`Cases: ${cases.length}`);
+  if (options.refreshInputs) {
+    console.log("Mode: --refresh-inputs enabled");
+  }
+  console.log();
 
   const results = [];
   for (const discovered of cases) {
@@ -62,11 +74,13 @@ async function main(): Promise<void> {
     console.log();
   }
 
-  const passed = results.filter((r) => r.pass).length;
-  console.log(`Summary: ${passed}/${results.length} passed`);
+  const summary = buildEvalRunSummary(results);
+  console.log("Summary");
+  console.log(formatEvalRunSummary(summary));
+  console.log();
   console.log(`Artifacts: evals/out/${runId}/`);
 
-  process.exit(passed === results.length ? 0 : 1);
+  process.exit(summary.failed === 0 ? 0 : 1);
 }
 
 main().catch((err: unknown) => {

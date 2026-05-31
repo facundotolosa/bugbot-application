@@ -2,6 +2,8 @@
 
 Regression harness for the AI code review pipeline. Evals invoke LLM-backed agents; deterministic pipeline code stays in Vitest (`npm test`).
 
+**v1 is local-only** — there is no GitHub Actions workflow for `npm run eval`. Use `CURSOR_API_KEY` on your machine.
+
 ## Tests vs evals
 
 | | **Vitest (`npm test`)** | **Evals (`npm run eval`)** |
@@ -11,110 +13,120 @@ Regression harness for the AI code review pipeline. Evals invoke LLM-backed agen
 | CI default | Every PR | Not in v1 (local only) |
 | Examples | `merge-findings.test.ts`, `agent-stream.test.ts` | Golden security leak in diff |
 
-## Running locally (v1)
-
-Evals are **local-only** in v1 — there is no GitHub Actions workflow for `npm run eval`.
+## Running locally
 
 ```bash
 export CURSOR_API_KEY=...   # required
-npm run eval                # all suites (when cases exist)
-npm run eval -- --suite analyzer-security --case leaked-key
+npm run eval                # all golden cases (6 in v1)
 npm test -w evals           # deterministic lib tests (no API key)
 ```
 
-Optional env:
+### npm scripts (repo root)
 
-- `EVAL_MODEL_ID` — reviewer model (default `composer-2.5`)
-- `EVAL_JUDGE_MODEL_ID` — LLM-as-judge model (defaults to reviewer model)
+| Script | Command |
+|--------|---------|
+| `npm run eval` | All suites |
+| `npm run eval:analyzers` | `analyzer-security` + `analyzer-performance` |
+| `npm run eval:validator` | `validator` suite |
+| `npm run eval:e2e` | `e2e` suite |
+
+### CLI flags
+
+| Flag | Effect |
+|------|--------|
+| `--suite <name>` | Filter suite (repeatable) |
+| `--case <id>` | Filter case id |
+| `--refresh-inputs` | Regenerate frozen inputs (diff or pr-files; see below) |
+
+### Environment
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CURSOR_API_KEY` | — | **Required** for `npm run eval` |
+| `EVAL_MODEL_ID` | `composer-2.5` | Reviewer / harness / E2E agent model |
+| `EVAL_JUDGE_MODEL_ID` | same as `EVAL_MODEL_ID` | LLM-as-judge for `must_find` / `must_not_find` |
+
+## Golden cases (v1)
+
+| Case | Suite | Type |
+|------|-------|------|
+| `leaked-key` | `analyzer-security` | Component harness → security analyzer |
+| `n-plus-one` | `analyzer-performance` | Component harness → performance analyzer |
+| `dedup-positive` | `validator` | Component harness → validator (no retry) |
+| `fp-filter-negative` | `validator` | Validator false-positive filters |
+| `ledger-security` | `e2e` | Full `runReviewAgent` (pinned SHA, ledger-lite scope) |
+| `ledger-pipeline` | `e2e` | Full orchestrator (performance + validator path) |
+
+**Total: 6 cases** (2 analyzer + 2 validator + 2 E2E).
 
 ## Layout
 
 ```
 evals/
-  cases/<suite>/<case-id>/   # expect.json + inputs/
-  fixtures/                  # minimal repos for component suites
-  lib/                       # runner, assertions, invocation parity
-  out/                       # run artifacts (gitignored)
+  cases/<suite>/<case-id>/   # expect.json, inputs/, optional pins.json (e2e)
+  fixtures/                  # minimal trees for component suites (+ git for refresh)
+  lib/                       # runner, invocation parity, judge, assertions
+  out/<run-id>/              # artifacts (gitignored)
   config.ts
   run.ts
 ```
 
-Suites: `e2e`, `analyzer-security`, `analyzer-performance`, `validator`.
+## Run artifacts
+
+Each run writes under `evals/out/<run-id>/`:
+
+| Path | Contents |
+|------|----------|
+| `<suite>-<case>/task-prompt.txt` | Exact Task lines sent to subagent (component suites) |
+| `<suite>-<case>/harness-prompt.txt` | Eval harness agent prompt (component) |
+| `<suite>-<case>/assert-result.json` | Structural + judge verdicts |
+| `<suite>-<case>/judge-*.json` | LLM judge transcripts |
+| `<suite>-<case>/review-prompt.txt` | E2E only — `buildReviewPrompt` output |
+| `worktrees/<case>/` | E2E only — detached worktree at `head_sha` (removed after case) |
+
+Console summary: `passed/total`, duration, retry count, judge count, per-suite breakdown.
 
 ## Adding a case
 
 1. Create `evals/cases/<suite>/<case-id>/`.
-2. Add `expect.json` with `suite`, `must_find` / `must_not_find`, and `judge.rubric` (see spec).
-3. Add frozen inputs under `inputs/` (e.g. `diff.json`, `raw-findings.json`).
-4. For component cases, add a matching tree under `evals/fixtures/<case-id>/`.
+2. Add `expect.json` with `suite`, `must_find` and/or `must_not_find`, and `judge.rubric`.
+3. Add frozen inputs under `inputs/`.
+4. Component cases: add `evals/fixtures/<case-id>/` (use git + `diff-refs.json` if using `--refresh-inputs`).
+5. E2E cases: add `pins.json` (full SHAs, never `main`) and factory branch commits under `packages/ledger-lite/`.
 
-Golden cases are discovered when `expect.json` exists.
+Cases are discovered when `expect.json` exists.
 
 ### `--refresh-inputs`
 
-When `inputs/diff-refs.json` is present (`source`, `target`, `pr_files`), re-runs `prepare-diff` against `evals/fixtures/<case-id>/` (git repo) and overwrites `inputs/diff.json`. Fixture repos ship with two commits (`HEAD` / `HEAD~1`).
-
-### Analyzer golden cases (v1)
-
-| Case | Suite | Fixture |
-|------|-------|---------|
-| `leaked-key` | `analyzer-security` | Hardcoded API key in `src/auth.ts` |
-| `n-plus-one` | `analyzer-performance` | Per-id `fetch` inside a loop |
-
-```bash
-npm run eval -- --suite analyzer-security --case leaked-key
-npm run eval:analyzers   # both analyzer suites
-```
-
-### Validator golden cases (v1)
-
-| Case | Intent |
-|------|--------|
-| `dedup-positive` | Near-duplicate security findings on `src/auth.ts` collapse to one root-cause finding |
-| `fp-filter-negative` | Placeholder credential + test-file nit filtered; real `src/auth.ts` token kept |
-
-Inputs: frozen `raw-findings.json` + `known-issues.json`. Validator harness uses the **three-line** Task prompt only; **no retry** on missing/invalid `validator-output.json`.
-
-```bash
-npm run eval:validator
-npm run eval -- --suite validator --case dedup-positive
-```
-
-### E2E golden cases (v1)
-
-Full orchestrator via `buildReviewPrompt` + `runReviewAgent` (same as CI). Each case uses a **detached git worktree** at pinned `head_sha` (see `pins.json` — never floating `main`).
-
-| Case | Factory branch | Intent |
-|------|----------------|--------|
-| `ledger-security` | `eval/e2e-security-head` | Hardcoded Plaid secret in `client.ts` |
-| `ledger-pipeline` | `eval/e2e-pipeline-head` | N+1-style loop in `transactions-export.ts` |
-
-Factory branches: `eval/e2e-base`, `eval/e2e-security-head`, `eval/e2e-pipeline-head`. SHAs are recorded in `evals/cases/e2e/_pins.json` and per-case `pins.json`.
-
-```bash
-npm run eval:e2e
-npm run eval -- --suite e2e --case ledger-security --refresh-inputs  # rewrite pr-files.txt from git diff
-```
+| Suite | Regenerates |
+|-------|-------------|
+| `analyzer-*` | `inputs/diff.json` via `prepare-diff` + `inputs/diff-refs.json` + fixture git |
+| `e2e` | `inputs/pr-files.txt` via `listPrFiles` between pinned SHAs (ledger-lite only) |
+| `validator` | Not supported |
 
 ## Invocation parity
 
 Production subagents receive minimal Task prompts from the orchestrator skill; rules live in `.cursor/agents/*.md`.
 
-Evals import **`evals/lib/invocation.ts`** as the single source of truth for:
+**`evals/lib/invocation.ts`** is the single source of truth for:
 
-- `SUBAGENT_TYPES` and `PATHS` under `.ai-code-review/`
-- `securityTaskPrompt()`, `performanceTaskPrompt()`, `validatorTaskPrompt()` — byte-identical to [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md) Task blocks
-- `buildComponentHarnessPrompt()` for component evals (one Task, no duplicated agent rules)
+- `SUBAGENT_TYPES` and `.ai-code-review/work/` paths
+- `securityTaskPrompt()`, `performanceTaskPrompt()`, `validatorTaskPrompt()` — byte-identical to [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md)
+- `buildComponentHarnessPrompt()` — one Task only; **no** duplicated agent rules in the harness prompt
 - `MODEL_ID` and `SETTING_SOURCES` (`["project"]`) matching `reviewer-runner` `agent.ts`
 
-If `SKILL.md` prompt lines change, update `invocation.ts` and fix `invocation.test.ts` — drift fails CI-style locally via `npm test -w evals`.
+E2E uses `buildReviewPrompt` + `runReviewAgent` from `packages/reviewer-runner` (same as CI).
 
-## Case assertions (deterministic lib)
+Drift is caught by `npm test -w evals` (`invocation.test.ts`).
+
+## Deterministic lib (`npm test -w evals`)
 
 | Module | Role |
 |--------|------|
 | `lib/expect.ts` | Parse and validate `expect.json` |
-| `lib/workspace.ts` | Copy `evals/fixtures/<id>` + case `inputs/` into a temp workspace |
-| `lib/structural.ts` | JSON + schema gates via `parseFindingsJson` / analyzer merge / `parseValidatorOutput` |
-| `lib/judge.ts` | LLM-as-judge prompt builder + `runJudgeWithAgent` (transcripts under `evals/out/<run-id>/`) |
-| `lib/assert-case.ts` | Structural gates → judge per expectation → optional `validator_funnel` checks |
+| `lib/workspace.ts` | Copy fixture + frozen inputs into temp workspace |
+| `lib/structural.ts` | JSON + schema gates |
+| `lib/judge.ts` | LLM-as-judge (live evals only) |
+| `lib/assert-case.ts` | Structural → judge → optional `validator_funnel` |
+| `lib/run-component.ts` | Analyzer (1 retry) and validator (no retry) harness |
+| `lib/run-e2e.ts` | Worktree + full orchestrator |
