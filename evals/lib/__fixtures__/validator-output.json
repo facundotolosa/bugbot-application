@@ -1,0 +1,22 @@
+{
+  "findings": [
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 75,
+      "issue": "Hardcoded API key",
+      "suggestion": "Use env vars"
+    }
+  ],
+  "filter_summary": {
+    "raw_input": 2,
+    "after_exact_dedup": 2,
+    "after_root_cause_dedup": 2,
+    "after_dedup": 2,
+    "after_fp_filters": 1,
+    "after_known_issues": 1,
+    "after_verification": 1,
+    "final_output": 1
+  }
+}

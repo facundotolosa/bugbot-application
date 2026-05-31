@@ -62,3 +62,13 @@ Evals import **`evals/lib/invocation.ts`** as the single source of truth for:
 - `MODEL_ID` and `SETTING_SOURCES` (`["project"]`) matching `reviewer-runner` `agent.ts`
 
 If `SKILL.md` prompt lines change, update `invocation.ts` and fix `invocation.test.ts` — drift fails CI-style locally via `npm test -w evals`.
+
+## Case assertions (deterministic lib)
+
+| Module | Role |
+|--------|------|
+| `lib/expect.ts` | Parse and validate `expect.json` |
+| `lib/workspace.ts` | Copy `evals/fixtures/<id>` + case `inputs/` into a temp workspace |
+| `lib/structural.ts` | JSON + schema gates via `parseFindingsJson` / analyzer merge / `parseValidatorOutput` |
+| `lib/judge.ts` | LLM-as-judge prompt builder + `runJudgeWithAgent` (transcripts under `evals/out/<run-id>/`) |
+| `lib/assert-case.ts` | Structural gates → judge per expectation → optional `validator_funnel` checks |
