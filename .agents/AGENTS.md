@@ -35,6 +35,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | [`specs/05-pipeline-observability/`](specs/05-pipeline-observability/) | Pipeline observability: wrapper logger, orchestrator progress blocks, SDK stream prefix, run artifacts for CI/local. [plan.md](specs/05-pipeline-observability/plan.md) | Implemented (pending `/validate`) |
 | [`specs/06-evals-harness/`](specs/06-evals-harness/) | `evals/` golden cases: E2E orchestrator, analyzer + validator component evals, invocation parity with production Task prompts. [plan.md](specs/06-evals-harness/plan.md) | In progress |
 | [`specs/07-review-progress-ux/`](specs/07-review-progress-ux/) | Mandatory TodoWrite (local), English-only concise narration, ephemeral temp IPC files (no `work/` clutter). [spec.md](specs/07-review-progress-ux/spec.md) · [plan.md](specs/07-review-progress-ux/plan.md) | Done |
+| [`specs/08-reviewer-runner-src-layout/`](specs/08-reviewer-runner-src-layout/) | Modular `packages/reviewer-runner/src/` folders by domain; stable public API; update evals/skill deep imports. [spec.md](specs/08-reviewer-runner-src-layout/spec.md) · [plan.md](specs/08-reviewer-runner-src-layout/plan.md) | In progress |
 
 ## Spec workflow
 
