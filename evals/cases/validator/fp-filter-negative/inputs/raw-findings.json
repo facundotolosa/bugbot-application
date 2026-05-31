@@ -1,0 +1,29 @@
+{
+  "version": "2",
+  "findings": [
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/config.ts",
+      "line": 1,
+      "issue": "Placeholder credential YOUR_API_KEY must not ship to production",
+      "suggestion": "Replace the placeholder before deploy"
+    },
+    {
+      "analyzer": "performance",
+      "severity": "major",
+      "file": "src/utils.test.ts",
+      "line": 9,
+      "issue": "Missing null check on function parameter",
+      "suggestion": "Add an explicit null guard"
+    },
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 2,
+      "issue": "Hardcoded production API token in source",
+      "suggestion": "Move token to a secret store"
+    }
+  ]
+}

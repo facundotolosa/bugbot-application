@@ -2,11 +2,16 @@
   "name": "bugbot-application",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "evals"
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "eval": "npm run eval -w evals",
+    "eval:e2e": "npm run eval -w evals -- --suite e2e",
+    "eval:analyzers": "npm run eval -w evals -- --suite analyzer-security --suite analyzer-performance",
+    "eval:validator": "npm run eval -w evals -- --suite validator"
   },
   "engines": {
     "node": ">=20"

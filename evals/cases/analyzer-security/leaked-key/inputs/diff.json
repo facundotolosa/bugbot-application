@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "is_incremental": false,
+    "diff_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
+    "merge_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
+    "pr_size": "small",
+    "total_files": 1,
+    "total_lines_added": 4,
+    "total_lines_removed": 0,
+    "files_excluded": 114,
+    "excluded_patterns_matched": {
+      "out-of-pr": 114
+    },
+    "warnings": []
+  },
+  "files": [
+    {
+      "path": "evals/fixtures/leaked-key/src/auth.ts",
+      "diff": "diff --git a/evals/fixtures/leaked-key/src/auth.ts b/evals/fixtures/leaked-key/src/auth.ts\nnew file mode 100644\nindex 0000000..62eccb7\n--- /dev/null\n+++ b/evals/fixtures/leaked-key/src/auth.ts\n@@ -0,0 +1,4 @@\n+export function getApiKey(): string {\n+  const API_KEY = \"sk-live-hardcoded-secret-abc123\";\n+  return API_KEY;\n+}\n",
+      "lines_added": 4,
+      "lines_removed": 0
+    }
+  ]
+}

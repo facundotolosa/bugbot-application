@@ -1,0 +1,5 @@
+{
+  "suite": "analyzer-security",
+  "must_find": [{ "file": "src/app.ts", "match": "value" }],
+  "judge": { "rubric": "Fixture smoke test." }
+}
