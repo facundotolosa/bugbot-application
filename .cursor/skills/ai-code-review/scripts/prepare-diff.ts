@@ -1,6 +1,11 @@
 import { execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
+import {
+  pathMatchesReviewPackages,
+  REVIEW_PACKAGE_EXCLUSION_ID,
+  resolveReviewPackages,
+} from "./review-scope.js";
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 10 * 1024 * 1024;
@@ -74,6 +79,8 @@ export interface PrepareDiffOptions {
   prFiles: Set<string>;
   cwd: string;
   git?: PrepareDiffGit;
+  /** When set (including `[]`), overrides `.ai-code-review/review.config.json`. */
+  reviewPackages?: string[];
 }
 
 export function getIgnorePatternId(path: string): string | null {
@@ -88,6 +95,7 @@ export function getIgnorePatternId(path: string): string | null {
 export function filterReviewableFiles(
   paths: string[],
   prFiles: Set<string>,
+  reviewPackages?: string[],
 ): {
   reviewable: string[];
   excludedCount: number;
@@ -96,11 +104,18 @@ export function filterReviewableFiles(
   const reviewable: string[] = [];
   const excludedPatterns: Record<string, number> = {};
   let excludedCount = 0;
+  const packageFilterActive = Boolean(reviewPackages?.length);
 
   for (const path of paths) {
     if (!prFiles.has(path)) {
       excludedCount++;
       excludedPatterns["out-of-pr"] = (excludedPatterns["out-of-pr"] ?? 0) + 1;
+      continue;
+    }
+    if (packageFilterActive && !pathMatchesReviewPackages(path, reviewPackages!)) {
+      excludedCount++;
+      excludedPatterns[REVIEW_PACKAGE_EXCLUSION_ID] =
+        (excludedPatterns[REVIEW_PACKAGE_EXCLUSION_ID] ?? 0) + 1;
       continue;
     }
     const ignoreId = getIgnorePatternId(path);
@@ -260,7 +275,11 @@ export async function prepareDiff(options: PrepareDiffOptions): Promise<PrepareD
   });
 
   const changedPaths = await git.listChangedFiles(base.diffBase, options.source);
-  const filtered = filterReviewableFiles(changedPaths, options.prFiles);
+  const reviewPackages = await resolveReviewPackages(
+    options.cwd,
+    "reviewPackages" in options ? { packages: options.reviewPackages } : undefined,
+  );
+  const filtered = filterReviewableFiles(changedPaths, options.prFiles, reviewPackages);
   const warnings = [...base.warnings];
 
   const fileResults = await mapConcurrent(filtered.reviewable, DIFF_CONCURRENCY, async (path) => {
