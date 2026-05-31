@@ -6,7 +6,7 @@
 ## Prerequisites
 
 - [x] Spec reviewed; blocking open questions resolved or deferred in spec
-- [ ] Human approves plan before `/implement`
+- [x] Human approves plan before `/implement`
 
 ## Phases
 
@@ -18,7 +18,7 @@ _Each phase must be independently testable/verifiable before moving on._
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Every inline comment body ends with the spec footer (`<sub>`, italic prompt, `[👍](#)` / `[👎](#)` links). |
 
 #### Steps
@@ -34,9 +34,9 @@ _Each phase must be independently testable/verifiable before moving on._
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (`comments.test.ts` and full workspace suite)
-- [ ] `formatCommentBody` output matches spec full example structure (header + issue + suggestion + footer)
-- [ ] `toInlineReviewComments` still skips findings without `line` (unchanged behavior)
+- [x] `npm test -w reviewer-runner` passes (`comments.test.ts` and full workspace suite)
+- [x] `formatCommentBody` output matches spec full example structure (header + issue + suggestion + footer)
+- [x] `toInlineReviewComments` still skips findings without `line` (unchanged behavior)
 
 #### Notes
 
@@ -93,3 +93,4 @@ _Each phase must be independently testable/verifiable before moving on._
 | Date | Change |
 |------|--------|
 | 2026-05-31 | Initial plan from spec |
+| 2026-05-31 | Phase 1 done: footer in `formatCommentBody`, tests, README |
