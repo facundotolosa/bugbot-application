@@ -165,7 +165,7 @@ describe("EvalReporter", () => {
     expect(out).toMatch(/⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/);
   });
 
-  it("transitions pending to running to pass on same logical row", () => {
+  it("transitions pending to running to pass on same logical row on TTY", () => {
     vi.stubEnv("NO_COLOR", "1");
     const { stream, text } = createCaptureStream(true);
     const reporter = new EvalReporter({
@@ -190,5 +190,27 @@ describe("EvalReporter", () => {
     expect(out).toContain("○ leaked-key");
     expect(out).toContain("✓ leaked-key (0.5s)");
     expect(out).not.toContain("✗ leaked-key");
+  });
+
+  it("does not duplicate the pending tree on non-TTY updates", () => {
+    vi.stubEnv("NO_COLOR", "1");
+    const { stream, text } = createCaptureStream();
+    const reporter = new EvalReporter({ output: stream, isTTY: false, useColor: false });
+
+    reporter.startRun("run-1", CASES);
+    reporter.startCase("analyzer-security", "leaked-key");
+    reporter.endCase({
+      suite: "analyzer-security",
+      caseId: "leaked-key",
+      pass: true,
+      durationMs: 1000,
+      retry: false,
+      judgeUsed: true,
+    });
+
+    const out = text();
+    expect(out.match(/analyzer-security/g)?.length).toBe(1);
+    expect(out).toContain("○ leaked-key");
+    expect(out).toContain("✓ leaked-key (1.0s) judge=yes");
   });
 });
