@@ -5,13 +5,13 @@ export {
   type Finding,
   type FindingsReport,
   type Severity,
-} from "./findings.js";
+} from "./findings/findings.js";
 export {
   formatCommentBody,
   toInlineReviewComments,
   type InlineReviewComment,
-} from "./comments.js";
-export { getUnifiedDiff } from "./diff.js";
+} from "./findings/comments.js";
+export { getUnifiedDiff } from "./git/diff.js";
 export {
   createReviewRunDir,
   findingsPathInRun,
@@ -29,17 +29,17 @@ export {
   FINDINGS_PATH,
   SKILL_PATH,
   type ReviewPromptInput,
-} from "./agent.js";
+} from "./agent/agent.js";
 export {
   buildKnownIssuesJson,
   filterFindingsForPost,
   type KnownIssuesJson,
-} from "./post-review.js";
+} from "./findings/post-review.js";
 export {
   executeReviewOrchestration,
   type ReviewOrchestrationConfig,
   type ReviewOutcome,
-} from "./orchestrate-review.js";
+} from "./orchestration/orchestrate-review.js";
 export {
   TRACKING_MARKER,
   formatTrackingBody,
@@ -47,7 +47,7 @@ export {
   selectTrackingComment,
   type ParsedTracking,
   type TrackingCommentLike,
-} from "./tracking.js";
+} from "./github/tracking.js";
 export {
   createGitHubClient,
   findTrackingComment,
@@ -64,7 +64,7 @@ export {
   type KnownIssue,
   type PrContext,
   type PullReviewCommentLike,
-} from "./github.js";
+} from "./github/github.js";
 export {
   computeEffectiveScope,
   createExecGitRunner,
@@ -86,4 +86,4 @@ export {
   type ShouldSkipAgentResult,
   type SkipReason,
   type ValidateSinceShaResult,
-} from "./git-scope.js";
+} from "./git/git-scope.js";

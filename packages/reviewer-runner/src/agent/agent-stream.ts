@@ -1,5 +1,5 @@
 import type { SDKMessage } from "@cursor/sdk";
-import * as log from "./support/logger.js";
+import * as log from "../support/logger.js";
 
 /** Canonical skill start line — drop paraphrased duplicates from agent narration. */
 export const ORCHESTRATOR_START_LINE =

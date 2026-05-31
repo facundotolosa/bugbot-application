@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FoundTrackingComment } from "./github.js";
+import type { FoundTrackingComment } from "../github/github.js";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

@@ -9,12 +9,12 @@ installProcessGuards();
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { runReviewAgent } from "./agent.js";
-import { resolveShasFromEnv } from "./diff.js";
-import { parseFindingsJson } from "./findings.js";
-import { createGitHubClient, loadPrContextFromEvent, postInlineReview } from "./github.js";
+import { runReviewAgent } from "./agent/agent.js";
+import { resolveShasFromEnv } from "./git/diff.js";
+import { parseFindingsJson } from "./findings/findings.js";
+import { createGitHubClient, loadPrContextFromEvent, postInlineReview } from "./github/github.js";
 import * as log from "./support/logger.js";
-import { executeReviewOrchestration } from "./orchestrate-review.js";
+import { executeReviewOrchestration } from "./orchestration/orchestrate-review.js";
 import { resolveRepoRoot } from "./paths/repo-root.js";
 
 function parseArgs(argv: string[]) {

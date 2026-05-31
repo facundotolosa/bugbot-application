@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
-import type { FindingsReport } from "./findings.js";
+import type { FindingsReport } from "./findings/findings.js";
 
 const report: FindingsReport = {
   version: "2",

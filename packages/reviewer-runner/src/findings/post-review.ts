@@ -1,5 +1,5 @@
 import type { FindingsReport, Finding } from "./findings.js";
-import type { KnownIssue } from "./github.js";
+import type { KnownIssue } from "../github/github.js";
 
 export interface KnownIssuesJson {
   issues: KnownIssue[];
