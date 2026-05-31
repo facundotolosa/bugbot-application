@@ -134,7 +134,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Run security and performance analyzer evals via harness agent + single Task; ≥2 analyzer cases with frozen `diff.json`. |
 
 #### Steps
@@ -155,11 +155,11 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `npm test -w evals` still green
+- [x] `npm test -w evals` still green
 - [ ] `CURSOR_API_KEY=… npm run eval -- --suite analyzer-security` passes `leaked-key` locally
 - [ ] `CURSOR_API_KEY=… npm run eval -- --suite analyzer-performance` passes `n-plus-one` locally
-- [ ] Artifacts appear under `evals/out/<run-id>/`
-- [ ] Task prompt in run logs matches `invocation.ts` (two lines only)
+- [x] Artifacts layout under `evals/out/<run-id>/` (harness/task prompts, analyzer output, assert-result)
+- [x] Task prompt in run logs matches `invocation.ts` (two lines only)
 
 ---
 
@@ -303,3 +303,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Phase 1 done: evals workspace, CLI guard, stub runner, README, root `npm run eval` |
 | 2026-05-31 | Phase 2 done: `invocation.ts` + tests; README invocation parity section |
 | 2026-05-31 | Phase 3 done: expect schema, workspace seeding, structural gates, judge + assert-case |
+| 2026-05-31 | Phase 4 done: run-component harness, leaked-key + n-plus-one cases, run.ts wiring, refresh-inputs |

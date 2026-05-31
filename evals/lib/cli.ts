@@ -1,13 +1,15 @@
 const API_KEY_ENV = "CURSOR_API_KEY";
 
 export type CliOptions = {
+  /** Single suite filter (legacy). Prefer `suites`. */
   suite?: string;
+  suites: string[];
   caseId?: string;
   refreshInputs: boolean;
 };
 
 export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliOptions {
-  const options: CliOptions = { refreshInputs: false };
+  const options: CliOptions = { refreshInputs: false, suites: [] };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -16,7 +18,9 @@ export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliOptions
       continue;
     }
     if (arg === "--suite" && argv[i + 1]) {
-      options.suite = argv[++i];
+      const name = argv[++i]!;
+      options.suites.push(name);
+      options.suite = options.suite ?? name;
       continue;
     }
     if (arg === "--case" && argv[i + 1]) {
