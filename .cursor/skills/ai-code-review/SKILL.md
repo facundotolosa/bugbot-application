@@ -7,7 +7,7 @@ description: Orchestrate PR-scoped diff review via security/performance subagent
 
 You are the **orchestrator**. You do **not** perform heuristic analysis yourself. You coordinate:
 
-**`prepare-diff` → work artifacts → invocation criteria → parallel analyzer Tasks → merge raw → validator Task → `.ai-code-review/findings.json` (v2)**
+**`prepare-diff` → ephemeral session IPC → invocation criteria → parallel analyzer Tasks → merge raw → validator Task → `.ai-code-review/findings.json` (v2)**
 
 Subagent intelligence lives in `.cursor/agents/ai-code-review-{security,performance,validator}.md`. Analyzer Task prompts are **two lines only** (read path + write path). The validator Task prompt is **three lines only** (raw findings, known issues, output path).
 
@@ -24,8 +24,8 @@ flowchart TB
   OUT[findings.json v2]
 
   PD --> IC
-  PD -->|work/diff.json| SEC
-  PD -->|work/diff.json| PERF
+  PD -->|session/diff.json| SEC
+  PD -->|session/diff.json| PERF
   IC --> SEC
   IC --> PERF
   SEC --> RAW
@@ -37,12 +37,64 @@ flowchart TB
 
 | Layer | Responsibility |
 |-------|----------------|
-| **You (orchestrator)** | `prepare-diff`, prescribed stdout blocks (see Progress visibility), write `work/diff.json`, select analyzers, launch analyzer Tasks, merge **raw**, launch validator when non-empty, map validated output → v2, fail closed on validator errors, log funnel summary |
+| **You (orchestrator)** | Step 0 TodoWrite; session dir + manifest; `prepare-diff`; English stdout blocks; select analyzers; launch analyzer Tasks; merge **raw**; launch validator when non-empty; map validated output → v2; fail closed on validator errors; snapshot session → `run-artifacts/session/` |
 | **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
 | **Validator subagent** | Five-phase funnel on raw findings; read reference docs; write `validator-output.json`; reply `Done` |
 | **reviewer-runner** | Incremental scope, tracking, build `known-issues.json`, invoke agent, validate v2, **`filterFindingsForPost` = PR file scope only**, post inline comments |
 
 You do **not** filter severity, dedupe findings, or run verification yourself — the validator owns the funnel after merge.
+
+## Step 0 — TodoWrite (mandatory, IDE only)
+
+**First tool call** of the orchestration turn — before **any** other tool (including `prepare-diff`, Bash, Read, or Task).
+
+Full checklist and state machine: [references/progress-todos.md](references/progress-todos.md)
+
+1. `TodoWrite` with `merge: false`, exactly **7** items (`prereq` … `report`) with fixed `content` strings from the reference table; `prereq` starts `in_progress`, others `pending`.
+2. At the **start** of each workflow step below, `TodoWrite` with `merge: true` — update **only** `status` per the state machine (never change `content`).
+3. Mark `report` → `completed` only after `.ai-code-review/findings.json` exists **and** the final stdout line is printed.
+4. **Never** print TodoWrite lines to stdout.
+
+## Session directory
+
+Create immediately after Step 0 (before `prepare-diff`):
+
+```bash
+npx tsx -e "
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const sessionDir = process.env.AI_CODE_REVIEW_SESSION_DIR
+  ? process.env.AI_CODE_REVIEW_SESSION_DIR
+  : mkdtempSync(join(tmpdir(), 'ai-code-review-'));
+const manifest = {
+  version: '1',
+  sessionDir,
+  diff: join(sessionDir, 'diff.json'),
+  security: join(sessionDir, 'security-findings.json'),
+  performance: join(sessionDir, 'performance-findings.json'),
+  raw: join(sessionDir, 'raw-findings.json'),
+  validatorOut: join(sessionDir, 'validator-output.json'),
+  validatorSummary: join(sessionDir, 'validator-summary.json'),
+};
+writeFileSync(join(sessionDir, 'session-manifest.json'), JSON.stringify(manifest, null, 2));
+console.log(sessionDir);
+"
+```
+
+- If `AI_CODE_REVIEW_SESSION_DIR` is set (absolute path), **reuse** it; do not create a new temp dir.
+- All analyzer/validator IPC files live under `sessionDir` only — **not** under `.ai-code-review/work/`.
+- Read paths from `session-manifest.json` for Task prompts and inline scripts.
+
+## Language rules
+
+| Surface | Language |
+|---------|----------|
+| **Stdout** (status lines, emoji labels, `Warning:`, `Analyzers:`, `Validator funnel:`, `Report written to:`) | **English only** — short, one sentence per step |
+| **IDE chat with human** | May be Spanish per project conventions; **do not** mix Spanish into stdout |
+| **Finding bodies** (`issue`, `suggestion`) | English |
+
+**Anti-patterns on stdout:** Spanish status text; narrating tool calls (“Running npx tsx prepare-diff”); dumping session temp paths (except `Warning:` lines).
 
 ## Inputs
 
@@ -64,54 +116,68 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 
 The runner forwards **every line you print to stdout** with an `[orchestrator]` prefix as it streams. Operators must see **what you are doing in order**, not only a dump at the end.
 
-**Print short status lines (one sentence each) at these moments — before moving on:**
+**IDE progress:** see Step 0 — mandatory TodoWrite; never print todo text to stdout.
 
-1. After reading the skill / at start: e.g. `I'll run the ai-code-review skill with the PR parameters from the prompt.`
-2. Right after `prepare-diff` succeeds: print **📋** and **📊** blocks immediately, then e.g. `Preparing diff complete; selecting analyzers.`
-3. After `Analyzers:` line, **before** launching Tasks: e.g. `Launching security and performance analyzer subagents in parallel.`
-4. After collecting analyzer files, **before** validator: e.g. `Collected analyzer output; running validator.` or `All analyzers returned no findings; skipping validator.`
-5. After validator (or skip): print collect/validator emoji lines, then the **consolidated close** (repeat 📋→📥 + 🎯).
-6. Final line only: `Report written to: .ai-code-review/findings.json`
+**Print short English status lines (one sentence each) immediately before the action:**
+
+| When | Line (exact wording) |
+|------|------------------------|
+| Start | `I'll run the ai-code-review skill with the PR parameters from the prompt.` |
+| After `prepare-diff` | Print **📋** and **📊** blocks, then `Diff ready; selecting analyzers.` |
+| After `Analyzers:` line, before Tasks | `Launching selected analyzer sub-agents in parallel.` (or name the selected set if only one) |
+| After analyzer files read | `Collected analyzer output; merging raw findings.` |
+| Before validator Task | `Running validator on raw findings.` |
+| Raw empty, skip validator | `All analyzers returned no findings; skipping validator.` |
+| After validator or skip | Collect/validator emoji lines + consolidated close (spec 05) |
+| Final | `Report written to: .ai-code-review/findings.json` |
 
 - Tool work stays silent (no tool names, Task prompts, or bash in stdout).
-- Optional **TodoWrite** keys: `prereq`, `metadata`, `diff`, `analyzers`, `collect`, `validate`, `report` — **IDE only**; never print TodoWrite lines to stdout.
 - `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply.
 
-**Do not print to stdout:** Task prompts, `tool_use` narration, shell one-liners, env dumps, or extra content on the final path line.
+**Do not print to stdout:** Task prompts, `tool_use` narration, shell one-liners, env dumps, session paths (except `Warning:`), or extra content on the final path line.
 
 ## Workflow checklist
 
-1. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
-2. **Immediately** print the **📋 PR Metadata** and **📊 Diff stats** blocks (templates below) — not only in the final consolidated close.
-3. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
-4. Ensure `.ai-code-review/work/` exists. **Write** `.ai-code-review/work/diff.json` with the same shape as the `prepare-diff` output (`metadata` + `files[]`).
-5. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
+1. **Step 0:** TodoWrite init (see above).
+2. **Session:** Create or reuse session dir; write `session-manifest.json`.
+3. **Todo:** `prereq` in_progress (from step 0).
+4. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
+5. **Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
+6. **Immediately** print **📋 PR Metadata** and **📊 Diff stats** blocks — then `Diff ready; selecting analyzers.`
+7. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
+8. **Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
+9. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
 
    ```bash
+   SESSION=$(node -p "JSON.parse(require('fs').readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8')).sessionDir")
    npx tsx -e "
-   import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+   import { readFileSync } from 'node:fs';
    import { selectAnalyzers } from './.cursor/skills/ai-code-review/scripts/select-analyzers.ts';
-   const diff = JSON.parse(readFileSync('.ai-code-review/work/diff.json','utf8'));
-   const selected = selectAnalyzers(diff.files ?? []);
-   console.log(selected.join(', '));
+   const manifest = JSON.parse(readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8'));
+   const diff = JSON.parse(readFileSync(manifest.diff,'utf8'));
+   console.log(selectAnalyzers(diff.files ?? []));
    "
    ```
 
-6. **Log analyzers** to stdout (exactly one line):
-   - Both: `Analyzers: security, performance`
-   - Performance skipped: `Analyzers: security (skipped: performance)`
-7. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers.
-8. **Collect** each analyzer output file (see file contract). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
-9. **Merge raw** — concatenate analyzer outputs (no cross-analyzer dedup) and write `.ai-code-review/work/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
-10. **Validator path:**
-    - If `raw_findings.length === 0`: write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `work/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
-    - Else: ensure `known-issues.json` exists (runner supplies path in prompt). Launch **one** validator Task (**no retry**).
-11. **Collect validator output** — read `work/validator-output.json` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`).
-12. **Map** validated output → `.ai-code-review/findings.json` (v2 via `mapValidatorToFindingsReport`); copy `filter_summary` → `work/validator-summary.json`.
-13. Print **one stdout line**: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
-14. Print the **consolidated final block** (repeat 📋 📊 🔬 📥 ⏭️/✅ in order, then 🎯 severity counts from **final** `.ai-code-review/findings.json`).
-15. Print **exactly one** closing line: `Report written to: .ai-code-review/findings.json` (no extra tables or timestamps on that line). If file write is impossible locally, embed JSON report block only as documented edge case.
-16. Confirm `.ai-code-review/findings.json` exists before finishing.
+10. **Log analyzers** to stdout (exactly one line):
+    - Both: `Analyzers: security, performance`
+    - Performance skipped: `Analyzers: security (skipped: performance)`
+11. Print `Launching selected analyzer sub-agents in parallel.` (or name subset) — then **Todo:** `diff` completed; `analyzers` in_progress.
+12. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Keep `analyzers` in_progress until step 13 starts.
+13. **Todo:** `analyzers` completed; `collect` in_progress. Print `Collected analyzer output; merging raw findings.`
+14. **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
+15. **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
+16. **Validator path:**
+    - If `raw_findings.length === 0`: print `All analyzers returned no findings; skipping validator.`; write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `.ai-code-review/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
+    - Else: print `Running validator on raw findings.`; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
+17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Print `Warning: session files kept at <sessionDir>`; snapshot session if possible; **do not** delete temp.
+18. **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
+19. **Todo:** `validate` completed; `report` in_progress.
+20. Print **one stdout line**: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
+21. Print the **consolidated final block** (repeat 📋 📊 🔬 📥 ⏭️/✅ in order, then 🎯 severity counts from **final** `findings.json`).
+22. Print **exactly one** closing line: `Report written to: .ai-code-review/findings.json`
+23. **Todo:** `report` completed.
+24. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 
 ## `prepare-diff`
 
@@ -128,7 +194,7 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
 
 ## Stdout emoji blocks (fixed templates)
 
-Print values from `prepare-diff` `metadata` / work files. Machine lines `Analyzers:` and `Validator funnel:` stay **plain** (no emoji).
+Print values from `prepare-diff` `metadata` / session files. Machine lines `Analyzers:` and `Validator funnel:` stay **plain** (no emoji).
 
 | Step | Block |
 |------|--------|
@@ -140,22 +206,6 @@ Print values from `prepare-diff` `metadata` / work files. Machine lines `Analyze
 | Validator done | `✅ Validator complete: {raw} raw → {final} validated` |
 | Close | Repeat 📋 📊 🔬 📥 ✅ in order, then `🎯 Review complete:` severity breakdown from **final** `findings.json` |
 
-**📊 Diff stats example (incremental):**
-
-```text
-📊 Diff stats:
-  files: <n>  +<added>/-<removed>  excluded: <files_excluded>
-  mode: incremental (since <full-sha>)
-```
-
-**📊 Diff stats example (full):**
-
-```text
-📊 Diff stats:
-  files: <n>  +<added>/-<removed>  excluded: <files_excluded>
-  mode: full (base <full-sha>)
-```
-
 ## Invocation criteria
 
 Full rules: [references/invocation-criteria.md](references/invocation-criteria.md)
@@ -165,67 +215,79 @@ Full rules: [references/invocation-criteria.md](references/invocation-criteria.m
 | **security** | **Always** |
 | **performance** | Any path/diff heuristic matches (see reference) |
 
-## File contract (`.ai-code-review/`)
+## File contract
+
+### Durable (`.ai-code-review/` at repo root)
 
 | Path | Role |
 |------|------|
+| `findings.json` | Final v2 report (runner input) |
+| `validator-summary.json` | Copy of `filter_summary` (or zeroed on skip) |
+| `known-issues.json` | Runner-built; validator input only |
+| `pr-files.txt` | Runner-built PR file list |
 | `prepare-diff.json` | Optional; `--output` from `prepare-diff` |
-| `work/diff.json` | Orchestrator → analyzers (copy of prepare-diff payload) |
-| `work/security-findings.json` | Security subagent output |
-| `work/performance-findings.json` | Performance subagent output |
-| `work/raw-findings.json` | Merged analyzer findings pre-validation |
-| `known-issues.json` | Runner-built; input to validator only |
-| `work/validator-output.json` | Validator subagent output |
-| `work/validator-summary.json` | Copy of `filter_summary` for logs/CI |
-| `findings.json` | Final v2 report post-validator |
+| `run-artifacts/**` | SDK trace + `session/` IPC snapshot (spec 05) |
+
+### Ephemeral (session dir under `$TMPDIR` or `AI_CODE_REVIEW_SESSION_DIR`)
+
+| File | Role |
+|------|------|
+| `session-manifest.json` | Path map (schema version `"1"`) |
+| `diff.json` | Orchestrator → analyzers |
+| `security-findings.json` | Security subagent output |
+| `performance-findings.json` | Performance subagent output |
+| `raw-findings.json` | Merged pre-validation |
+| `validator-output.json` | Validator subagent output |
+| `validator-summary.json` | In-session copy of `filter_summary` |
+
+**Removed:** persistent `.ai-code-review/work/` — do not create it.
 
 ## Analyzer Tasks
 
 Use the **Task** tool. `subagent_type` must match agent frontmatter `name` exactly.
 
-| Analyzer | `subagent_type` | Output path |
-|----------|-----------------|-------------|
-| security | `ai-code-review-security-analyzer` | `.ai-code-review/work/security-findings.json` |
-| performance | `ai-code-review-performance-analyzer` | `.ai-code-review/work/performance-findings.json` |
+| Analyzer | `subagent_type` | Output (manifest key) |
+|----------|-----------------|------------------------|
+| security | `ai-code-review-security-analyzer` | `security` |
+| performance | `ai-code-review-performance-analyzer` | `performance` |
 
-### Task prompt (exactly two lines — anti-pattern: duplicating `.md` rules here)
+### Task prompt (exactly two lines — use absolute paths from manifest)
 
 Security:
 
 ```text
-Read diff from: .ai-code-review/work/diff.json
-Write findings to: .ai-code-review/work/security-findings.json
+Read diff from: /var/folders/.../ai-code-review-abc/diff.json
+Write findings to: /var/folders/.../ai-code-review-abc/security-findings.json
 ```
 
 Performance:
 
 ```text
-Read diff from: .ai-code-review/work/diff.json
-Write findings to: .ai-code-review/work/performance-findings.json
+Read diff from: /var/folders/.../ai-code-review-abc/diff.json
+Write findings to: /var/folders/.../ai-code-review-abc/performance-findings.json
 ```
 
 **Do not** trust Task return text for findings. Only read output files; validate JSON.
 
 ### Collect and retry (analyzers only)
 
-1. Read output path after Task completes.
+1. Read manifest output path after Task completes.
 2. If missing or invalid JSON → retry **once** with the **same** two-line prompt.
 3. Second failure → treat as `{ "analyzer": "<key>", "findings": [] }`.
 
 ### Merge raw
 
-Build outputs in order: security (if run), then performance (if run). Skipped analyzers contribute `{ "findings": [] }`. Write result to `work/raw-findings.json`.
+Build outputs in order: security (if run), then performance (if run). Write to manifest `raw`:
 
 ```bash
 npx tsx -e "
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { mergeAnalyzerOutputs } from './.cursor/skills/ai-code-review/scripts/merge-findings.ts';
+const m = JSON.parse(readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8'));
 const read = (p) => { try { return JSON.parse(readFileSync(p,'utf8')); } catch { return null; } };
-const sec = read('.ai-code-review/work/security-findings.json') ?? { analyzer: 'security', findings: [] };
-const perf = read('.ai-code-review/work/performance-findings.json') ?? { analyzer: 'performance', findings: [] };
-const raw = mergeAnalyzerOutputs([sec, perf]);
-mkdirSync('.ai-code-review/work', { recursive: true });
-writeFileSync('.ai-code-review/work/raw-findings.json', JSON.stringify(raw, null, 2));
+const sec = read(m.security) ?? { analyzer: 'security', findings: [] };
+const perf = read(m.performance) ?? { analyzer: 'performance', findings: [] };
+writeFileSync(m.raw, JSON.stringify(mergeAnalyzerOutputs([sec, perf]), null, 2));
 "
 ```
 
@@ -233,23 +295,23 @@ writeFileSync('.ai-code-review/work/raw-findings.json', JSON.stringify(raw, null
 
 Launch **only** when `raw-findings.json` has `findings.length > 0`. **No retry** on failure.
 
-| Validator | `subagent_type` | Output path |
-|-----------|-----------------|-------------|
-| validator | `ai-code-review-validator` | `.ai-code-review/work/validator-output.json` |
+| Validator | `subagent_type` | Output (manifest key) |
+|-----------|-----------------|------------------------|
+| validator | `ai-code-review-validator` | `validatorOut` |
 
-### Task prompt (exactly three lines — data only)
+### Task prompt (exactly three lines — absolute paths)
 
 ```text
-Read findings from: .ai-code-review/work/raw-findings.json
-Read known issues from: .ai-code-review/known-issues.json
-Write output to: .ai-code-review/work/validator-output.json
+Read findings from: /var/folders/.../ai-code-review-abc/raw-findings.json
+Read known issues from: /abs/path/to/repo/.ai-code-review/known-issues.json
+Write output to: /var/folders/.../ai-code-review-abc/validator-output.json
 ```
 
 ### Collect validator output
 
-1. Read `work/validator-output.json` after Task completes.
+1. Read manifest `validatorOut` after Task completes.
 2. Parse with `parseValidatorOutput` (see helper below).
-3. If missing or invalid → **abort** the orchestration run (non-zero exit). Do **not** write `findings.json` from raw merge. Do **not** retry the validator Task.
+3. If missing or invalid → **abort**. Do **not** write `findings.json` from raw merge. Do **not** retry.
 
 ### Map to final report
 
@@ -257,16 +319,17 @@ Write output to: .ai-code-review/work/validator-output.json
 npx tsx -e "
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseValidatorOutput, mapValidatorToFindingsReport, zeroedFilterSummary } from './.cursor/skills/ai-code-review/scripts/validator-output.ts';
-const rawPath = '.ai-code-review/work/raw-findings.json';
-const raw = JSON.parse(readFileSync(rawPath,'utf8'));
+const m = JSON.parse(readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8'));
+const raw = JSON.parse(readFileSync(m.raw,'utf8'));
 if (!raw.findings?.length) {
   writeFileSync('.ai-code-review/findings.json', JSON.stringify({ version: '2', findings: [] }, null, 2));
-  writeFileSync('.ai-code-review/work/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
+  writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
   console.log('Validator funnel: 0 → 0');
 } else {
-  const out = parseValidatorOutput(JSON.parse(readFileSync('.ai-code-review/work/validator-output.json','utf8')));
+  const out = parseValidatorOutput(JSON.parse(readFileSync(m.validatorOut,'utf8')));
   writeFileSync('.ai-code-review/findings.json', JSON.stringify(mapValidatorToFindingsReport(out), null, 2));
-  writeFileSync('.ai-code-review/work/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
+  writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
+  writeFileSync(m.validatorSummary, JSON.stringify(out.filter_summary, null, 2));
   console.log('Validator funnel: ' + out.filter_summary.raw_input + ' → ' + out.filter_summary.final_output);
 }
 "
@@ -326,7 +389,6 @@ The runner formats inline comments (analyzer title + severity emoji + suggestion
 - Analyzers other than `security` and `performance`
 - Automatic **retry** of validator Task (analyzers: one retry only)
 - `evals/` harness
-- Workflow artifact upload for `filter_summary` (file + stdout only in v1)
 - Posting GitHub comments directly
 - External tracking state (runner owns PR tracking comment)
 - Ticket cross-reference, `codebase-patterns.md`, `category` on findings
