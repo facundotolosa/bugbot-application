@@ -199,6 +199,7 @@ export async function runE2eCase(options: {
   judgeFn: JudgeFn;
   artifactDir: string;
   dryRun?: boolean;
+  verbose?: boolean;
 }): Promise<E2eRunResult> {
   const pins = await loadE2ePins(options.caseDir);
   const caseExpect = await loadExpectFile(path.join(options.caseDir, "expect.json"));
@@ -244,6 +245,7 @@ export async function runE2eCase(options: {
         knownIssuesPath,
         knownIssuesCount: 0,
         prompt,
+        logging: options.verbose ? "default" : "quiet",
       });
     }
 

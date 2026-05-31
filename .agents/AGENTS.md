@@ -36,6 +36,7 @@ Each feature: `.agents/specs/<id>-<slug>/spec.md` + `plan.md`.
 | [`specs/06-evals-harness/`](specs/06-evals-harness/) | `evals/` golden cases: E2E orchestrator, analyzer + validator component evals, invocation parity with production Task prompts. [plan.md](specs/06-evals-harness/plan.md) | In progress |
 | [`specs/07-review-progress-ux/`](specs/07-review-progress-ux/) | Mandatory TodoWrite (local), English-only concise narration, ephemeral temp IPC files (no `work/` clutter). [spec.md](specs/07-review-progress-ux/spec.md) · [plan.md](specs/07-review-progress-ux/plan.md) | Done |
 | [`specs/08-reviewer-runner-src-layout/`](specs/08-reviewer-runner-src-layout/) | Modular `packages/reviewer-runner/src/` folders by domain; stable public API; update evals/skill deep imports. [spec.md](specs/08-reviewer-runner-src-layout/spec.md) · [plan.md](specs/08-reviewer-runner-src-layout/plan.md) | Done |
+| [`specs/09-evals-console-reporter/`](specs/09-evals-console-reporter/) | Vitest-style `npm run eval` console: quiet agent stream, suite/case tree, spinner, concise failure lines. [plan.md](specs/09-evals-console-reporter/plan.md) | In progress |
 
 ## Spec workflow
 
