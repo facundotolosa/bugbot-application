@@ -37,7 +37,7 @@ flowchart TB
 
 | Layer | Responsibility |
 |-------|----------------|
-| **You (orchestrator)** | Step 0 TodoWrite; session dir + manifest; `prepare-diff`; English stdout blocks; select analyzers; launch analyzer Tasks; merge **raw**; launch validator when non-empty; map validated output → v2; fail closed on validator errors; snapshot session → `run-artifacts/session/` |
+| **You (orchestrator)** | Step 0 TodoWrite; session dir + manifest; `prepare-diff`; English **narration** in assistant messages; select analyzers; launch analyzer Tasks; merge **raw**; launch validator when non-empty; map validated output → v2; fail closed on validator errors; snapshot session → `run-artifacts/session/` |
 | **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
 | **Validator subagent** | Five-phase funnel on raw findings; read reference docs; write `validator-output.json`; reply `Done` |
 | **reviewer-runner** | Incremental scope, tracking, build `known-issues.json`, invoke agent, validate v2, **`filterFindingsForPost` = PR file scope only**, post inline comments |
@@ -71,8 +71,8 @@ State machine (status-only updates): [references/progress-todos.md](references/p
 
 1. First tool call: `TodoWrite` with the JSON above (exactly **7** items; no extra todos).
 2. At the **start** of each workflow step below, `TodoWrite` with `merge: true` — update **only** `status` per the state machine (never change `content`).
-3. Mark `report` → `completed` only after `.ai-code-review/findings.json` exists **and** the final stdout line is printed.
-4. **Never** print TodoWrite lines to stdout.
+3. Mark `report` → `completed` only after `.ai-code-review/findings.json` exists **and** the final narration line is emitted (see Progress visibility).
+4. **Never** emit TodoWrite lines in orchestrator narration.
 
 ## Session directory
 
@@ -105,16 +105,6 @@ console.log(sessionDir);
 - All analyzer/validator IPC files live under `sessionDir` only — **not** under `.ai-code-review/work/`.
 - Read paths from `session-manifest.json` for Task prompts and inline scripts.
 
-## Language rules
-
-| Surface | Language |
-|---------|----------|
-| **Stdout** (status lines, emoji labels, `Warning:`, `Analyzers:`, `Validator funnel:`, `Report written to:`) | **English only** — short, one sentence per step |
-| **IDE chat with human** | May be Spanish per project conventions; **do not** mix Spanish into stdout |
-| **Finding bodies** (`issue`, `suggestion`) | English |
-
-**Anti-patterns on stdout:** Spanish status text; narrating tool calls (“Running npx tsx prepare-diff”); dumping session temp paths (except `Warning:` lines).
-
 ## Inputs
 
 | Input | Source | Required |
@@ -133,27 +123,34 @@ console.log(sessionDir);
 
 ## Progress visibility
 
-The runner forwards **every line you print to stdout** with an `[orchestrator]` prefix as it streams. Operators must see **what you are doing in order**, not only a dump at the end.
+**Orchestrator narration** = plain English lines in your **assistant message text** (the chat reply), in order, **immediately before** the corresponding tool action. In CI, `reviewer-runner` forwards each line of assistant text with an `[orchestrator]` prefix (it does **not** read Shell tool stdout).
 
-**IDE progress:** see Step 0 — mandatory TodoWrite; never print todo text to stdout.
+| Surface | Mechanism |
+|---------|-----------|
+| **Progress lines + emoji blocks** | Assistant message text (this section) |
+| **IDE step checklist** | TodoWrite only (Step 0) — never paste todo lines into narration |
 
-**Print short English status lines (one sentence each) immediately before the action:**
+**During the run:** emit only **plain one-sentence** English lines (no emoji blocks) before each phase — see table below.
+
+**Once at the end:** emit the **consolidated final block** (all 📋 📊 🔬 📥 ⏭️/✅ + 🎯) in a **single** assistant message, immediately before `Report written to:`. Do **not** print 📋 📊 🔬 📥 ⏭️/✅ earlier in the run.
 
 | When | Line (exact wording) |
 |------|------------------------|
 | Start | `I'll run the ai-code-review skill with the PR parameters from the prompt.` |
-| After `prepare-diff` | Print **📋** and **📊** blocks, then `Diff ready; selecting analyzers.` |
+| After `prepare-diff` | `Diff ready; selecting analyzers.` |
 | After `Analyzers:` line, before Tasks | `Launching selected analyzer sub-agents in parallel.` (or name the selected set if only one) |
 | After analyzer files read | `Collected analyzer output; merging raw findings.` |
 | Before validator Task | `Running validator on raw findings.` |
 | Raw empty, skip validator | `All analyzers returned no findings; skipping validator.` |
-| After validator or skip | Collect/validator emoji lines + consolidated close (spec 05) |
+| After `findings.json` written | **Consolidated final block** (see [Orchestrator narration blocks](#orchestrator-narration-blocks-fixed-templates)) + `Validator funnel: …` |
 | Final | `Report written to: .ai-code-review/findings.json` |
 
-- Tool work stays silent (no tool names, Task prompts, or bash in stdout).
-- `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply.
+- Tool work stays silent in narration (no tool names, Task prompts, or bash).
+- `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply (may appear when they occur; do not duplicate them in the consolidated block unless still relevant).
 
-**Do not print to stdout:** Task prompts, `tool_use` narration, shell one-liners, env dumps, session paths (except `Warning:`), or extra content on the final path line.
+**Do not use Shell/Bash solely to emit progress lines** (`echo`, `node -e` with `console.log`, etc.) — operators and CI will not see them as orchestrator progress.
+
+**Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), or extra content on the final path line.
 
 ## Workflow checklist
 
@@ -162,8 +159,8 @@ The runner forwards **every line you print to stdout** with an `[orchestrator]` 
 3. **Todo:** `prereq` in_progress (from step 0).
 4. Run `prepare-diff` (see below); read JSON from stdout or `--output` file.
 5. **Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
-6. **Immediately** print **📋 PR Metadata** and **📊 Diff stats** blocks — then `Diff ready; selecting analyzers.`
-7. If incremental was requested but `metadata.is_incremental === false`, print `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
+6. Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — those belong only in the consolidated final block).
+7. If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
 8. **Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
 9. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
 
@@ -174,27 +171,30 @@ The runner forwards **every line you print to stdout** with an `[orchestrator]` 
    import { selectAnalyzers } from './.cursor/skills/ai-code-review/scripts/select-analyzers.ts';
    const manifest = JSON.parse(readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8'));
    const diff = JSON.parse(readFileSync(manifest.diff,'utf8'));
-   console.log(selectAnalyzers(diff.files ?? []));
+   const selected = selectAnalyzers(diff.files ?? []);
+   require('fs').writeFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/selected-analyzers.json', JSON.stringify(selected));
    "
    ```
 
-10. **Log analyzers** to stdout (exactly one line):
+   Read `selected-analyzers.json` for the list; **do not** paste that JSON into narration.
+
+10. **Log analyzers** in narration (exactly one line):
     - Both: `Analyzers: security, performance`
     - Performance skipped: `Analyzers: security (skipped: performance)`
-11. Print `Launching selected analyzer sub-agents in parallel.` (or name subset) — then **Todo:** `diff` completed; `analyzers` in_progress.
+11. Emit `Launching selected analyzer sub-agents in parallel.` (or name subset) in assistant text — then **Todo:** `diff` completed; `analyzers` in_progress.
 12. **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Keep `analyzers` in_progress until step 13 starts.
-13. **Todo:** `analyzers` completed; `collect` in_progress. Print `Collected analyzer output; merging raw findings.`
+13. **Todo:** `analyzers` completed; `collect` in_progress. Emit `Collected analyzer output; merging raw findings.` in assistant text before merge.
 14. **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
 15. **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
 16. **Validator path:**
-    - If `raw_findings.length === 0`: print `All analyzers returned no findings; skipping validator.`; write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `.ai-code-review/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
-    - Else: print `Running validator on raw findings.`; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
-17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Print `Warning: session files kept at <sessionDir>`; snapshot session if possible; **do not** delete temp.
+    - If `raw_findings.length === 0`: emit `All analyzers returned no findings; skipping validator.` in assistant text; write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `.ai-code-review/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
+    - Else: emit `Running validator on raw findings.` in assistant text; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
+17. **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
 18. **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
 19. **Todo:** `validate` completed; `report` in_progress.
-20. Print **one stdout line**: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
-21. Print the **consolidated final block** (repeat 📋 📊 🔬 📥 ⏭️/✅ in order, then 🎯 severity counts from **final** `findings.json`).
-22. Print **exactly one** closing line: `Report written to: .ai-code-review/findings.json`
+20. Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below; include findings table or list when non-empty.
+21. Emit **one** machine line: `Validator funnel: <raw_input> → <final_output>` (from `filter_summary`).
+22. Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json`
 23. **Todo:** `report` completed.
 24. **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 
@@ -211,19 +211,23 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
   [--output .ai-code-review/prepare-diff.json]
 ```
 
-## Stdout emoji blocks (fixed templates)
+## Orchestrator narration blocks (fixed templates)
 
-Print values from `prepare-diff` `metadata` / session files. Machine lines `Analyzers:` and `Validator funnel:` stay **plain** (no emoji).
+Emit in **assistant message text** (not Shell), **once** in the consolidated final block after `findings.json` exists. Use values from `prepare-diff` `metadata` / session files. Machine lines `Analyzers:` (during run) and `Validator funnel:` (after the block) stay **plain** (no emoji).
 
-| Step | Block |
-|------|--------|
+**Anti-pattern:** emitting 📋 📊 after `prepare-diff`, or 🔬 📥 ✅ before the consolidated block — causes duplicate blocks in the IDE/CI stream.
+
+| Block | Template |
+|-------|----------|
 | Metadata | `📋 PR Metadata:` — source/target branch, incremental yes/no + since SHA |
 | Diff | `📊 Diff stats:` — file count, +/- lines, excluded count; label full vs incremental |
 | Analyzers | `🔬 Analyzers:` — selected list and `(skipped: …)` when applicable |
 | Collect | `📥 Collected results:` — raw count, categories from analyzers present |
-| Validator skip | `⏭️ Validator skipped: …` when raw empty |
+| Validator skip | `⏭️ Validator skipped: …` when raw empty (use instead of ✅) |
 | Validator done | `✅ Validator complete: {raw} raw → {final} validated` |
-| Close | Repeat 📋 📊 🔬 📥 ✅ in order, then `🎯 Review complete:` severity breakdown from **final** `findings.json` |
+| Close | `🎯 Review complete:` severity breakdown from **final** `findings.json` |
+
+**Consolidated final block order:** 📋 → 📊 → 🔬 → 📥 → (⏭️ **or** ✅) → 🎯 — then `Validator funnel:` → `Report written to:`.
 
 ## Invocation criteria
 
@@ -398,16 +402,3 @@ The runner builds `.ai-code-review/known-issues.json` from existing PR inline co
 - Known-issue skip is validator Phase 3.
 - The runner's `filterFindingsForPost` drops findings whose `file` is **outside the PR file list** only (not known-issues dedup at post time).
 
-## GitHub posting (runner-owned)
-
-The runner formats inline comments (analyzer title + severity emoji + suggestion). Subagents and you write **JSON only**.
-
-## Out of scope
-
-- Multi-batch `batch-{i}.json` for large PRs
-- Analyzers other than `security` and `performance`
-- Automatic **retry** of validator Task (analyzers: one retry only)
-- `evals/` harness
-- Posting GitHub comments directly
-- External tracking state (runner owns PR tracking comment)
-- Ticket cross-reference, `codebase-patterns.md`, `category` on findings

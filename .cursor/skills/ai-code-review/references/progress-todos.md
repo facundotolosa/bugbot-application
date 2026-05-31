@@ -30,8 +30,8 @@ Mandatory **TodoWrite** checklist for local orchestration.
 | 4 Launch analyzer Tasks | `diff` → `completed`; `analyzers` → `in_progress` |
 | 5 Collect analyzer files | `analyzers` → `completed`; `collect` → `in_progress` |
 | 6 Validator (or skip) | `collect` → `completed`; `validate` → `in_progress` |
-| 7 Report + stdout close | `validate` → `completed`; `report` → `in_progress` |
-| 7 End | `report` → `completed` (only after `findings.json` exists **and** final stdout line) |
+| 7 Report + narration close | `validate` → `completed`; `report` → `in_progress` |
+| 7 End | `report` → `completed` (only after `findings.json` exists **and** final narration line in assistant text) |
 
 ## Rules
 
@@ -48,5 +48,6 @@ Mandatory **TodoWrite** checklist for local orchestration.
 - Extra todo items beyond the seven above
 - Changing `content` strings on `merge: true`
 - Two todos `in_progress` at once
-- Printing TodoWrite text to stdout (IDE only; spec 05)
-- Marking `report` completed before `findings.json` and the final `Report written to:` line
+- Printing TodoWrite text in orchestrator narration (IDE only; spec 05)
+- Using Shell (`echo`, `node -e` + `console.log`) solely to emit progress lines — use assistant message text instead
+- Marking `report` completed before `findings.json` and the final `Report written to:` narration line
