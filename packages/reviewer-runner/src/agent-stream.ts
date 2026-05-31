@@ -28,6 +28,14 @@ export function shouldForwardOrchestratorLine(line: string): boolean {
   if (/^(- \[[ x]\] )?(prereq|metadata|diff|analyzers|collect|validate|report)\b/i.test(trimmed)) {
     return false;
   }
+  // Markdown findings tables render poorly in CI logs; details belong in findings.json.
+  if (/^\|.*\|$/.test(trimmed)) {
+    return false;
+  }
+  // Funnel counts are in the ✅ block; filter_summary is in validator-summary.json.
+  if (/^Validator funnel:/i.test(trimmed)) {
+    return false;
+  }
   return true;
 }
 

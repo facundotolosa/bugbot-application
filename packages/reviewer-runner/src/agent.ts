@@ -59,14 +59,6 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     lines.push("", `PR title: ${input.prTitle}`);
   }
 
-  lines.push(
-    "",
-    "All orchestrator progress lines must be in English (short, one sentence per step).",
-    "Emit plain one-sentence progress lines during the run in assistant messages.",
-    "Emit emoji blocks once in the consolidated final block only (not after prepare-diff) — not via Shell echo.",
-    "The runner forwards assistant message text as [orchestrator] lines.",
-  );
-
   return lines.join("\n");
 }
 

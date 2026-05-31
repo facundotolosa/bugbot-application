@@ -212,14 +212,6 @@ export function orchestratorLine(rawLine: string): void {
     return;
   }
 
-  if (/^Validator funnel:/i.test(line)) {
-    writeln(
-      stdout,
-      `${prefix}${fmt(c, BOLD, "Validator funnel:")}${fmt(c, WHITE, line.slice("Validator funnel:".length))}`,
-    );
-    return;
-  }
-
   if (/^Warning:/i.test(line)) {
     writeln(stdout, `${prefix}${fmt(c, YELLOW, line)}`);
     return;
