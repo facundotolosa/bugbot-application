@@ -24,7 +24,6 @@ export interface ReviewPromptInput {
   sinceCommit?: string;
   knownIssuesPath?: string;
   prFilesPath?: string;
-  prTitle?: string;
   knownIssuesCount?: number;
 }
 
@@ -54,10 +53,6 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     `  Known issues file: ${knownIssuesFile}`,
     `  PR files file: ${prFilesFile}`,
   );
-
-  if (input.prTitle) {
-    lines.push("", `PR title: ${input.prTitle}`);
-  }
 
   return lines.join("\n");
 }

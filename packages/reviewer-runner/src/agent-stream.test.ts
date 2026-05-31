@@ -35,6 +35,19 @@ describe("shouldForwardOrchestratorLine", () => {
     expect(shouldForwardOrchestratorLine("- [x] analyzers")).toBe(false);
   });
 
+  it("drops paraphrased skill-start lines (canonical start line only)", () => {
+    expect(
+      shouldForwardOrchestratorLine(
+        "I'll read the ai-code-review skill and follow its workflow with your PR parameters.",
+      ),
+    ).toBe(false);
+    expect(
+      shouldForwardOrchestratorLine(
+        "I'll run the ai-code-review skill with the PR parameters from the prompt.",
+      ),
+    ).toBe(true);
+  });
+
   it("drops Validator funnel line (duplicates ✅ block)", () => {
     expect(shouldForwardOrchestratorLine("Validator funnel: 5 → 3")).toBe(false);
   });

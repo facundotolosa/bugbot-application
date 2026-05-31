@@ -115,7 +115,6 @@ console.log(sessionDir);
 | Known issues JSON | Path to `{ "issues": [{ "file", "line", "message" }] }` | Optional (CI supplies; may be `[]`) |
 | `Since commit: <sha>` | Runner (incremental) or human in local invocation | Optional — enables incremental diff |
 | Repository root (`cwd`) | Workspace / runner | Yes |
-| PR title | Runner / human | No |
 
 **Local incremental:** only when the human supplies `Since commit: <full-sha>` in the prompt. Without it, run a **full** review from merge-base.
 

@@ -1,6 +1,10 @@
 import type { SDKMessage } from "@cursor/sdk";
 import * as log from "./logger.js";
 
+/** Canonical skill start line — drop paraphrased duplicates from agent narration. */
+export const ORCHESTRATOR_START_LINE =
+  "I'll run the ai-code-review skill with the PR parameters from the prompt.";
+
 const SUBAGENT_SLUG_LABELS: Record<string, string> = {
   "ai-code-review-security-analyzer": "security analyzer",
   "ai-code-review-performance-analyzer": "performance analyzer",
@@ -34,6 +38,9 @@ export function shouldForwardOrchestratorLine(line: string): boolean {
   }
   // Funnel counts are in the ✅ block; filter_summary is in validator-summary.json.
   if (/^Validator funnel:/i.test(trimmed)) {
+    return false;
+  }
+  if (/ai-code-review skill/i.test(trimmed) && trimmed !== ORCHESTRATOR_START_LINE) {
     return false;
   }
   return true;

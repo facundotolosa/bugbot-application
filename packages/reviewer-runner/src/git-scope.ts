@@ -199,10 +199,10 @@ export async function resolveReviewMode(
   return { mode: "incremental", sinceCommit: since };
 }
 
-/** @deprecated Logging removed — mode is visible in orchestrator 📋 block and Review Summary. */
+/** @deprecated Logging removed — mode is visible in orchestrator 📋 block and reviewOutcome line. */
 export function logReviewMode(_result: ResolveReviewModeResult): void {}
 
-/** @deprecated Logging removed — scope is visible in orchestrator output and Review Summary. */
+/** @deprecated Logging removed — scope is visible in orchestrator output and reviewOutcome line. */
 export function logReviewScope(_mode: ReviewMode, _scope: EffectiveScope): void {}
 
 export async function listPrFiles(
