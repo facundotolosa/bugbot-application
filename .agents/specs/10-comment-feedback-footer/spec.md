@@ -37,14 +37,14 @@ Only **inline review comments** on PR diffs. The orchestrator and analyzers cont
 Appended **after** the existing suggestion block, separated by one blank line:
 
 ```html
-<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>
+<sub><em>Was this comment useful?</em> <a href="#">👍</a> | <a href="#">👎</a></sub>
 ```
 
 | Element | Rule |
 |---------|------|
 | Size | Entire footer wrapped in `<sub>…</sub>` — renders smaller than body text (no custom CSS). |
 | Prompt | `<em>Was this comment useful?</em>` — italic inside `<sub>`. |
-| Line break | `<br>` between prompt and thumbs (markdown line breaks inside `<sub>` overlap on GitHub). |
+| Layout | Prompt and thumb links on **one line**; space between prompt and `[👍]` (no `<br>` — separate lines render poorly on GitHub). |
 | Thumbs | Literal 👍 and 👎 as `<a href="#">` links; pipe separator ` \| ` between them. |
 | Spacing | One blank line between the suggestion line and the footer HTML block. |
 
@@ -57,7 +57,7 @@ Appended **after** the existing suggestion block, separated by one blank line:
 
 💡 **Suggestion:** Guard the divisor before calling `divide`.
 
-<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>
+<sub><em>Was this comment useful?</em> <a href="#">👍</a> | <a href="#">👎</a></sub>
 ```
 
 ### Edge cases
@@ -105,3 +105,4 @@ N/A — internal string formatting in `formatCommentBody`. No new env vars, webh
 | 2026-05-31 | implement | Phase 2: dry-run smoke; GitHub render check deferred to PR |
 | 2026-05-31 | implement | Footer layout fix: HTML `<br>` + `<a href="#">` (markdown inside `<sub>` overlapped) |
 | 2026-05-31 | validate | PASS — PR #13 visual check; spec Done |
+| 2026-05-31 | implement | Inline footer layout: thumbs on same line as prompt |

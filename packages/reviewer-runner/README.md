@@ -65,10 +65,10 @@ Each finding with `file` + `line` becomes one PR review comment:
 
 💡 **Suggestion:** {suggestion}
 
-<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>
+<sub><em>Was this comment useful?</em> <a href="#">👍</a> | <a href="#">👎</a></sub>
 ```
 
-Analyzer titles, severity emojis, and the demo feedback footer are applied in `formatCommentBody` (`findings/comments.ts`). Footer uses HTML inside `<sub>` so GitHub renders the prompt and thumb links on separate lines.
+Analyzer titles, severity emojis, and the demo feedback footer are applied in `formatCommentBody` (`findings/comments.ts`). Prompt and thumb links render inline on one line inside `<sub>`.
 
 ## Scripts
 

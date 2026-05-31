@@ -9,7 +9,7 @@ import { parseFindingsJson } from "./findings.js";
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures");
 
 const COMMENT_FEEDBACK_FOOTER =
-  '<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>';
+  '<sub><em>Was this comment useful?</em> <a href="#">👍</a> | <a href="#">👎</a></sub>';
 
 function finding(
   overrides: Partial<Finding> & Pick<Finding, "analyzer" | "severity" | "issue" | "suggestion">,
