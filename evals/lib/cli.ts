@@ -6,13 +6,21 @@ export type CliOptions = {
   suites: string[];
   caseId?: string;
   refreshInputs: boolean;
+  /** When true, show agent orchestration stream and task prompt dumps. */
+  verbose: boolean;
 };
 
 export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliOptions {
-  const options: CliOptions = { refreshInputs: false, suites: [] };
+  const options: CliOptions = { refreshInputs: false, suites: [], verbose: false };
+  let verboseFromFlag = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
+    if (arg === "--verbose") {
+      verboseFromFlag = true;
+      options.verbose = true;
+      continue;
+    }
     if (arg === "--refresh-inputs") {
       options.refreshInputs = true;
       continue;
@@ -27,6 +35,11 @@ export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliOptions
       options.caseId = argv[++i];
       continue;
     }
+  }
+
+  // CLI flag wins when both --verbose and EVAL_VERBOSE=1 are set.
+  if (!verboseFromFlag && process.env.EVAL_VERBOSE === "1") {
+    options.verbose = true;
   }
 
   return options;

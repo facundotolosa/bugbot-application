@@ -39,12 +39,14 @@ npm test -w evals           # deterministic lib tests (no API key)
 | `--suite <name>` | Filter suite (repeatable) |
 | `--case <id>` | Filter case id |
 | `--refresh-inputs` | Regenerate frozen inputs (diff or pr-files; see below) |
+| `--verbose` | Show agent orchestration stream, SDK INFO, and task prompt dumps (default: quiet Vitest-style output) |
 
 ### Environment
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CURSOR_API_KEY` | repo root `.env` | **Required** for `npm run eval` (auto-loaded) |
+| `EVAL_VERBOSE` | unset | Set to `1` for verbose agent output (same as `--verbose`; CLI flag wins if both set) |
 | `EVAL_MODEL_ID` | `composer-2.5` | Reviewer / harness / E2E agent model |
 | `EVAL_JUDGE_MODEL_ID` | same as `EVAL_MODEL_ID` | LLM-as-judge for `must_find` / `must_not_find` |
 
@@ -86,7 +88,7 @@ Each run writes under `evals/out/<run-id>/`:
 | `<suite>-<case>/review-prompt.txt` | E2E only — `buildReviewPrompt` output |
 | `worktrees/<case>/` | E2E only — detached worktree at `head_sha` (removed after case) |
 
-Console summary: `passed/total`, duration, retry count, judge count, per-suite breakdown.
+Console output (default): Vitest-style suite/case tree with pass/fail, duration, and concise failure lines. Use `--verbose` or `EVAL_VERBOSE=1` for full agent stream. Artifacts and summary: `passed/total`, duration, retry count, judge count, per-suite breakdown.
 
 ## Adding a case
 
