@@ -146,10 +146,11 @@ export function buildE2eReviewPrompt(options: {
   return [
     base,
     "",
-    "E2E eval constraints:",
-    "- Use FULL review from merge-base to head (not incremental).",
-    "- Do NOT treat the Head commit SHA as Since commit.",
-    "- A frozen work/diff.json may already exist; re-run prepare-diff in full mode if needed.",
+    "E2E eval constraints (mandatory):",
+    "- FULL review only: run prepare-diff with --source matching Source ref and --target matching Target branch. Never pass --since-commit.",
+    '- The "Commit:" line is PR HEAD for metadata only; it is NOT "Since commit" and must not be used as an incremental boundary.',
+    "- If .ai-code-review/work/diff.json already exists with files.length > 0, use it as the diff; do not replace it with an empty incremental diff.",
+    "- If you must regenerate the diff, use full mode (merge-base to head) without --since-commit.",
   ].join("\n");
 }
 
@@ -238,6 +239,7 @@ export async function runE2eCase(options: {
         knownIssuesPath,
         prTitle: `eval e2e ${options.caseId}`,
         knownIssuesCount: 0,
+        prompt,
       });
     }
 

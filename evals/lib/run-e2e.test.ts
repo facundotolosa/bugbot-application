@@ -60,8 +60,9 @@ describe("e2e pins and prompt", () => {
       knownIssuesPath,
     });
 
-    expect(prompt).toContain("FULL review");
-    expect(prompt).toContain("Do NOT treat the Head commit SHA as Since commit");
+    expect(prompt).toContain("FULL review only");
+    expect(prompt).toContain("Never pass --since-commit");
+    expect(prompt).toContain("work/diff.json already exists");
   });
 
   it("buildE2eReviewPrompt includes frozen input paths and head SHA", async () => {
