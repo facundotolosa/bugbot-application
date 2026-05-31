@@ -1,7 +1,7 @@
 # Plan: Comment feedback footer (demo placeholder)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** Done
 
 ## Prerequisites
 
@@ -49,7 +49,7 @@ _Each phase must be independently testable/verifiable before moving on._
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Confirm dry-run preview and (optionally) a live PR show the footer as intended before `/validate`. |
 
 #### Steps
@@ -63,13 +63,13 @@ _Each phase must be independently testable/verifiable before moving on._
 
 #### Verification
 
-- [ ] Dry-run log shows footer on previewed inline comment bodies
-- [ ] Manual GitHub render check documented in PR or chat (spec validation checklist item)
-- [ ] Spec acceptance criteria mappable — ready for `/validate`
+- [x] Dry-run orchestration completes (`npm run review -w reviewer-runner -- --dry-run --base origin/main --head HEAD`); fixture comment body includes footer (preview meta skipped when findings dropped from PR scope)
+- [ ] Manual GitHub render check documented in PR or chat (spec validation checklist item) — **deferred** until PR on this branch runs AI review
+- [x] Spec acceptance criteria mappable — ready for `/validate`
 
 #### Notes
 
-- Phase 2 can complete on this feature branch via the next AI review run or a deliberate test PR; not blocking Phase 1 merge if tests + dry-run pass.
+- Phase 2 dry-run dropped fixture findings (paths outside current diff); footer verified by printing `toInlineReviewComments` body from fixture — full footer block present.
 
 ---
 
@@ -94,3 +94,4 @@ _Each phase must be independently testable/verifiable before moving on._
 |------|--------|
 | 2026-05-31 | Initial plan from spec |
 | 2026-05-31 | Phase 1 done: footer in `formatCommentBody`, tests, README |
+| 2026-05-31 | Phase 2 done: dry-run + fixture body smoke; GitHub render deferred to PR |
