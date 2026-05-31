@@ -3,7 +3,7 @@ import type {
   Finding,
   FindingsReport,
   Severity,
-} from "../../../../packages/reviewer-runner/src/findings.js";
+} from "../../../../packages/reviewer-runner/src/findings/findings.js";
 
 export type { AnalyzerKey };
 

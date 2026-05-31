@@ -14,7 +14,7 @@ import {
   parseFindingsJson,
   type AnalyzerKey,
   type FindingsReport,
-} from "../../packages/reviewer-runner/src/findings.js";
+} from "../../packages/reviewer-runner/src/findings/findings.js";
 
 export type StructuralArtifactKind =
   | "findings"

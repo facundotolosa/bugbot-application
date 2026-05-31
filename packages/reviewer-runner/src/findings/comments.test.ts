@@ -6,7 +6,7 @@ import { formatCommentBody, toInlineReviewComments } from "./comments.js";
 import type { AnalyzerKey, Finding, Severity } from "./findings.js";
 import { parseFindingsJson } from "./findings.js";
 
-const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
+const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures");
 
 function finding(
   overrides: Partial<Finding> & Pick<Finding, "analyzer" | "severity" | "issue" | "suggestion">,

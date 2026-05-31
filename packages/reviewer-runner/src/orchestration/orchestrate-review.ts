@@ -1,13 +1,13 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ReviewPromptInput } from "./agent.js";
+import type { ReviewPromptInput } from "../agent/agent.js";
 import {
   createReviewRunDir,
   findingsPathInRun,
   REVIEW_RUN_FILES,
-} from "./review-run-dir.js";
-import { toInlineReviewComments, type InlineReviewComment } from "./comments.js";
-import { parseFindingsFile, type FindingsReport } from "./findings.js";
+} from "../paths/review-run-dir.js";
+import { toInlineReviewComments, type InlineReviewComment } from "../findings/comments.js";
+import { parseFindingsFile, type FindingsReport } from "../findings/findings.js";
 import {
   createGitHubClient,
   findTrackingComment,
@@ -18,7 +18,7 @@ import {
   type GitHubClient,
   type PrContext,
   upsertTrackingComment,
-} from "./github.js";
+} from "../github/github.js";
 import {
   createExecGitRunner,
   resolveReviewMode,
@@ -26,9 +26,9 @@ import {
   writePrFilesList,
   type GitRunner,
   type ShouldSkipAgentResult,
-} from "./git-scope.js";
-import * as log from "./logger.js";
-import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
+} from "../git/git-scope.js";
+import * as log from "../support/logger.js";
+import { buildKnownIssuesJson, filterFindingsForPost } from "../findings/post-review.js";
 
 function formatTrackingRef(commentId: number | undefined): string | undefined {
   if (commentId == null) {

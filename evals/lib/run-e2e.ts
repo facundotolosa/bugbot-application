@@ -7,16 +7,16 @@ import {
   createReviewRunDir,
   findingsPathInRun,
   REVIEW_RUN_FILES,
-} from "../../packages/reviewer-runner/src/review-run-dir.js";
+} from "../../packages/reviewer-runner/src/paths/review-run-dir.js";
 import {
   buildReviewPrompt,
   runReviewAgent,
-} from "../../packages/reviewer-runner/src/agent.js";
-import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings.js";
+} from "../../packages/reviewer-runner/src/agent/agent.js";
+import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings/findings.js";
 import {
   listPrFiles,
   writePrFilesList,
-} from "../../packages/reviewer-runner/src/git-scope.js";
+} from "../../packages/reviewer-runner/src/git/git-scope.js";
 import {
   prepareDiff,
 } from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";
@@ -103,12 +103,12 @@ export async function seedE2eInputs(
 ): Promise<{ reviewRunDir: string; prFilesPath: string; knownIssuesPath: string }> {
   const reviewRunDir = await createReviewRunDir(worktreeRoot);
 
-  const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
-  const knownIssuesPath = join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
-  const inputsDir = join(caseDir, "inputs");
+  const prFilesPath = path.join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
+  const knownIssuesPath = path.join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
+  const inputsDir = path.join(caseDir, "inputs");
 
-  await copyFile(join(inputsDir, "pr-files.txt"), prFilesPath);
-  await copyFile(join(inputsDir, "known-issues.json"), knownIssuesPath);
+  await copyFile(path.join(inputsDir, "pr-files.txt"), prFilesPath);
+  await copyFile(path.join(inputsDir, "known-issues.json"), knownIssuesPath);
 
   return { reviewRunDir, prFilesPath, knownIssuesPath };
 }
