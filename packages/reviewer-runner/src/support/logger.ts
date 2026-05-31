@@ -13,6 +13,14 @@ export function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
+export function green(text: string, enabled: boolean = shouldUseColor()): string {
+  return fmt(enabled, GREEN, text);
+}
+
+export function red(text: string, enabled: boolean = shouldUseColor()): string {
+  return fmt(enabled, RED, text);
+}
+
 export function shouldUseColor(
   env: NodeJS.ProcessEnv = process.env,
   isTTY: boolean = stdout.isTTY === true,
