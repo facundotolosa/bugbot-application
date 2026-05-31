@@ -1,13 +1,13 @@
 ---
 name: ai-code-review
-description: Orchestrate PR-scoped diff review via security/performance subagents and validator funnel; write schema v2 findings to .ai-code-review/findings.json. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
+description: Orchestrate PR-scoped diff review via security/performance subagents and validator funnel; write schema v2 findings under .ai-code-review/<timestamp>/. Use when reviewing PR diffs locally or when invoked by reviewer-runner in CI.
 ---
 
 # AI Code Review (orchestrator)
 
 You are the **orchestrator**. You do **not** perform heuristic analysis yourself. You coordinate:
 
-**`prepare-diff` → ephemeral session IPC → invocation criteria → parallel analyzer Tasks → merge raw → validator Task → `.ai-code-review/findings.json` (v2)**
+**`prepare-diff` → ephemeral session IPC → invocation criteria → parallel analyzer Tasks → merge raw → validator Task → `.ai-code-review/<timestamp>/findings.json` (v2)**
 
 Subagent intelligence lives in `.cursor/agents/ai-code-review-{security,performance,validator}.md`. Analyzer Task prompts are **two lines only** (read path + write path). The validator Task prompt is **three lines only** (raw findings, known issues, output path).
 
@@ -37,7 +37,7 @@ flowchart TB
 
 | Layer | Responsibility |
 |-------|----------------|
-| **You (orchestrator)** | Step 0 TodoWrite; session dir + manifest; `prepare-diff`; English **narration** in assistant messages; select analyzers; launch analyzer Tasks; merge **raw**; launch validator when non-empty; map validated output → v2; fail closed on validator errors; snapshot session → `run-artifacts/session/` |
+| **You (orchestrator)** | Step 0 TodoWrite; review run dir + session dir + manifest; `prepare-diff`; English **narration** in assistant messages; select analyzers; launch analyzer Tasks; merge **raw**; launch validator when non-empty; map validated output → v2; fail closed on validator errors; snapshot session → `{runDir}/run-artifacts/session/` |
 | **Analyzer subagents** | Read diff JSON; domain analysis; write intermediate JSON; reply `Done` |
 | **Validator subagent** | Five-phase funnel on raw findings; read reference docs; write `validator-output.json`; reply `Done` |
 | **reviewer-runner** | Incremental scope, tracking, build `known-issues.json`, invoke agent, validate v2, **`filterFindingsForPost` = PR file scope only**, post inline comments |
@@ -71,7 +71,7 @@ State machine (status-only updates): [references/progress-todos.md](references/p
 
 1. First tool call: `TodoWrite` with the JSON above (exactly **7** items; no extra todos).
 2. At the **start** of each workflow step below, `TodoWrite` with `merge: true` — update **only** `status` per the state machine (never change `content`).
-3. Mark `report` → `completed` only after `.ai-code-review/findings.json` exists **and** the final narration line is emitted (see Progress visibility).
+3. Mark `report` → `completed` only after `{reviewRunDir}/findings.json` exists **and** the final narration line is emitted (see Progress visibility).
 4. **Never** emit TodoWrite lines in orchestrator narration.
 
 ## Session directory
@@ -105,6 +105,43 @@ console.log(sessionDir);
 - All analyzer/validator IPC files live under `sessionDir` only — **not** under `.ai-code-review/work/`.
 - Read paths from `session-manifest.json` for Task prompts and inline scripts.
 
+## Review run directory
+
+Each run writes **durable** outputs under a timestamped folder so prior runs are preserved:
+
+```text
+.ai-code-review/
+  2026-05-31T14-30-00-123Z/
+    findings.json
+    findings.md          # local IDE only
+    validator-summary.json
+    prepare-diff.json    # optional
+    pr-files.txt
+    known-issues.json
+    run-artifacts/
+      session/           # IPC snapshot
+      orchestrator.json  # CI SDK trace (runner-owned)
+```
+
+Create immediately after the session dir (Turn A), **before** `prepare-diff`:
+
+```bash
+npx tsx -e "
+import { createReviewRunDir } from './packages/reviewer-runner/src/review-run-dir.ts';
+const runDir = process.env.AI_CODE_REVIEW_RUN_DIR
+  ? process.env.AI_CODE_REVIEW_RUN_DIR
+  : await createReviewRunDir(process.cwd());
+console.log(runDir);
+"
+```
+
+- **CI:** `reviewer-runner` creates the run dir and passes `Review output directory:` + `Report file:` in the prompt — **reuse** that path; do not create a second run dir.
+- **Local:** create via script above when the prompt has no `Review output directory:` line.
+- Set `AI_CODE_REVIEW_RUN_DIR` to the absolute run dir for all durable writes and for `write-findings-markdown.ts`.
+- Final narration line uses the **repo-relative** path inside the run dir:
+  - **local:** `Report written to: .ai-code-review/<timestamp>/findings.md` (human-readable report)
+  - **CI:** `Report written to: .ai-code-review/<timestamp>/findings.json` (runner input)
+
 ## Inputs
 
 | Input | Source | Required |
@@ -114,6 +151,8 @@ console.log(sessionDir);
 | PR file list | Path to newline-separated paths (`--pr-files` for `prepare-diff`) | Yes in CI; recommended locally |
 | Known issues JSON | Path to `{ "issues": [{ "file", "line", "message" }] }` | Optional (CI supplies; may be `[]`) |
 | `Since commit: <sha>` | Runner (incremental) or human in local invocation | Optional — enables incremental diff |
+| Review output directory | Runner prompt or orchestrator-created `{AI_CODE_REVIEW_RUN_DIR}` | Yes |
+| Report file | Runner prompt (`Report file:`) | Yes in CI |
 | Repository root (`cwd`) | Workspace / runner | Yes |
 | Execution context | Omitted (default **local**) or `Execution context: CI` from `reviewer-runner` | Optional |
 
@@ -121,7 +160,7 @@ console.log(sessionDir);
 
 | Context | How to detect | Markdown report |
 |---------|---------------|-----------------|
-| **local** (default) | Prompt has no `Execution context:` line, or value is `local` | After `findings.json`, run `write-findings-markdown.ts` → `.ai-code-review/findings.md` |
+| **local** (default) | Prompt has no `Execution context:` line, or value is `local` | After `findings.json`, run `write-findings-markdown.ts` → `{reviewRunDir}/findings.md` |
 | **CI** | Prompt includes `Execution context: CI` | Do not write `findings.md` |
 
 The runner only passes context; it does not instruct orchestrator actions beyond the skill.
@@ -151,7 +190,7 @@ Operators must see progress **as each phase starts**, not a silent run followed 
 
 | Turn | Narration first (in this order) | Tools allowed in this turn **only** |
 |------|----------------------------------|-------------------------------------|
-| A | Start line | TodoWrite Step 0; session `session-manifest.json`; `prepare-diff` |
+| A | Start line | TodoWrite Step 0; review run dir; session `session-manifest.json`; `prepare-diff` |
 | B | `Diff ready; selecting analyzers.`; `Warning:` lines when incremental fallback applies; `Analyzers: …` | TodoWrite metadata/diff; write session `diff.json`; select analyzers |
 | C | `Launching selected analyzer sub-agents in parallel.` (or subset) | Analyzer Task(s) — parallel batch OK |
 | D | `Collected analyzer output; merging raw findings.` | Read analyzer outputs; merge `raw-findings.json` |
@@ -183,7 +222,8 @@ If the IDE batches text with tools into one bubble, **still** use turns A–F so
 | Before validator Task | `Running validator on raw findings.` |
 | Raw empty, skip validator | `All analyzers returned no findings; skipping validator.` |
 | After `findings.json` written | **Consolidated final block** (see [Orchestrator narration blocks](#orchestrator-narration-blocks-fixed-templates)) |
-| Final | `Report written to: .ai-code-review/findings.json` |
+| Final (CI) | `Report written to: .ai-code-review/<timestamp>/findings.json` |
+| Final (local) | `Report written to: .ai-code-review/<timestamp>/findings.md` |
 
 - Tool work stays silent in narration (no tool names, Task prompts, or bash).
 - `Warning:` / `⚠️` lines when `metadata.warnings` or incremental fallback apply (may appear when they occur; do not duplicate them in the consolidated block unless still relevant).
@@ -192,21 +232,22 @@ If the IDE batches text with tools into one bubble, **still** use turns A–F so
 
 **Do not put in narration:** Task prompts, `tool_use` narration, env dumps, session paths (except `Warning:`), script JSON (e.g. analyzer selection arrays), findings tables/lists (severity/file/line/issue), `Validator funnel:` (already in the ✅ block), horizontal rules (`---`), post-close recaps (“The incremental diff…”, “Both analyzers…”, “Final report: …”), or extra content on the final path line.
 
-**After `🎯 Review complete:`** — at most **one** more line (`Report written to: .ai-code-review/findings.json`). No other assistant text.
+**After `🎯 Review complete:`** — at most **one** more line (`Report written to:`). Use **`findings.md`** when execution context is **local**; use **`findings.json`** when context is **CI**. No other assistant text.
 
 ## Workflow checklist
 
 Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** — end the assistant message (with narration) before starting the next turn’s tools.
 
 1. **Turn A — Step 0:** TodoWrite init (see above).
-2. **Turn A — Session:** Create or reuse session dir; write `session-manifest.json`.
-3. **Turn A — Todo:** `prereq` in_progress (from step 0).
-4. **Turn A:** Run `prepare-diff` (see below); read JSON from stdout or `--output` file — **stop**; do not start analyzer Tasks in this turn.
-5. **Turn B — Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
-6. **Turn B:** Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — turn **F** only).
-7. **Turn B:** If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
-8. **Turn B — Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
-9. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
+2. **Turn A — Review run:** Create or reuse `{reviewRunDir}`; set `AI_CODE_REVIEW_RUN_DIR`; export for later turns.
+3. **Turn A — Session:** Create or reuse session dir; write `session-manifest.json`.
+4. **Turn A — Todo:** `prereq` in_progress (from step 0).
+5. **Turn A:** Run `prepare-diff` (see below); read JSON from stdout or `--output` file — **stop**; do not start analyzer Tasks in this turn.
+6. **Turn B — Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
+7. **Turn B:** Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — turn **F** only).
+8. **Turn B:** If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
+9. **Turn B — Todo:** `diff` in_progress. **Write** `{sessionDir}/diff.json` with the same shape as `prepare-diff` output (`metadata` + `files[]`).
+10. **Select analyzers** (see [Invocation criteria](references/invocation-criteria.md)) — apply the same rules as `scripts/select-analyzers.ts`, or run:
 
    ```bash
    SESSION=$(node -p "JSON.parse(require('fs').readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8')).sessionDir")
@@ -222,25 +263,25 @@ Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** �
 
    Read `selected-analyzers.json` for the list; **do not** paste that JSON into narration.
 
-10. **Turn B — Log analyzers** in narration (exactly one line):
+11. **Turn B — Log analyzers** in narration (exactly one line):
     - Both: `Analyzers: security, performance`
     - Performance skipped: `Analyzers: security (skipped: performance)`
-11. **Turn B end / Turn C start:** Emit `Launching selected analyzer sub-agents in parallel.` (or name subset) — then **Todo:** `diff` completed; `analyzers` in_progress. **End turn B** before analyzer Tasks unless `Launching…` is the last line of turn B and Tasks are turn C only.
-12. **Turn C:** **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Do **not** merge raw or run validator in this turn. Keep `analyzers` in_progress until step 13 starts.
-13. **Turn D — Todo:** `analyzers` completed; `collect` in_progress. Emit `Collected analyzer output; merging raw findings.` in assistant text before merge.
-14. **Turn D:** **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
-15. **Turn D:** **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
-16. **Turn E — Validator path:**
-    - If `raw_findings.length === 0`: emit `All analyzers returned no findings; skipping validator.` in assistant text; write `{ "version": "2", "findings": [] }` to `.ai-code-review/findings.json`; write `.ai-code-review/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
-    - Else: emit `Running validator on raw findings.` in assistant text; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
-17. **Turn E:** **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
-18. **Turn E:** **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
-18b. **Turn E (local context):** When execution context is **local** (default — no `Execution context:` line, or `local`), run `write-findings-markdown.ts` (see [Local markdown report](#local-markdown-report-local-only)). When context is **CI**, skip.
-19. **Turn F — Todo:** `validate` completed; `report` in_progress.
-20. **Turn F:** Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator. **Do not** repeat mid-run lines from turns B–E.
-21. **Turn F:** Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json` — then **end orchestrator narration** (no recap, `---`, or file dumps).
-22. **Turn F — Todo:** `report` completed.
-23. **Turn F:** **Session snapshot & cleanup:** Ensure `.ai-code-review/run-artifacts/` exists; copy session dir → `.ai-code-review/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
+12. **Turn B end / Turn C start:** Emit `Launching selected analyzer sub-agents in parallel.` (or name subset) — then **Todo:** `diff` completed; `analyzers` in_progress. **End turn B** before analyzer Tasks unless `Launching…` is the last line of turn B and Tasks are turn C only.
+13. **Turn C:** **Launch analyzer Tasks** in **one parallel batch** for each selected key. Do **not** launch Tasks for skipped analyzers. Do **not** merge raw or run validator in this turn. Keep `analyzers` in_progress until step 14 starts.
+14. **Turn D — Todo:** `analyzers` completed; `collect` in_progress. Emit `Collected analyzer output; merging raw findings.` in assistant text before merge.
+15. **Turn D:** **Collect** each analyzer output file (manifest paths). On missing file or invalid JSON: **retry once** with the same two-line prompt; on second failure use `{ "analyzer": "<key>", "findings": [] }`.
+16. **Turn D:** **Merge raw** — write `{sessionDir}/raw-findings.json` (v2 shape via `mergeAnalyzerOutputs`).
+17. **Turn E — Validator path:**
+    - If `raw_findings.length === 0`: emit `All analyzers returned no findings; skipping validator.` in assistant text; write `{ "version": "2", "findings": [] }` to `{reviewRunDir}/findings.json`; write `{reviewRunDir}/validator-summary.json` from `zeroedFilterSummary()`; **do not** launch validator Task.
+    - Else: emit `Running validator on raw findings.` in assistant text; **Todo:** `collect` completed; `validate` in_progress. Ensure `{reviewRunDir}/known-issues.json` exists. Launch **one** validator Task (**no retry**).
+18. **Turn E:** **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
+19. **Turn E:** **Map** validated output → `{reviewRunDir}/findings.json` (v2); copy `filter_summary` → `{reviewRunDir}/validator-summary.json` and session `validatorSummary`.
+19b. **Turn E (local context):** When execution context is **local** (default — no `Execution context:` line, or `local`), run `write-findings-markdown.ts` (see [Local markdown report](#local-markdown-report-local-only)). When context is **CI**, skip.
+20. **Turn F — Todo:** `validate` completed; `report` in_progress.
+21. **Turn F:** Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `{reviewRunDir}/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator. **Do not** repeat mid-run lines from turns B–E.
+22. **Turn F:** Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/<timestamp>/findings.md` (**local**) or `…/findings.json` (**CI**) — repo-relative for this run — then **end orchestrator narration** (no recap, `---`, or file dumps).
+23. **Turn F — Todo:** `report` completed.
+24. **Turn F:** **Session snapshot & cleanup:** Ensure `{reviewRunDir}/run-artifacts/` exists; copy session dir → `{reviewRunDir}/run-artifacts/session/`; best-effort `rm -rf` on temp session dir (skip delete on validator abort).
 
 ## `prepare-diff`
 
@@ -252,7 +293,7 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
   --target <target-ref> \
   --pr-files <path-to-pr-files-list> \
   [--since-commit <full-sha>] \
-  [--output .ai-code-review/prepare-diff.json]
+  [--output $AI_CODE_REVIEW_RUN_DIR/prepare-diff.json]
 ```
 
 ## Orchestrator narration blocks (fixed templates)
@@ -284,12 +325,14 @@ Full rules: [references/invocation-criteria.md](references/invocation-criteria.m
 
 ## File contract
 
-### Durable (`.ai-code-review/` at repo root)
+### Durable (`.ai-code-review/<timestamp>/` per run)
 
-| Path | Role |
+Each review run gets its own timestamped folder (filesystem-safe ISO, e.g. `2026-05-31T14-30-00-123Z`). Prior runs are **not** overwritten.
+
+| Path (under run dir) | Role |
 |------|------|
 | `findings.json` | Final v2 report (runner input) |
-| `findings.md` | Human-readable report (local IDE only; severity-ordered) |
+| `findings.md` | Human-readable report (local IDE only; severity sections with findings only) |
 | `validator-summary.json` | Copy of `filter_summary` (or zeroed on skip) |
 | `known-issues.json` | Runner-built; validator input only |
 | `pr-files.txt` | Runner-built PR file list |
@@ -371,7 +414,7 @@ Launch **only** when `raw-findings.json` has `findings.length > 0`. **No retry**
 
 ```text
 Read findings from: /var/folders/.../ai-code-review-abc/raw-findings.json
-Read known issues from: /abs/path/to/repo/.ai-code-review/known-issues.json
+Read known issues from: /abs/path/to/repo/.ai-code-review/2026-05-31T14-30-00-123Z/known-issues.json
 Write output to: /var/folders/.../ai-code-review-abc/validator-output.json
 ```
 
@@ -387,15 +430,16 @@ Write output to: /var/folders/.../ai-code-review-abc/validator-output.json
 npx tsx -e "
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseValidatorOutput, mapValidatorToFindingsReport, zeroedFilterSummary } from './.cursor/skills/ai-code-review/scripts/validator-output.ts';
+const runDir = process.env.AI_CODE_REVIEW_RUN_DIR;
 const m = JSON.parse(readFileSync(process.env.AI_CODE_REVIEW_SESSION_DIR + '/session-manifest.json','utf8'));
 const raw = JSON.parse(readFileSync(m.raw,'utf8'));
 if (!raw.findings?.length) {
-  writeFileSync('.ai-code-review/findings.json', JSON.stringify({ version: '2', findings: [] }, null, 2));
-  writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
+  writeFileSync(runDir + '/findings.json', JSON.stringify({ version: '2', findings: [] }, null, 2));
+  writeFileSync(runDir + '/validator-summary.json', JSON.stringify(zeroedFilterSummary(), null, 2));
 } else {
   const out = parseValidatorOutput(JSON.parse(readFileSync(m.validatorOut,'utf8')));
-  writeFileSync('.ai-code-review/findings.json', JSON.stringify(mapValidatorToFindingsReport(out), null, 2));
-  writeFileSync('.ai-code-review/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
+  writeFileSync(runDir + '/findings.json', JSON.stringify(mapValidatorToFindingsReport(out), null, 2));
+  writeFileSync(runDir + '/validator-summary.json', JSON.stringify(out.filter_summary, null, 2));
   writeFileSync(m.validatorSummary, JSON.stringify(out.filter_summary, null, 2));
 }
 "
@@ -405,22 +449,23 @@ if (!raw.findings?.length) {
 
 Script: `.cursor/skills/ai-code-review/scripts/write-findings-markdown.ts`
 
-Run **after** `.ai-code-review/findings.json` exists when execution context is **local** (default if the prompt omits `Execution context:`):
+Run **after** `{reviewRunDir}/findings.json` exists when execution context is **local** (default if the prompt omits `Execution context:`):
 
 ```bash
+export AI_CODE_REVIEW_RUN_DIR=/abs/path/to/.ai-code-review/2026-05-31T14-30-00-123Z
 npx tsx .cursor/skills/ai-code-review/scripts/write-findings-markdown.ts
 ```
 
-- **Input:** `.ai-code-review/findings.json` (default)
-- **Output:** `.ai-code-review/findings.md` (default)
-- **Order:** `critical` → `major` → `minor` → `enhancement` (most severe first); within a severity, by file path then line
-- **Optional:** reads `.ai-code-review/prepare-diff.json` when present for mode/base header lines
+- **Input:** `{reviewRunDir}/findings.json` (default via `AI_CODE_REVIEW_RUN_DIR`)
+- **Output:** `{reviewRunDir}/findings.md` (default via `AI_CODE_REVIEW_RUN_DIR`)
+- **Order:** `critical` → `major` → `minor` → `enhancement` (most severe first); **omit empty severity sections**
+- **Optional:** reads `{reviewRunDir}/prepare-diff.json` when present for mode/base header lines
 - **Do not** run when execution context is **CI** (`reviewer-runner`, GitHub Actions, E2E evals)
 - **Do not** paste markdown body in orchestrator narration — the file is the human-readable surface
 
 ## Output contract (final report — schema v2)
 
-**Path:** `.ai-code-review/findings.json`
+**Path:** `{reviewRunDir}/findings.json` (repo-relative: `.ai-code-review/<timestamp>/findings.json`)
 
 ```json
 {
@@ -455,7 +500,7 @@ Example: [examples/findings.sample.json](examples/findings.sample.json)
 
 ## Known issues
 
-The runner builds `.ai-code-review/known-issues.json` from existing PR inline comments. Pass the path to the validator Task prompt only.
+The runner builds `{reviewRunDir}/known-issues.json` from existing PR inline comments. Pass the path to the validator Task prompt only.
 
 - **Do not** filter or dedupe in the orchestrator or analyzer subagents.
 - **Do not** dedupe at merge — cross-analyzer dedup is validator Phase 1.

@@ -1,5 +1,6 @@
 import { access, readFile } from "node:fs/promises";
-import path from "node:path";
+import { join } from "node:path";
+import { REVIEW_RUN_FILES } from "../../packages/reviewer-runner/src/review-run-dir.js";
 
 import { Agent } from "@cursor/sdk";
 
@@ -123,11 +124,13 @@ export function validateValidatorOutputText(
 
 export async function runValidatorHarness(options: {
   cwd: string;
+  reviewRunDir: string;
   apiKey: string;
   dryRun?: boolean;
 }): Promise<ValidatorComponentResult> {
   const sessionDir = resolveEvalSessionDir(options.cwd);
-  const taskPrompt = validatorTaskPrompt(sessionDir, options.cwd);
+  const knownIssuesPath = join(options.reviewRunDir, REVIEW_RUN_FILES.knownIssues);
+  const taskPrompt = validatorTaskPrompt(sessionDir, knownIssuesPath);
   const harnessPrompt = buildComponentHarnessPrompt(
     SUBAGENT_TYPES.validator,
     taskPrompt,

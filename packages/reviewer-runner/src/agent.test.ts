@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildReviewPrompt } from "./agent.js";
 
 const REPO = "/repo";
+const RUN_DIR = `${REPO}/.ai-code-review/2026-05-31T12-00-00-000Z`;
 const HEAD_SHA = "c".repeat(40);
 const SINCE = "a".repeat(40);
 
@@ -9,13 +10,14 @@ describe("buildReviewPrompt", () => {
   it("uses a short skill invocation with file parameters", () => {
     const prompt = buildReviewPrompt({
       repoRoot: REPO,
+      reviewRunDir: RUN_DIR,
       sourceRef: HEAD_SHA,
       targetRef: "main",
       headSha: HEAD_SHA,
       sourceBranch: "feature/foo",
       sinceCommit: SINCE,
-      prFilesPath: `${REPO}/.ai-code-review/pr-files.txt`,
-      knownIssuesPath: `${REPO}/.ai-code-review/known-issues.json`,
+      prFilesPath: `${RUN_DIR}/pr-files.txt`,
+      knownIssuesPath: `${RUN_DIR}/known-issues.json`,
     });
     expect(prompt).toContain("ai-code-review skill");
     expect(prompt).toContain("SKILL.md");
@@ -24,9 +26,10 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain(`Commit: ${HEAD_SHA}`);
     expect(prompt).toContain(`Source branch: feature/foo`);
     expect(prompt).toContain(`Since commit: ${SINCE}`);
-    expect(prompt).toContain(`Report file: ${REPO}/.ai-code-review/findings.json`);
-    expect(prompt).toContain(`Known issues file: ${REPO}/.ai-code-review/known-issues.json`);
-    expect(prompt).toContain(`PR files file: ${REPO}/.ai-code-review/pr-files.txt`);
+    expect(prompt).toContain(`Review output directory: ${RUN_DIR}`);
+    expect(prompt).toContain(`Report file: ${RUN_DIR}/findings.json`);
+    expect(prompt).toContain(`Known issues file: ${RUN_DIR}/known-issues.json`);
+    expect(prompt).toContain(`PR files file: ${RUN_DIR}/pr-files.txt`);
     expect(prompt).toContain("Execution context: CI");
     expect(prompt).not.toMatch(/Execution context:.*findings\.md/i);
     expect(prompt).not.toContain("prepare-diff.ts");
@@ -37,6 +40,7 @@ describe("buildReviewPrompt", () => {
   it("omits optional since commit and source branch when absent", () => {
     const prompt = buildReviewPrompt({
       repoRoot: REPO,
+      reviewRunDir: RUN_DIR,
       sourceRef: HEAD_SHA,
       targetRef: "main",
       headSha: HEAD_SHA,
@@ -58,6 +62,12 @@ describe("runReviewAgent prompt option", () => {
       prompt: custom,
     };
     expect(options.prompt).toBe(custom);
-    expect(buildReviewPrompt(options)).not.toContain("E2E eval constraints");
+    expect(buildReviewPrompt({
+      repoRoot: REPO,
+      reviewRunDir: RUN_DIR,
+      sourceRef: HEAD_SHA,
+      targetRef: "main",
+      headSha: HEAD_SHA,
+    })).not.toContain("E2E eval constraints");
   });
 });

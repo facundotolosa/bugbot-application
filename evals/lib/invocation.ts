@@ -11,12 +11,29 @@ export const MODEL_ID = "composer-2.5";
 
 export const SETTING_SOURCES = ["project"] as const;
 
-/** Durable paths under eval workspace root (repo-relative). */
+/** Basenames for files inside a timestamped review run directory. */
+export const REVIEW_RUN_FILENAMES = {
+  knownIssues: "known-issues.json",
+  findings: "findings.json",
+  validatorSummary: "validator-summary.json",
+  prFiles: "pr-files.txt",
+} as const;
+
+/** @deprecated Use paths inside a timestamped review run directory. */
 export const DURABLE_PATHS = {
   knownIssues: ".ai-code-review/known-issues.json",
   findings: ".ai-code-review/findings.json",
   validatorSummary: ".ai-code-review/validator-summary.json",
 } as const;
+
+export function reviewRunInputPaths(reviewRunDir: string) {
+  return {
+    knownIssues: path.join(reviewRunDir, REVIEW_RUN_FILENAMES.knownIssues),
+    findings: path.join(reviewRunDir, REVIEW_RUN_FILENAMES.findings),
+    validatorSummary: path.join(reviewRunDir, REVIEW_RUN_FILENAMES.validatorSummary),
+    prFiles: path.join(reviewRunDir, REVIEW_RUN_FILENAMES.prFiles),
+  };
+}
 
 /** `subagent_type` values — must match `.cursor/agents/*.md` frontmatter `name`. */
 export const SUBAGENT_TYPES = {
@@ -50,12 +67,12 @@ export function performanceTaskPrompt(sessionDir: string): string {
 /** Three-line validator Task prompt (absolute session paths). */
 export function validatorTaskPrompt(
   sessionDir: string,
-  workspaceRoot: string,
+  knownIssuesPath: string,
 ): string {
   const p = sessionPaths(sessionDir);
   return [
     `Read findings from: ${p.raw}`,
-    `Read known issues from: ${path.join(workspaceRoot, DURABLE_PATHS.knownIssues)}`,
+    `Read known issues from: ${knownIssuesPath}`,
     `Write output to: ${p.validatorOut}`,
   ].join("\n");
 }

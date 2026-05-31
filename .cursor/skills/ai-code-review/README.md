@@ -20,14 +20,15 @@
    > Follow the ai-code-review skill.
    > Source: `HEAD` · Target: `main`
    > PR files list: `/tmp/pr-files.txt`
-   > Run `prepare-diff`, print the diff summary, select analyzers, run security/performance subagents in parallel, merge, and write `.ai-code-review/findings.json` (v2).
+   > Run `prepare-diff`, print the diff summary, select analyzers, run security/performance subagents in parallel, merge, and write findings v2 under `.ai-code-review/<timestamp>/`.
 
 4. Confirm durable outputs (IPC lives under `$TMPDIR/ai-code-review-*` during the run):
 
    ```bash
-   cat .ai-code-review/findings.json | jq .
-   cat .ai-code-review/findings.md   # human-readable, severity-ordered (local only)
-   ls .ai-code-review/run-artifacts/session/ 2>/dev/null || true
+   ls .ai-code-review/
+   cat .ai-code-review/*/findings.json | jq .
+   cat .ai-code-review/*/findings.md   # human-readable, local only; latest run
+   ls .ai-code-review/*/run-artifacts/session/ 2>/dev/null || true
    ```
 
 ## Incremental review (local only)
@@ -45,10 +46,10 @@ If the SHA is not an ancestor of `HEAD`, `prepare-diff` falls back to full revie
 | Path | Purpose |
 |------|---------|
 | `$TMPDIR/ai-code-review-*/` | Ephemeral session IPC (diff, analyzer outputs, raw, validator) |
-| `.ai-code-review/findings.json` | Final v2 report |
-| `.ai-code-review/findings.md` | Human-readable report (local IDE only; not written in CI) |
-| `.ai-code-review/validator-summary.json` | Validator funnel summary |
-| `.ai-code-review/run-artifacts/session/` | Post-run snapshot of session IPC |
+| `.ai-code-review/<timestamp>/findings.json` | Final v2 report (one folder per run) |
+| `.ai-code-review/<timestamp>/findings.md` | Human-readable report (local IDE only; non-empty severity sections only) |
+| `.ai-code-review/<timestamp>/validator-summary.json` | Validator funnel summary |
+| `.ai-code-review/<timestamp>/run-artifacts/session/` | Post-run snapshot of session IPC |
 
 ## Analyzer subagents
 
@@ -74,4 +75,4 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help
 
 ## CI path
 
-`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `.ai-code-review/findings.json` (v2) and posts formatted inline comments.
+`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `{reviewRunDir}/findings.json` (v2) and posts formatted inline comments. CI uploads `.ai-code-review/*/run-artifacts/**` as the `ai-review-run-artifacts` artifact.

@@ -11,6 +11,7 @@ import {
   SUBAGENT_TYPES,
   buildComponentHarnessPrompt,
   performanceTaskPrompt,
+  reviewRunInputPaths,
   securityTaskPrompt,
   sessionPaths,
   validatorTaskPrompt,
@@ -64,15 +65,13 @@ describe("invocation parity", () => {
 
   it("validatorTaskPrompt uses absolute session paths (three lines)", async () => {
     const session = await createEvalSession();
-    const ws = "/tmp/eval-worktree";
+    const knownIssuesPath = "/tmp/eval-worktree/.ai-code-review/2026-05-31T12-00-00-000Z/known-issues.json";
     try {
-      const prompt = validatorTaskPrompt(session.sessionDir, ws);
+      const prompt = validatorTaskPrompt(session.sessionDir, knownIssuesPath);
       const lines = prompt.split("\n");
       expect(lines).toHaveLength(3);
       expect(lines[0]).toBe(`Read findings from: ${session.manifest.raw}`);
-      expect(lines[1]).toBe(
-        `Read known issues from: ${join(ws, DURABLE_PATHS.knownIssues)}`,
-      );
+      expect(lines[1]).toBe(`Read known issues from: ${knownIssuesPath}`);
       expect(lines[2]).toBe(`Write output to: ${session.manifest.validatorOut}`);
     } finally {
       await session.cleanup();
@@ -115,8 +114,15 @@ describe("invocation parity", () => {
     expect(prompt).not.toMatch(/severity|false.?positive|root.?cause/i);
   });
 
-  it("DURABLE_PATHS exclude ephemeral work/", () => {
+  it("DURABLE_PATHS are deprecated root-level paths", () => {
     expect(DURABLE_PATHS.findings).toBe(".ai-code-review/findings.json");
     expect(DURABLE_PATHS.knownIssues).toBe(".ai-code-review/known-issues.json");
+  });
+
+  it("reviewRunInputPaths join filenames under a run directory", () => {
+    const runDir = "/repo/.ai-code-review/2026-05-31T12-00-00-000Z";
+    const paths = reviewRunInputPaths(runDir);
+    expect(paths.findings).toBe(`${runDir}/findings.json`);
+    expect(paths.knownIssues).toBe(`${runDir}/known-issues.json`);
   });
 });
