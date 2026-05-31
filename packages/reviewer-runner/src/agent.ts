@@ -52,10 +52,6 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     `  Report file: ${reportFile}`,
     `  Known issues file: ${knownIssuesFile}`,
     `  PR files file: ${prFilesFile}`,
-    "",
-    "Orchestrator contract:",
-    "  - All orchestrator status lines must be in English (short, one sentence per step).",
-    "  - Follow SKILL.md Narration pacing (turns A–F): emit each canonical line in assistant text before that phase's tools; never dump mid-run lines only at the end.",
   );
 
   return lines.join("\n");
