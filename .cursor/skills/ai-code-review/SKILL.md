@@ -48,9 +48,28 @@ You do **not** filter severity, dedupe findings, or run verification yourself �
 
 **First tool call** of the orchestration turn — before **any** other tool (including `prepare-diff`, Bash, Read, or Task).
 
-Full checklist and state machine: [references/progress-todos.md](references/progress-todos.md)
+**Do not** invent or paraphrase `content` strings (e.g. “Verify inputs…”). Use the JSON below **character-for-character** — including the `1-` … `7-` prefixes.
 
-1. `TodoWrite` with `merge: false`, exactly **7** items (`prereq` … `report`) with fixed `content` strings from the reference table; `prereq` starts `in_progress`, others `pending`.
+### Step 0 init — copy verbatim into `TodoWrite`
+
+```json
+{
+  "merge": false,
+  "todos": [
+    { "id": "prereq", "content": "1- Prerequisites check", "status": "in_progress" },
+    { "id": "metadata", "content": "2- Extract PR metadata", "status": "pending" },
+    { "id": "diff", "content": "3- Obtain and prepare diff", "status": "pending" },
+    { "id": "analyzers", "content": "4- Run analyzer sub-agents", "status": "pending" },
+    { "id": "collect", "content": "5- Collect results", "status": "pending" },
+    { "id": "validate", "content": "6- Run validator", "status": "pending" },
+    { "id": "report", "content": "7- Generate JSON report", "status": "pending" }
+  ]
+}
+```
+
+State machine (status-only updates): [references/progress-todos.md](references/progress-todos.md)
+
+1. First tool call: `TodoWrite` with the JSON above (exactly **7** items; no extra todos).
 2. At the **start** of each workflow step below, `TodoWrite` with `merge: true` — update **only** `status` per the state machine (never change `content`).
 3. Mark `report` → `completed` only after `.ai-code-review/findings.json` exists **and** the final stdout line is printed.
 4. **Never** print TodoWrite lines to stdout.

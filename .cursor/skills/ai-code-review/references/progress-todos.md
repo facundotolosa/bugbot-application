@@ -1,10 +1,12 @@
 # Progress todos (IDE only)
 
-Mandatory **TodoWrite** checklist for local orchestration. See [SKILL.md](../SKILL.md) Step 0.
+Mandatory **TodoWrite** checklist for local orchestration.
+
+**Step 0 init:** copy the JSON block in [SKILL.md Step 0](../SKILL.md#step-0--todowrite-mandatory-ide-only) verbatim — do not paraphrase `content`. This file documents the state machine only.
 
 ## Initialization (Step 0 — first tool call)
 
-`TodoWrite` with `merge: false`, exactly **7** items:
+`TodoWrite` with `merge: false`, exactly **7** items (must match SKILL.md JSON):
 
 | `id` | `content` (fixed — never change on merge) | Initial `status` |
 |------|-------------------------------------------|------------------|
@@ -41,6 +43,8 @@ Mandatory **TodoWrite** checklist for local orchestration. See [SKILL.md](../SKI
 
 ## Anti-patterns
 
+- Paraphrased `content` on Step 0 init (e.g. “Verify inputs and create session directory” instead of `1- Prerequisites check`)
+- Reading this file before Step 0 if it delays the first `TodoWrite` call (use SKILL.md JSON first)
 - Extra todo items beyond the seven above
 - Changing `content` strings on `merge: true`
 - Two todos `in_progress` at once
