@@ -49,3 +49,16 @@ Suites: `e2e`, `analyzer-security`, `analyzer-performance`, `validator`.
 4. For component cases, add a matching tree under `evals/fixtures/<case-id>/`.
 
 Golden cases are discovered when `expect.json` exists. Use `--refresh-inputs` (Phase 4+) to regenerate `inputs/diff.json` via `prepare-diff`.
+
+## Invocation parity
+
+Production subagents receive minimal Task prompts from the orchestrator skill; rules live in `.cursor/agents/*.md`.
+
+Evals import **`evals/lib/invocation.ts`** as the single source of truth for:
+
+- `SUBAGENT_TYPES` and `PATHS` under `.ai-code-review/`
+- `securityTaskPrompt()`, `performanceTaskPrompt()`, `validatorTaskPrompt()` — byte-identical to [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md) Task blocks
+- `buildComponentHarnessPrompt()` for component evals (one Task, no duplicated agent rules)
+- `MODEL_ID` and `SETTING_SOURCES` (`["project"]`) matching `reviewer-runner` `agent.ts`
+
+If `SKILL.md` prompt lines change, update `invocation.ts` and fix `invocation.test.ts` — drift fails CI-style locally via `npm test -w evals`.
