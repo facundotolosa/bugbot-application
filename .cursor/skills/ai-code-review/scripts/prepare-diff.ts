@@ -5,7 +5,7 @@ import {
   pathMatchesReviewPackages,
   REVIEW_PACKAGE_EXCLUSION_ID,
   resolveReviewPackages,
-} from "./review-scope.js";
+} from "../../../../packages/reviewer-runner/src/review-scope.js";
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 10 * 1024 * 1024;

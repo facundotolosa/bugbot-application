@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import {
   filterPathsByReviewPackages,
   loadReviewPackagesFromConfig,
-} from "../../../.cursor/skills/ai-code-review/scripts/review-scope.js";
+} from "./review-scope.js";
 import type { FoundTrackingComment } from "./github.js";
 import * as log from "./logger.js";
 
