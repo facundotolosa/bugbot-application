@@ -63,7 +63,6 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     `  Known issues file: ${knownIssuesFile}`,
     `  PR files file: ${prFilesFile}`,
     `  Repository root: ${input.repoRoot}`,
-    `  Shell cwd: run every Bash command from the repository root (cd there first).`,
     `  Execution context: CI`,
   );
 
