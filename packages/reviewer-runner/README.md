@@ -64,9 +64,16 @@ Each finding with `file` + `line` becomes one PR review comment:
 ⚠️ {issue}
 
 💡 **Suggestion:** {suggestion}
+
+<sub>
+
+*Was this comment useful?*  
+[👍](#) | [👎](#)
+
+</sub>
 ```
 
-Analyzer titles and severity emojis are applied in `formatCommentBody` (`findings/comments.ts`).
+Analyzer titles, severity emojis, and the demo feedback footer are applied in `formatCommentBody` (`findings/comments.ts`).
 
 ## Scripts
 
