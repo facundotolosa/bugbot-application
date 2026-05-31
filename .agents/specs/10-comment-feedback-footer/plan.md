@@ -64,7 +64,7 @@ _Each phase must be independently testable/verifiable before moving on._
 #### Verification
 
 - [x] Dry-run orchestration completes (`npm run review -w reviewer-runner -- --dry-run --base origin/main --head HEAD`); fixture comment body includes footer (preview meta skipped when findings dropped from PR scope)
-- [ ] Manual GitHub render check documented in PR or chat (spec validation checklist item) — **deferred** until PR on this branch runs AI review
+- [x] Manual GitHub render check documented in PR or chat — PR #13, human confirmed footer layout OK
 - [x] Spec acceptance criteria mappable — ready for `/validate`
 
 #### Notes
@@ -95,3 +95,4 @@ _Each phase must be independently testable/verifiable before moving on._
 | 2026-05-31 | Initial plan from spec |
 | 2026-05-31 | Phase 1 done: footer in `formatCommentBody`, tests, README |
 | 2026-05-31 | Phase 2 done: dry-run + fixture body smoke; GitHub render deferred to PR |
+| 2026-05-31 | Validate PASS: PR #13 visual check; footer HTML layout fix merged |
