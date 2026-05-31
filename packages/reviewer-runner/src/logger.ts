@@ -138,18 +138,36 @@ export function prompt(text: string, meta: PromptMeta): void {
   writeln(stdout, "");
 }
 
-export function summary(fields: Record<string, string | number>): void {
+export interface ReviewOutcome {
+  mode: string;
+  findings: string | number;
+  posted: number;
+  dropped?: number;
+  tracking?: string | number;
+}
+
+/** Single post-run line (replaces verbose step/meta/summary + done). */
+export function reviewOutcome(
+  status: "complete" | "skipped",
+  outcome: ReviewOutcome,
+): void {
   const c = shouldUseColor();
-  writeln(stdout, fmt(c, BOLD, "Review Summary"));
-  const labels = Object.keys(fields);
-  const width = Math.max(...labels.map((l) => l.length), 8);
-  for (const [label, value] of Object.entries(fields)) {
-    const padded = label.padEnd(width);
-    writeln(
-      stdout,
-      `  ${fmt(c, DIM, padded)}  ${fmt(c, WHITE, String(value))}`,
-    );
+  const parts = [
+    fmt(c, DIM, outcome.mode),
+    fmt(c, WHITE, `${outcome.findings} findings`),
+    fmt(c, WHITE, `${outcome.posted} posted`),
+  ];
+  if (outcome.dropped != null && outcome.dropped > 0) {
+    parts.push(fmt(c, WHITE, `${outcome.dropped} dropped`));
   }
+  if (outcome.tracking != null) {
+    parts.push(fmt(c, WHITE, `tracking ${outcome.tracking}`));
+  }
+  const label = status === "skipped" ? "Review skipped" : "Review complete";
+  writeln(
+    stdout,
+    `${fmt(c, GREEN, "✔")} ${fmt(c, BOLD, label)} — ${parts.join(fmt(c, DIM, " · "))}`,
+  );
 }
 
 export function blank(): void {
@@ -183,44 +201,51 @@ export function orchestratorPrefix(): string {
   return fmt(c, BOLD + CYAN, "[orchestrator] ");
 }
 
-/** Styled orchestrator stdout line (block headers bold, detail lines dim label + white value). */
+const ORCHESTRATOR_EMOJI_BLOCK =
+  /^([📋📊🔬📥⏭️⏩✅🎯])\s+([^:]+):\s*(.*)$/u;
+
+/** Styled orchestrator stdout line — only `[orchestrator]` is colored; titles bold, body plain. */
 export function orchestratorLine(rawLine: string): void {
   const c = shouldUseColor();
   const line = rawLine.trimEnd();
   const prefix = orchestratorPrefix();
 
-  if (/^(📋|📊|🔬|📥|⏭️|✅|🎯)/.test(line.trimStart())) {
-    writeln(stdout, `${prefix}${fmt(c, BOLD + CYAN, line.trimStart())}`);
+  const emojiBlock = ORCHESTRATOR_EMOJI_BLOCK.exec(line.trimStart());
+  if (emojiBlock) {
+    const [, emoji, title, body] = emojiBlock;
+    const titlePart = fmt(c, BOLD, `${title}:`);
+    const suffix = body.length > 0 ? ` ${body}` : "";
+    writeln(stdout, `${prefix}${emoji} ${titlePart}${suffix}`);
     return;
   }
 
   const detail = /^(\s{2,})([a-zA-Z][^:]*):\s*(.*)$/.exec(line);
   if (detail) {
     const [, indent, label, value] = detail;
-    writeln(
-      stdout,
-      `${prefix}${indent}${fmt(c, DIM, `${label}:`)} ${fmt(c, WHITE, value)}`,
-    );
+    writeln(stdout, `${prefix}${indent}${fmt(c, BOLD, `${label}:`)} ${value}`);
     return;
   }
 
   if (/^Analyzers:/i.test(line)) {
     writeln(
       stdout,
-      `${prefix}${fmt(c, BOLD, "Analyzers:")}${fmt(c, WHITE, line.slice("Analyzers:".length))}`,
+      `${prefix}${fmt(c, BOLD, "Analyzers:")}${line.slice("Analyzers:".length)}`,
     );
     return;
   }
 
   if (/^Warning:/i.test(line)) {
-    writeln(stdout, `${prefix}${fmt(c, YELLOW, line)}`);
+    writeln(stdout, `${prefix}${fmt(c, YELLOW, "Warning:")}${line.slice("Warning:".length)}`);
     return;
   }
 
   if (/^Report written to:/i.test(line)) {
-    writeln(stdout, `${prefix}${fmt(c, BOLD + GREEN, line)}`);
+    writeln(
+      stdout,
+      `${prefix}${fmt(c, BOLD, "Report written to:")}${line.slice("Report written to:".length)}`,
+    );
     return;
   }
 
-  writeln(stdout, `${prefix}${fmt(c, WHITE, line.trimStart())}`);
+  writeln(stdout, `${prefix}${line.trimStart()}`);
 }

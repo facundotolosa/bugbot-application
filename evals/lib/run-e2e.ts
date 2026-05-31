@@ -130,7 +130,6 @@ export function buildE2eReviewPrompt(options: {
   pins: E2ePins;
   prFilesPath: string;
   knownIssuesPath: string;
-  prTitle?: string;
 }): string {
   const base = buildReviewPrompt({
     repoRoot: options.worktreeRoot,
@@ -139,7 +138,6 @@ export function buildE2eReviewPrompt(options: {
     headSha: options.pins.head_sha,
     prFilesPath: options.prFilesPath,
     knownIssuesPath: options.knownIssuesPath,
-    prTitle: options.prTitle,
     knownIssuesCount: 0,
   });
 
@@ -222,7 +220,6 @@ export async function runE2eCase(options: {
       pins,
       prFilesPath,
       knownIssuesPath,
-      prTitle: `eval e2e ${options.caseId}`,
     });
 
     await writeFile(path.join(options.artifactDir, "review-prompt.txt"), prompt, "utf8");
@@ -238,7 +235,6 @@ export async function runE2eCase(options: {
         headSha: pins.head_sha,
         prFilesPath,
         knownIssuesPath,
-        prTitle: `eval e2e ${options.caseId}`,
         knownIssuesCount: 0,
         prompt,
       });
