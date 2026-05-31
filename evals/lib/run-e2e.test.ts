@@ -62,7 +62,7 @@ describe("e2e pins and prompt", () => {
 
     expect(prompt).toContain("FULL review only");
     expect(prompt).toContain("Never pass --since-commit");
-    expect(prompt).toContain("work/diff.json already exists");
+    expect(prompt).toContain("session diff.json");
   });
 
   it("buildE2eReviewPrompt includes frozen input paths and head SHA", async () => {
