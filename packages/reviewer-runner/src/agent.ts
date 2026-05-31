@@ -59,6 +59,11 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     lines.push("", `PR title: ${input.prTitle}`);
   }
 
+  lines.push(
+    "",
+    "All orchestrator stdout lines must be in English (short, one sentence per step).",
+  );
+
   return lines.join("\n");
 }
 
