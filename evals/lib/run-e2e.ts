@@ -176,7 +176,6 @@ export async function seedE2eDiff(
     target: pins.base_sha,
     prFiles,
     cwd: worktreeRoot,
-    reviewPackages: [],
   });
 
   await mkdir(path.join(worktreeRoot, WORK_DIR), { recursive: true });

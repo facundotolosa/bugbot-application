@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FoundTrackingComment } from "./github.js";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   type GitRunner,
-  applyReviewPackageScope,
   computeEffectiveScope,
   intersectFiles,
   logReviewMode,
@@ -15,7 +14,6 @@ import {
   validateSinceSha,
   writePrFilesList,
 } from "./git-scope.js";
-import { REVIEW_CONFIG_RELATIVE } from "../../../.cursor/skills/ai-code-review/scripts/review-scope.js";
 
 const SINCE = "a".repeat(40);
 const HEAD = "b".repeat(40);
@@ -119,27 +117,6 @@ describe("resolveReviewMode", () => {
 describe("intersectFiles", () => {
   it("keeps only paths present in both pr and incremental sets", () => {
     expect(intersectFiles(["a.ts", "b.ts", "c.ts"], ["b.ts", "d.ts"])).toEqual(["b.ts"]);
-  });
-});
-
-describe("applyReviewPackageScope", () => {
-  it("filters paths when review.config.json is present", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "review-scope-"));
-    try {
-      await mkdir(join(dir, ".ai-code-review"), { recursive: true });
-      await writeFile(
-        join(dir, REVIEW_CONFIG_RELATIVE),
-        JSON.stringify({ reviewPackages: ["packages/reviewer-runner"] }),
-        "utf8",
-      );
-      const scoped = await applyReviewPackageScope(
-        ["packages/reviewer-runner/a.ts", "packages/ledger-lite/b.ts"],
-        dir,
-      );
-      expect(scoped).toEqual(["packages/reviewer-runner/a.ts"]);
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
   });
 });
 

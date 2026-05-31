@@ -145,16 +145,14 @@ export async function ensureReviewInputFiles(
   base: string,
   head: string,
 ): Promise<{ prFilesPath: string; knownIssuesPath: string }> {
-  const { applyReviewPackageScope, listPrFiles, writePrFilesList } =
-    await import("./git-scope.js");
+  const { listPrFiles, writePrFilesList } = await import("./git-scope.js");
   const aiDir = join(repoRoot, ".ai-code-review");
   await mkdir(aiDir, { recursive: true });
 
   const prFilesPath = join(aiDir, "pr-files.txt");
   const knownIssuesPath = join(aiDir, "known-issues.json");
 
-  const rawPrFiles = await listPrFiles(base, head, repoRoot);
-  const prFiles = await applyReviewPackageScope(rawPrFiles, repoRoot);
+  const prFiles = await listPrFiles(base, head, repoRoot);
   await writePrFilesList(prFiles, prFilesPath);
   const { writeFile } = await import("node:fs/promises");
   await writeFile(knownIssuesPath, JSON.stringify({ issues: [] }, null, 2), "utf8");
