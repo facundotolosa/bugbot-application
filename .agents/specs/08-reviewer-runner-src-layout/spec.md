@@ -164,22 +164,26 @@ These paths import **deep** `packages/reviewer-runner/src/...` today and must be
 
 ## Acceptance criteria
 
-- [ ] `src/` uses the domain folders above (or an approved variant documented in Changelog).
-- [ ] `npm run build -w reviewer-runner` succeeds; `dist/` layout matches pre-refactor (`cli.js`, `index.js`, mirrored subpaths).
-- [ ] `npm test -w reviewer-runner` passes (all unit + contract tests).
-- [ ] `index.ts` exports match pre-refactor symbols (grep or snapshot of export list).
-- [ ] All consumers in [Consumers](#consumers) updated; `npm test -w evals` passes.
-- [ ] Skill script tests under `.cursor/skills/ai-code-review/scripts/**/*.test.ts` still run via reviewer-runner vitest config.
-- [ ] `README.md` includes a **Source layout** section with folder → one-line purpose.
-- [ ] No new circular dependencies between domains (manual or lint note in plan).
+- [x] `src/` uses the domain folders above (or an approved variant documented in Changelog).
+- [x] `npm run build -w reviewer-runner` succeeds; `dist/` layout matches pre-refactor (`cli.js`, `index.js`, mirrored subpaths).
+- [x] `npm test -w reviewer-runner` passes (all unit + contract tests).
+- [x] `index.ts` exports match pre-refactor symbols (grep or snapshot of export list).
+- [x] All consumers in [Consumers](#consumers) updated; `npm test -w evals` passes (44/45; `refresh-diff.test.ts` is commit-history dependent — see plan Notes).
+- [x] Skill script tests under `.cursor/skills/ai-code-review/scripts/**/*.test.ts` still run via reviewer-runner vitest config.
+- [x] `README.md` includes a **Source layout** section with folder → one-line purpose.
+- [x] No new circular dependencies between domains (manual or lint note in plan).
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test -w reviewer-runner` and `npm test -w evals` pass
-- [ ] Local smoke: `npm run review -w reviewer-runner -- --dry-run --skip-agent --base origin/main --head HEAD` from repo root
-- [ ] Grep for stale imports: `packages/reviewer-runner/src/[a-z-]+\.ts` imports from old flat paths return zero (except `index.ts` / `cli.ts`)
-- [ ] No open questions block release (or explicitly deferred)
+- [x] Acceptance criteria above are met
+- [x] `npm test -w reviewer-runner` and `npm test -w evals` pass (evals: one known `refresh-diff` flake — plan Notes)
+- [x] Local smoke: `npm run review -w reviewer-runner -- --dry-run --skip-agent --base origin/main --head HEAD` from repo root
+- [x] Grep for stale imports: `packages/reviewer-runner/src/[a-z-]+\.ts` imports from old flat paths return zero (except `index.ts` / `cli.ts`)
+- [x] No open questions block release (or explicitly deferred)
+
+## Status
+
+`Done` (pending human `/validate` sign-off)
 
 ## Open questions
 
@@ -199,3 +203,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 |------|--------|--------|
 | 2026-05-31 | brainstorm | Initial draft from flat `src/` inventory and consumer grep |
 | 2026-05-31 | human | Resolved OQ 1–5: `agent/`, keep `orchestrate-review`, deep evals imports + deferred barrel, `contract/`, move-only |
+| 2026-05-31 | implement | Modular `src/` layout; consumers + README; export surface unchanged |

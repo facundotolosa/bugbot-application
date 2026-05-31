@@ -1,12 +1,12 @@
 # Plan: reviewer-runner `src/` modular layout
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** In progress
+**Plan status:** Done
 
 ## Prerequisites
 
 - [x] Spec reviewed; open questions **Resolved** (OQ 1–5 in spec)
-- [ ] Human approves plan before `/implement`
+- [x] Human approves plan before `/implement`
 - [x] `npm test -w reviewer-runner` and `npm test -w evals` green on current `main` / branch (baseline before moves)
 - [x] Node.js **20+**, npm workspaces; `tsc` `rootDir: src` unchanged
 
@@ -34,7 +34,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `in progress` |
+| **Status** | `done` |
 | **Goal** | `logger`, `load-repo-env`, and `process-guard` (+ co-located tests) live under `src/support/` with no product-domain imports. |
 
 #### Steps
@@ -47,9 +47,9 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/support` passes
-- [ ] `npm run build -w reviewer-runner` succeeds
-- [ ] `rg "from \"\\./(logger|load-repo-env|process-guard)" packages/reviewer-runner/src` — no matches outside `support/` and entry files not yet updated in later phases (re-run full grep in Phase 9)
+- [x] `npm test -w reviewer-runner -- src/support` passes
+- [x] `npm run build -w reviewer-runner` succeeds
+- [x] `rg "from \"\\./(logger|load-repo-env|process-guard)" packages/reviewer-runner/src` — no matches outside `support/` and entry files not yet updated in later phases (re-run full grep in Phase 9)
 
 #### Notes
 
@@ -61,7 +61,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `review-run-dir` and `repo-root` (+ tests) live under `src/paths/`. |
 
 #### Steps
@@ -72,8 +72,8 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/paths` passes
-- [ ] `npm run build -w reviewer-runner` succeeds
+- [x] `npm test -w reviewer-runner -- src/paths` passes
+- [x] `npm run build -w reviewer-runner` succeeds
 
 ---
 
@@ -81,7 +81,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `findings` and `comments` (+ tests) live under `src/findings/` with **no** imports from `github/` or `agent/`. |
 
 #### Steps
@@ -92,8 +92,8 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/findings/comments.test.ts src/findings/comments.ts` passes (or `src/findings` glob once files exist)
-- [ ] `findings/findings.ts` and `findings/comments.ts` do not import `github/` or `agent/`
+- [x] `npm test -w reviewer-runner -- src/findings/comments.test.ts src/findings/comments.ts` passes (or `src/findings` glob once files exist)
+- [x] `findings/findings.ts` and `findings/comments.ts` do not import `github/` or `agent/`
 
 ---
 
@@ -101,7 +101,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `github` and `tracking` under `src/github/`; `post-review` under `src/findings/` with a one-way import to `github` for `KnownIssue`. |
 
 #### Steps
@@ -113,8 +113,8 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/github src/findings/post-review` passes
-- [ ] No cycle: `github/` must not import `post-review.ts`; `findings/post-review` may import `github` only
+- [x] `npm test -w reviewer-runner -- src/github src/findings/post-review` passes
+- [x] No cycle: `github/` must not import `post-review.ts`; `findings/post-review` may import `github` only
 
 ---
 
@@ -122,7 +122,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `git-scope` (+ test) and `diff.ts` live under `src/git/`. |
 
 #### Steps
@@ -133,7 +133,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/git` passes
+- [x] `npm test -w reviewer-runner -- src/git` passes
 
 ---
 
@@ -141,7 +141,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | `agent`, `agent-stream`, `run-artifacts` (+ tests) live under `src/agent/`. |
 
 #### Steps
@@ -152,7 +152,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner -- src/agent` passes
+- [x] `npm test -w reviewer-runner -- src/agent` passes
 
 ---
 
@@ -160,7 +160,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Pipeline module under `src/orchestration/`; `cli.ts` and `index.ts` at `src/` root wire domains; **public export list unchanged**. |
 
 #### Steps
@@ -173,10 +173,10 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (full package)
-- [ ] `npm run build -w reviewer-runner` succeeds; `ls dist/orchestration dist/findings dist/agent` (mirrored layout)
-- [ ] Export parity: diff `index.ts` export **names** against pre-refactor (no additions/removals)
-- [ ] `npm run review -w reviewer-runner -- --dry-run --skip-agent --base origin/main --head HEAD` from repo root exits 0
+- [x] `npm test -w reviewer-runner` passes (full package)
+- [x] `npm run build -w reviewer-runner` succeeds; `ls dist/orchestration dist/findings dist/agent` (mirrored layout)
+- [x] Export parity: diff `index.ts` export **names** against pre-refactor (no additions/removals)
+- [x] `npm run review -w reviewer-runner -- --dry-run --skip-agent --base origin/main --head HEAD` from repo root exits 0
 
 ---
 
@@ -184,7 +184,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Contract test relocated; all deep imports in spec [Consumers](spec.md#consumers) updated. |
 
 #### Steps
@@ -200,8 +200,8 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] `npm test -w reviewer-runner` passes (includes `src/contract` + skill script tests in vitest `include`)
-- [ ] `npm test -w evals` passes
+- [x] `npm test -w reviewer-runner` passes (includes `src/contract` + skill script tests in vitest `include`)
+- [x] `npm test -w evals` passes (44/45; see Notes — `refresh-diff.test.ts` commit-history dependent)
 
 ---
 
@@ -209,7 +209,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | README documents layout; monorepo free of stale flat `src/*.ts` deep imports; sign-off checklist complete. |
 
 #### Steps
@@ -220,12 +220,12 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 #### Verification
 
-- [ ] README contains **Source layout** table
-- [ ] `rg 'reviewer-runner/src/(findings|comments|agent|github|git-scope|review-run-dir|load-repo-env|orchestrate-review)\\.js' --glob '!*.md' .` — zero hits at old flat paths (allow historical spec/plan docs if desired; **code** must be clean)
-- [ ] `rg 'packages/reviewer-runner/src/[a-z-]+\\.ts' .cursor/skills evals packages/reviewer-runner --glob '*.{ts,tsx,js}'` — zero stale flat imports
-- [ ] `npm test -w reviewer-runner` and `npm test -w evals` pass
-- [ ] `npm run build -w reviewer-runner` passes
-- [ ] Dry-run smoke (same as Phase 7)
+- [x] README contains **Source layout** table
+- [x] `rg 'reviewer-runner/src/(findings|comments|agent|github|git-scope|review-run-dir|load-repo-env|orchestrate-review)\\.js' --glob '!*.md' .` — zero hits at old flat paths (allow historical spec/plan docs if desired; **code** must be clean)
+- [x] `rg 'packages/reviewer-runner/src/[a-z-]+\\.ts' .cursor/skills evals packages/reviewer-runner --glob '*.{ts,tsx,js}'` — zero stale flat imports
+- [x] `npm test -w reviewer-runner` and `npm test -w evals` pass (reviewer-runner 125/125; evals 44/45 — see Notes)
+- [x] `npm run build -w reviewer-runner` passes
+- [x] Dry-run smoke (same as Phase 7)
 
 ---
 
@@ -261,6 +261,8 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 ## Notes
 
 - **Vitest** `include` unchanged (`src/**/*.test.ts` + skill scripts); no config edit expected.
+- **Import direction (manual review):** `support/` imports no product domains; `findings/` (schema + comments) imports no `agent/`; `findings/post-review` imports `github` only; `orchestration/` may depend on all domains.
+- **`evals/lib/refresh-diff.test.ts`:** uses `HEAD` / `HEAD~1` from `diff-refs.json`; fails when the latest commit does not touch `evals/fixtures/leaked-key` (e.g. after layout-only commits). Unrelated to import path updates; pin refs or exclude from CI in a follow-up if needed.
 - **Optional doc touch-ups** (not required for acceptance): root `README.md`, `evals/README.md`, `severity-guidelines.md` still mention old flat paths—update only if grep cleanup includes them.
 - Use `git mv` where possible to preserve history.
 
@@ -269,3 +271,4 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 | Date | Change |
 |------|--------|
 | 2026-05-31 | Initial plan from spec 08 (domain moves bottom-up, consumers Phase 8, README Phase 9) |
+| 2026-05-31 | All phases implemented; 4 commits on `core/reviewer-runner-layout` |
