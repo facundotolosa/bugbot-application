@@ -1,6 +1,6 @@
 # Evals harness (golden cases + regression)
 
-**Status:** Pending
+**Status:** Pending (awaiting human sign-off after local `npm run eval` with `CURSOR_API_KEY`)
 
 ## Product summary
 
@@ -162,24 +162,24 @@ Full precision/recall tables deferred.
 
 ## Acceptance criteria
 
-- [ ] `evals/` exists with documented layout and at least **6 golden cases** total (≥2 E2E, ≥2 analyzer, ≥2 validator).
-- [ ] Shared **invocation parity** module exports Task prompts and subagent types matching `SKILL.md` verbatim.
-- [ ] **Analyzer eval** runs security (and at least one performance case) with only the two-line prompt; reads/writes only declared paths under fixture `cwd`.
-- [ ] **Validator eval** runs with only the three-line prompt; references `severity-guidelines.md`, `root-cause-dedup.md`, `false-positive-filters.md` via agent definition (not duplicated in eval prompt).
-- [ ] **E2E eval** uses `buildReviewPrompt` + `runReviewAgent` (or equivalent exported runner) against a fixture repo and asserts `findings.json` passes `parseFindingsFile` plus `expect.json`.
-- [ ] Each case has at least one **`must_find`** or **`must_not_find`** with a **`judge.rubric`**; harness runs LLM-as-judge for every expectation in v1.
-- [ ] `npm run eval` fails with clear message when `CURSOR_API_KEY` is unset.
-- [ ] README section in `evals/README.md` (or package doc) explains tests vs evals and how to add a case.
-- [ ] Root `AGENTS.md` lists `evals/` path.
+- [x] `evals/` exists with documented layout and at least **6 golden cases** total (≥2 E2E, ≥2 analyzer, ≥2 validator).
+- [x] Shared **invocation parity** module exports Task prompts and subagent types matching `SKILL.md` verbatim.
+- [x] **Analyzer eval** runs security (and at least one performance case) with only the two-line prompt; reads/writes only declared paths under fixture `cwd`.
+- [x] **Validator eval** runs with only the three-line prompt; references `severity-guidelines.md`, `root-cause-dedup.md`, `false-positive-filters.md` via agent definition (not duplicated in eval prompt).
+- [x] **E2E eval** uses `buildReviewPrompt` + `runReviewAgent` (or equivalent exported runner) against a fixture repo and asserts `findings.json` passes `parseFindingsFile` plus `expect.json`.
+- [x] Each case has at least one **`must_find`** or **`must_not_find`** with a **`judge.rubric`**; harness runs LLM-as-judge for every expectation in v1.
+- [x] `npm run eval` fails with clear message when `CURSOR_API_KEY` is unset.
+- [x] README section in `evals/README.md` (or package doc) explains tests vs evals and how to add a case.
+- [x] Root `AGENTS.md` lists `evals/` path.
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` still passes (no regression in deterministic tests)
+- [x] Acceptance criteria above are met (code + tests; full LLM eval run deferred to human with API key)
+- [x] `npm test` still passes (no regression in deterministic tests)
 - [ ] `npm run eval` passes locally with key (documented in plan) on all v1 cases
-- [ ] Manual spot-check: eval Task prompt strings match `SKILL.md` copy-paste
-- [ ] No eval prompt duplicates long rules from `.cursor/agents/*.md`
-- [ ] `evals/README.md` states evals are **local-only** in v1 (no CI workflow)
+- [x] Manual spot-check: eval Task prompt strings match `SKILL.md` copy-paste (`invocation.test.ts`)
+- [x] No eval prompt duplicates long rules from `.cursor/agents/*.md`
+- [x] `evals/README.md` states evals are **local-only** in v1 (no CI workflow)
 
 ## Open questions
 
@@ -207,3 +207,4 @@ _Status: `Open` · `Deferred` · `Resolved`_
 | 2026-05-31 | brainstorm | Resolved Q5: one dedicated performance analyzer golden in v1 |
 | 2026-05-31 | brainstorm | Resolved Q6: local-only in v1, no GitHub Actions |
 | 2026-05-31 | brainstorm | Resolved Q7: skill tests stay in skill, not in root npm test; no script package move |
+| 2026-05-31 | implement | Phases 1–7 complete; 6 golden cases; `/validate` pending full `npm run eval` with API key |

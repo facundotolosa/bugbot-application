@@ -1,7 +1,7 @@
 # Plan: Evals harness (golden cases + regression)
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Done
+**Plan status:** Done (all phases implemented)
 
 ## Prerequisites
 
@@ -232,7 +232,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Single `npm run eval` runs all suites; metrics + filters; docs and spec validation checklist complete. |
 
 #### Steps
@@ -245,12 +245,12 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `npm test` (root) passes — no regression in `reviewer-runner` / workspaces
-- [ ] `npm test -w evals` passes
-- [ ] `npm run eval` without key → clear error
-- [ ] `CURSOR_API_KEY=… npm run eval` passes all v1 cases (document date/key in plan changelog when run)
-- [ ] `evals/README.md` states **local-only**, no GitHub Actions workflow
-- [ ] All spec acceptance criteria checked off in `/validate`
+- [x] `npm test` (root) passes — no regression in `reviewer-runner` / workspaces
+- [x] `npm test -w evals` passes (40 tests)
+- [x] `npm run eval` without key → clear error
+- [ ] `CURSOR_API_KEY=… npm run eval` passes all v1 cases (human: run locally; key not available in implement session)
+- [x] `evals/README.md` states **local-only**, no GitHub Actions workflow
+- [x] All spec acceptance criteria checked off (LLM run item deferred)
 
 ---
 
@@ -306,3 +306,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Phase 4 done: run-component harness, leaked-key + n-plus-one cases, run.ts wiring, refresh-inputs |
 | 2026-05-31 | Phase 5 done: validator harness (no retry), dedup-positive + fp-filter-negative cases |
 | 2026-05-31 | Phase 6 done: E2E worktree runner, factory branches, ledger-security + ledger-pipeline cases |
+| 2026-05-31 | Phase 7 done: run summary metrics, README/AGENTS.md finalized, automated validation |
