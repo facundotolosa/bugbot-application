@@ -1,6 +1,6 @@
 # Evals console reporter (Vitest-style UX)
 
-**Status:** Pending
+**Status:** In progress
 
 ## Product summary
 
