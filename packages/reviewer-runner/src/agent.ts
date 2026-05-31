@@ -15,7 +15,7 @@ import {
   findingsReportRelativePath,
   REVIEW_RUN_FILES,
   runArtifactsDirInRun,
-} from "./review-run-dir.js";
+} from "./paths/review-run-dir.js";
 import { writeRunArtifacts } from "./run-artifacts.js";
 
 /** @deprecated Use findings path inside a timestamped review run directory. */

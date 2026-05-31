@@ -21,7 +21,7 @@ export {
   reviewRunRelativeDir,
   REVIEW_RUN_FILES,
   AI_CODE_REVIEW_DIR,
-} from "./review-run-dir.js";
+} from "./paths/review-run-dir.js";
 export {
   buildReviewPrompt,
   ensureReviewInputFiles,
