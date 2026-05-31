@@ -7,16 +7,16 @@ import {
   createReviewRunDir,
   findingsPathInRun,
   REVIEW_RUN_FILES,
-} from "../../packages/reviewer-runner/src/review-run-dir.js";
+} from "../../packages/reviewer-runner/src/paths/review-run-dir.js";
 import {
   buildReviewPrompt,
   runReviewAgent,
-} from "../../packages/reviewer-runner/src/agent.js";
-import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings.js";
+} from "../../packages/reviewer-runner/src/agent/agent.js";
+import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings/findings.js";
 import {
   listPrFiles,
   writePrFilesList,
-} from "../../packages/reviewer-runner/src/git-scope.js";
+} from "../../packages/reviewer-runner/src/git/git-scope.js";
 import {
   prepareDiff,
 } from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";

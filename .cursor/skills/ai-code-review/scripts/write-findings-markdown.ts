@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import type { Finding, FindingsReport, Severity } from "../../../../packages/reviewer-runner/src/findings.js";
-import { parseFindingsJson } from "../../../../packages/reviewer-runner/src/findings.js";
+import type { Finding, FindingsReport, Severity } from "../../../../packages/reviewer-runner/src/findings/findings.js";
+import { parseFindingsJson } from "../../../../packages/reviewer-runner/src/findings/findings.js";
 
 export const SEVERITY_ORDER: readonly Severity[] = [
   "critical",

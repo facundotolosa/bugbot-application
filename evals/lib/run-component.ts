@@ -1,10 +1,10 @@
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { REVIEW_RUN_FILES } from "../../packages/reviewer-runner/src/review-run-dir.js";
+import { REVIEW_RUN_FILES } from "../../packages/reviewer-runner/src/paths/review-run-dir.js";
 
 import { Agent } from "@cursor/sdk";
 
-import { REPO_ROOT } from "../../packages/reviewer-runner/src/load-repo-env.js";
+import { REPO_ROOT } from "../../packages/reviewer-runner/src/support/load-repo-env.js";
 import { getEvalModelId } from "../config.js";
 import type {
   FilterSummary,
@@ -26,7 +26,7 @@ import {
 import type {
   AnalyzerKey,
   FindingsReport,
-} from "../../packages/reviewer-runner/src/findings.js";
+} from "../../packages/reviewer-runner/src/findings/findings.js";
 
 export type AnalyzerComponentResult = {
   analyzer: AnalyzerKey;

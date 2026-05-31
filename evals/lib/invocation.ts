@@ -1,4 +1,4 @@
-/** Parity with `packages/reviewer-runner/src/agent.ts` and `.cursor/skills/ai-code-review/SKILL.md`. */
+/** Parity with `packages/reviewer-runner/src/agent/agent.ts` and `.cursor/skills/ai-code-review/SKILL.md`. */
 
 import path from "node:path";
 

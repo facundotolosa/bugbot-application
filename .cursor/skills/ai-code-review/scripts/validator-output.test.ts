@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFindingsJson } from "../../../../packages/reviewer-runner/src/findings.js";
+import { parseFindingsJson } from "../../../../packages/reviewer-runner/src/findings/findings.js";
 import {
   mapValidatorToFindingsReport,
   parseValidatorOutput,

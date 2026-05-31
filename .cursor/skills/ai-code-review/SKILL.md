@@ -127,7 +127,7 @@ Create immediately after the session dir (Turn A), **before** `prepare-diff`:
 
 ```bash
 npx tsx -e "
-import { createReviewRunDir } from './packages/reviewer-runner/src/review-run-dir.ts';
+import { createReviewRunDir } from './packages/reviewer-runner/src/paths/review-run-dir.ts';
 const runDir = process.env.AI_CODE_REVIEW_RUN_DIR
   ? process.env.AI_CODE_REVIEW_RUN_DIR
   : await createReviewRunDir(process.cwd());
