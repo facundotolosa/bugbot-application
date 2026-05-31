@@ -103,7 +103,7 @@ export class EvalReporter {
     const key = caseKey(suite, caseId);
     this.runningKey = key;
     this.states.set(key, "running");
-    this.renderTree();
+    this.renderCaseUpdate(suite, caseId);
 
     if (this.isTTY && !this.isCI) {
       this.startSpinner();
@@ -116,7 +116,7 @@ export class EvalReporter {
     this.runningKey = null;
     this.states.set(key, result.pass ? "passed" : "failed");
     this.results.set(key, result);
-    this.renderTree();
+    this.renderCaseUpdate(result.suite, result.caseId);
 
     if (this.verbose && result.taskPrompt) {
       this.printTaskPrompt(result.taskPrompt);
@@ -161,7 +161,10 @@ export class EvalReporter {
     this.stopSpinner();
     this.spinnerTimer = setInterval(() => {
       this.spinnerFrame = (this.spinnerFrame + 1) % SPINNER_FRAMES.length;
-      this.renderTree();
+      if (this.runningKey) {
+        const [suite, caseId] = this.runningKey.split("/") as [string, string];
+        this.renderCaseUpdate(suite, caseId);
+      }
     }, 80);
   }
 
@@ -184,6 +187,19 @@ export class EvalReporter {
     }
 
     this.treeLineCount = lines.length;
+  }
+
+  private renderCaseUpdate(suite: string, caseId: string): void {
+    if (!this.isTTY) {
+      this.writeLine(this.formatCaseLine(suite, caseId));
+      const result = this.results.get(caseKey(suite, caseId));
+      if (result?.error) {
+        this.writeLine(`      ${result.error}`);
+      }
+      return;
+    }
+
+    this.renderTree();
   }
 
   private buildTreeLines(): string[] {
