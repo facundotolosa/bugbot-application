@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "is_incremental": false,
+    "diff_base": "eval-base",
+    "merge_base": "eval-base",
+    "pr_size": "small",
+    "total_files": 1,
+    "total_lines_added": 8,
+    "total_lines_removed": 4,
+    "files_excluded": 0,
+    "excluded_patterns_matched": {},
+    "warnings": []
+  },
+  "files": [
+    {
+      "path": "src/users.ts",
+      "diff": "--- a/src/users.ts\n+++ b/src/users.ts\n@@ -1,6 +1,8 @@\n export async function loadUsers(ids: string[]): Promise<unknown[]> {\n-  const response = await fetch(`https://api.example.com/users?ids=${ids.join(\",\")}`);\n-  return response.json();\n+  const results: unknown[] = [];\n+  for (const id of ids) {\n+    const response = await fetch(`https://api.example.com/users/${id}`);\n+    results.push(await response.json());\n+  }\n+  return results;\n }\n",
+      "lines_added": 6,
+      "lines_removed": 2
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "suite": "analyzer-performance",
+  "must_find": [
+    {
+      "file": "src/users.ts",
+      "match": "N\\+1|per-row|loop.*fetch|sequential fetch",
+      "severity_min": "major"
+    }
+  ],
+  "judge": {
+    "rubric": "Must flag an N+1 or per-iteration HTTP/database fetch pattern in the loadUsers loop introduced in the diff."
+  }
+}

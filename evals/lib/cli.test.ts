@@ -21,6 +21,7 @@ describe("cli", () => {
       ]),
     ).toEqual({
       suite: "analyzer-security",
+      suites: ["analyzer-security"],
       caseId: "leaked-key",
       refreshInputs: true,
     });

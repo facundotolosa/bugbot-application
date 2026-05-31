@@ -48,7 +48,23 @@ Suites: `e2e`, `analyzer-security`, `analyzer-performance`, `validator`.
 3. Add frozen inputs under `inputs/` (e.g. `diff.json`, `raw-findings.json`).
 4. For component cases, add a matching tree under `evals/fixtures/<case-id>/`.
 
-Golden cases are discovered when `expect.json` exists. Use `--refresh-inputs` (Phase 4+) to regenerate `inputs/diff.json` via `prepare-diff`.
+Golden cases are discovered when `expect.json` exists.
+
+### `--refresh-inputs`
+
+When `inputs/diff-refs.json` is present (`source`, `target`, `pr_files`), re-runs `prepare-diff` against `evals/fixtures/<case-id>/` (git repo) and overwrites `inputs/diff.json`. Fixture repos ship with two commits (`HEAD` / `HEAD~1`).
+
+### Analyzer golden cases (v1)
+
+| Case | Suite | Fixture |
+|------|-------|---------|
+| `leaked-key` | `analyzer-security` | Hardcoded API key in `src/auth.ts` |
+| `n-plus-one` | `analyzer-performance` | Per-id `fetch` inside a loop |
+
+```bash
+npm run eval -- --suite analyzer-security --case leaked-key
+npm run eval:analyzers   # both analyzer suites
+```
 
 ## Invocation parity
 

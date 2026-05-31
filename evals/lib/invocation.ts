@@ -23,12 +23,12 @@ export const SUBAGENT_TYPES = {
   validator: "ai-code-review-validator",
 } as const;
 
-const SECURITY_TASK_LINES = [
+export const SECURITY_TASK_LINES = [
   `Read diff from: ${PATHS.diff}`,
   `Write findings to: ${PATHS.securityFindings}`,
 ] as const;
 
-const PERFORMANCE_TASK_LINES = [
+export const PERFORMANCE_TASK_LINES = [
   `Read diff from: ${PATHS.diff}`,
   `Write findings to: ${PATHS.performanceFindings}`,
 ] as const;

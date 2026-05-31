@@ -25,7 +25,13 @@ export async function discoverCases(
   const cases: DiscoveredCase[] = [];
 
   for (const suite of entries) {
-    if (options.suite && suite !== options.suite) continue;
+    const suiteFilter =
+      options.suites.length > 0
+        ? options.suites
+        : options.suite
+          ? [options.suite]
+          : null;
+    if (suiteFilter && !suiteFilter.includes(suite)) continue;
 
     const suiteDir = path.join(CASES_ROOT, suite);
     const stat = await fs.stat(suiteDir).catch(() => null);
