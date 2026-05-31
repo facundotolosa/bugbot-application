@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "util";
 import { describe, expect, it } from "vitest";
 
+import { prepareDiff } from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";
 import {
   buildE2eReviewPrompt,
   loadE2ePins,
@@ -45,6 +47,23 @@ describe("e2e pins and prompt", () => {
     }
   });
 
+  it("buildE2eReviewPrompt requires full review (not incremental since HEAD)", async () => {
+    const pins = await loadE2ePins(SECURITY_CASE);
+    const worktreeRoot = "/tmp/eval-worktree";
+    const prFilesPath = join(worktreeRoot, ".ai-code-review/pr-files.txt");
+    const knownIssuesPath = join(worktreeRoot, ".ai-code-review/known-issues.json");
+
+    const prompt = buildE2eReviewPrompt({
+      worktreeRoot,
+      pins,
+      prFilesPath,
+      knownIssuesPath,
+    });
+
+    expect(prompt).toContain("FULL review");
+    expect(prompt).toContain("Do NOT treat the Head commit SHA as Since commit");
+  });
+
   it("buildE2eReviewPrompt includes frozen input paths and head SHA", async () => {
     const pins = await loadE2ePins(SECURITY_CASE);
     const worktreeRoot = "/tmp/eval-worktree";
@@ -73,6 +92,28 @@ describe("e2e pins and prompt", () => {
     );
     expect(stdout).toContain("packages/ledger-lite/");
     expect(stdout).not.toMatch(/packages\/reviewer-runner\//);
+  });
+
+  it("prepareDiff for ledger-pipeline pins yields scoped file changes", async () => {
+    const caseDir = join(import.meta.dirname, "../cases/e2e/ledger-pipeline");
+    const pins = await loadE2ePins(caseDir);
+    const prFilesText = await readFile(join(caseDir, "inputs/pr-files.txt"), "utf8");
+    const prFiles = new Set(
+      prFilesText
+        .trim()
+        .split("\n")
+        .filter((line) => line.length > 0),
+    );
+
+    const diff = await prepareDiff({
+      source: pins.head_sha,
+      target: pins.base_sha,
+      prFiles,
+      cwd: REPO_ROOT,
+    });
+
+    expect(diff.files.length).toBeGreaterThan(0);
+    expect(diff.files[0]?.path).toContain("transactions-export");
   });
 
   it("refreshE2ePrFilesInput writes ledger-lite paths only", async () => {

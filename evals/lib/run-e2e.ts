@@ -13,7 +13,11 @@ import {
   listPrFiles,
   writePrFilesList,
 } from "../../packages/reviewer-runner/src/git-scope.js";
+import {
+  prepareDiff,
+} from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";
 import { getOutDir } from "../config.js";
+import { PATHS, WORK_DIR } from "./invocation.js";
 import { assertCaseFromFile } from "./assert-case.js";
 import { loadExpectFile } from "./expect.js";
 import type { JudgeFn } from "./judge.js";
@@ -128,7 +132,7 @@ export function buildE2eReviewPrompt(options: {
   knownIssuesPath: string;
   prTitle?: string;
 }): string {
-  return buildReviewPrompt({
+  const base = buildReviewPrompt({
     repoRoot: options.worktreeRoot,
     sourceRef: options.pins.source_ref,
     targetRef: options.pins.target_ref,
@@ -138,6 +142,47 @@ export function buildE2eReviewPrompt(options: {
     prTitle: options.prTitle,
     knownIssuesCount: 0,
   });
+
+  return [
+    base,
+    "",
+    "E2E eval constraints:",
+    "- Use FULL review from merge-base to head (not incremental).",
+    "- Do NOT treat the Head commit SHA as Since commit.",
+    "- A frozen work/diff.json may already exist; re-run prepare-diff in full mode if needed.",
+  ].join("\n");
+}
+
+async function readPrFilesSet(prFilesPath: string): Promise<Set<string>> {
+  const text = await readFile(prFilesPath, "utf8");
+  return new Set(
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  );
+}
+
+/** Pre-seed diff so the orchestrator has a non-empty scoped diff (full base..head). */
+export async function seedE2eDiff(
+  worktreeRoot: string,
+  pins: E2ePins,
+  prFilesPath: string,
+): Promise<void> {
+  const prFiles = await readPrFilesSet(prFilesPath);
+  const diff = await prepareDiff({
+    source: pins.head_sha,
+    target: pins.base_sha,
+    prFiles,
+    cwd: worktreeRoot,
+  });
+
+  await mkdir(path.join(worktreeRoot, WORK_DIR), { recursive: true });
+  await writeFile(
+    path.join(worktreeRoot, PATHS.diff),
+    JSON.stringify(diff, null, 2),
+    "utf8",
+  );
 }
 
 export async function runE2eCase(options: {
@@ -167,6 +212,8 @@ export async function runE2eCase(options: {
       options.caseDir,
       worktreePath,
     );
+
+    await seedE2eDiff(worktreePath, pins, prFilesPath);
 
     const prompt = buildE2eReviewPrompt({
       worktreeRoot: worktreePath,
