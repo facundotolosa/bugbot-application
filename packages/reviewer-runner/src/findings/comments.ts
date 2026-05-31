@@ -19,14 +19,8 @@ const SEVERITY_EMOJIS: Record<Severity, string> = {
   enhancement: "✨",
 };
 
-const COMMENT_FEEDBACK_FOOTER = [
-  "<sub>",
-  "",
-  "*Was this comment useful?*  ",
-  "[👍](#) | [👎](#)",
-  "",
-  "</sub>",
-].join("\n");
+const COMMENT_FEEDBACK_FOOTER =
+  '<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>';
 
 export function formatCommentBody(finding: Finding): string {
   const title = ANALYZER_TITLES[finding.analyzer];

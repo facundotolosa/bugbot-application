@@ -8,14 +8,8 @@ import { parseFindingsJson } from "./findings.js";
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures");
 
-const COMMENT_FEEDBACK_FOOTER = [
-  "<sub>",
-  "",
-  "*Was this comment useful?*  ",
-  "[👍](#) | [👎](#)",
-  "",
-  "</sub>",
-].join("\n");
+const COMMENT_FEEDBACK_FOOTER =
+  '<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>';
 
 function finding(
   overrides: Partial<Finding> & Pick<Finding, "analyzer" | "severity" | "issue" | "suggestion">,
@@ -83,8 +77,9 @@ describe("formatCommentBody", () => {
       }),
     );
     expect(body).toContain("<sub>");
-    expect(body).toContain("*Was this comment useful?*");
-    expect(body).toContain("[👍](#) | [👎](#)");
+    expect(body).toContain("<em>Was this comment useful?</em>");
+    expect(body).toContain('<a href="#">👍</a>');
+    expect(body).toContain('<a href="#">👎</a>');
     expect(body.endsWith(COMMENT_FEEDBACK_FOOTER)).toBe(true);
   });
 
