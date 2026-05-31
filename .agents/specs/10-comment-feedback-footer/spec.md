@@ -1,5 +1,7 @@
 # Comment feedback footer (demo placeholder)
 
+**Status:** Done
+
 ## Product summary
 
 Inline PR review comments posted by `reviewer-runner` should end with a small **feedback footer** so the demo looks like a product that collects usefulness signals. The footer is **visual only**: thumbs-up / thumbs-down links have **no backend, no tracking, and no click handler** — they exist purely as a placeholder for portfolio demos.
@@ -30,26 +32,21 @@ Inline PR review comments posted by `reviewer-runner` should end with a small **
 
 Only **inline review comments** on PR diffs. The orchestrator and analyzers continue emitting v2 JSON; markdown formatting stays centralized in `formatCommentBody`.
 
-### Footer format (GitHub Markdown)
+### Footer format (GitHub)
 
 Appended **after** the existing suggestion block, separated by one blank line:
 
-```markdown
-<sub>
-
-*Was this comment useful?*  
-[👍](#) | [👎](#)
-
-</sub>
+```html
+<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>
 ```
 
 | Element | Rule |
 |---------|------|
-| Size | Entire footer wrapped in `<sub>…</sub>` — GitHub allows this HTML tag in PR comments and renders it smaller than body text (no custom CSS; `font-size` is stripped). |
-| Prompt line | `*Was this comment useful?*` — italic inside `<sub>`. |
-| Thumbs | Literal 👍 and 👎, each a markdown link with placeholder `href`: `[👍](#)` and `[👎](#)`. |
-| Separator | ASCII pipe with spaces: ` \| ` between the two links. |
-| Spacing | One blank line between the suggestion line and the opening `<sub>`; optional single trailing space after the prompt line (`  `) so the thumbs stay on the next line inside `<sub>`. |
+| Size | Entire footer wrapped in `<sub>…</sub>` — renders smaller than body text (no custom CSS). |
+| Prompt | `<em>Was this comment useful?</em>` — italic inside `<sub>`. |
+| Line break | `<br>` between prompt and thumbs (markdown line breaks inside `<sub>` overlap on GitHub). |
+| Thumbs | Literal 👍 and 👎 as `<a href="#">` links; pipe separator ` \| ` between them. |
+| Spacing | One blank line between the suggestion line and the footer HTML block. |
 
 ### Full comment example
 
@@ -60,12 +57,7 @@ Appended **after** the existing suggestion block, separated by one blank line:
 
 💡 **Suggestion:** Guard the divisor before calling `divide`.
 
-<sub>
-
-*Was this comment useful?*  
-[👍](#) | [👎](#)
-
-</sub>
+<sub><em>Was this comment useful?</em><br><a href="#">👍</a> | <a href="#">👎</a></sub>
 ```
 
 ### Edge cases
@@ -80,26 +72,26 @@ N/A — internal string formatting in `formatCommentBody`. No new env vars, webh
 
 ## Acceptance criteria
 
-- [ ] Every inline comment body from `formatCommentBody` ends with the footer block exactly as specified (`<sub>` wrapper, italic prompt, linked emojis).
-- [ ] Tracking comment body is unchanged (no footer).
-- [ ] Thumbs links use placeholder href `[👍](#)`, `[👎](#)`; no real URL or query params.
-- [ ] Footer text renders smaller than the main comment body (via `<sub>`).
-- [ ] `npm test -w reviewer-runner` passes, including updated/added tests for the footer.
-- [ ] On a real PR, rendered comment shows smaller italic prompt and clickable thumb links (manual smoke once implemented).
+- [x] Every inline comment body from `formatCommentBody` ends with the footer block exactly as specified (`<sub>` wrapper, italic prompt, linked emojis).
+- [x] Tracking comment body is unchanged (no footer).
+- [x] Thumbs links use placeholder href `<a href="#">`; no real URL or query params.
+- [x] Footer text renders smaller than the main comment body (via `<sub>`).
+- [x] `npm test -w reviewer-runner` passes, including updated/added tests for the footer.
+- [x] On a real PR, rendered comment shows smaller italic prompt and clickable thumb links (PR #13, human confirmed).
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test -w reviewer-runner` passes
-- [ ] Spot-check one posted inline comment on GitHub: footer visibly smaller than body, links render as links, clicks are inert (no navigation beyond `#` anchor)
-- [ ] No open questions block release (or explicitly deferred in Open questions)
+- [x] Acceptance criteria above are met
+- [x] `npm test -w reviewer-runner` passes
+- [x] Spot-check one posted inline comment on GitHub: footer visibly smaller than body, links render as links, clicks are inert (PR #13)
+- [x] No open questions block release (or explicitly deferred in Open questions)
 
 ## Open questions
 
 | # | Question | Status | Answer / decision |
 |---|----------|--------|-------------------|
 | 1 | Should the **tracking comment** also show the feedback footer? | Resolved | **No** — inline finding comments only. |
-| 2 | Link href for thumbs: empty `()` vs `#`? | Resolved | **`[👍](#)` / `[👎](#)`** — placeholder links, no backend. |
+| 2 | Link href for thumbs: empty `()` vs `#`? | Resolved | **`<a href="#">`** — placeholder links, no backend. |
 | 3 | Smaller footer text? | Resolved | Wrap footer in **`<sub>…</sub>`** (GitHub-safe; no CSS). |
 | 4 | Export a dedicated `formatCommentFooter()` helper vs inline strings in `formatCommentBody`? | Deferred | Implementation detail; default to smallest change (inline or tiny constant in `comments.ts`). |
 
@@ -111,3 +103,5 @@ N/A — internal string formatting in `formatCommentBody`. No new env vars, webh
 | 2026-05-31 | brainstorm | Links `[👍](#)`; footer wrapped in `<sub>` for smaller text |
 | 2026-05-31 | implement | Phase 1: `COMMENT_FEEDBACK_FOOTER` appended in `formatCommentBody` |
 | 2026-05-31 | implement | Phase 2: dry-run smoke; GitHub render check deferred to PR |
+| 2026-05-31 | implement | Footer layout fix: HTML `<br>` + `<a href="#">` (markdown inside `<sub>` overlapped) |
+| 2026-05-31 | validate | PASS — PR #13 visual check; spec Done |
