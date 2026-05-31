@@ -1,0 +1,19 @@
+{
+  "suite": "validator",
+  "must_find": [
+    {
+      "file": "src/auth.ts",
+      "line_near": 10,
+      "line_tolerance": 5,
+      "match": "hardcoded|secret|api key",
+      "severity_min": "major"
+    }
+  ],
+  "validator_funnel": {
+    "final_output_min": 1,
+    "final_output_max": 2
+  },
+  "judge": {
+    "rubric": "After deduplication, exactly one root-cause finding about hardcoded secrets in src/auth.ts should remain; duplicate lines on the same defect must be merged."
+  }
+}

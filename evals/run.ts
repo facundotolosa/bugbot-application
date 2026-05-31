@@ -50,7 +50,8 @@ async function main(): Promise<void> {
       `  ${status} (${(result.durationMs / 1000).toFixed(1)}s${retry}${judge})`,
     );
     if (result.taskPrompt) {
-      console.log("  Task prompt (2 lines):");
+      const lineCount = result.taskPrompt.split("\n").length;
+      console.log(`  Task prompt (${lineCount} lines):`);
       for (const line of result.taskPrompt.split("\n")) {
         console.log(`    ${line}`);
       }

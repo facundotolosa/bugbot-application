@@ -66,6 +66,20 @@ npm run eval -- --suite analyzer-security --case leaked-key
 npm run eval:analyzers   # both analyzer suites
 ```
 
+### Validator golden cases (v1)
+
+| Case | Intent |
+|------|--------|
+| `dedup-positive` | Near-duplicate security findings on `src/auth.ts` collapse to one root-cause finding |
+| `fp-filter-negative` | Placeholder credential + test-file nit filtered; real `src/auth.ts` token kept |
+
+Inputs: frozen `raw-findings.json` + `known-issues.json`. Validator harness uses the **three-line** Task prompt only; **no retry** on missing/invalid `validator-output.json`.
+
+```bash
+npm run eval:validator
+npm run eval -- --suite validator --case dedup-positive
+```
+
 ## Invocation parity
 
 Production subagents receive minimal Task prompts from the orchestrator skill; rules live in `.cursor/agents/*.md`.
