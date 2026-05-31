@@ -1,15 +1,15 @@
 {
   "metadata": {
     "is_incremental": false,
-    "diff_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
-    "merge_base": "c5984cc3fb143701c1d7bab75fe439c67c6173e4",
+    "diff_base": "f054e04c9dcf90805ed40771fbebd8d7a4efdefb",
+    "merge_base": "f054e04c9dcf90805ed40771fbebd8d7a4efdefb",
     "pr_size": "small",
     "total_files": 1,
     "total_lines_added": 4,
     "total_lines_removed": 0,
-    "files_excluded": 114,
+    "files_excluded": 1,
     "excluded_patterns_matched": {
-      "out-of-pr": 114
+      "out-of-pr": 1
     },
     "warnings": []
   },
