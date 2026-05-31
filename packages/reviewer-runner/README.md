@@ -108,6 +108,7 @@ With `--dry-run` and no `CURSOR_API_KEY`, uses `fixtures/findings.json` (v2) aft
 | `.cursor/skills/ai-code-review/scripts/validator-output.ts` | Parse/map validator JSON to findings v2 |
 | `.cursor/agents/ai-code-review-*-analyzer.md` | Security / performance subagent definitions |
 | `.cursor/agents/ai-code-review-validator.md` | Validator funnel subagent |
-| `.ai-code-review/work/` | Diff, analyzer, raw, validator artifacts |
 | `.ai-code-review/known-issues.json` | Runner-built; validator input |
 | `.ai-code-review/findings.json` | Final v2 report post-validator (runner reads this) |
+| `.ai-code-review/validator-summary.json` | Validator `filter_summary` (local debug) |
+| `.ai-code-review/run-artifacts/session/` | Snapshot of ephemeral session IPC after a run |
