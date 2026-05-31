@@ -52,6 +52,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     `  Report file: ${reportFile}`,
     `  Known issues file: ${knownIssuesFile}`,
     `  PR files file: ${prFilesFile}`,
+    `  Execution context: CI`,
   );
 
   return lines.join("\n");

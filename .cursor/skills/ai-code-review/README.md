@@ -26,6 +26,7 @@
 
    ```bash
    cat .ai-code-review/findings.json | jq .
+   cat .ai-code-review/findings.md   # human-readable, severity-ordered (local only)
    ls .ai-code-review/run-artifacts/session/ 2>/dev/null || true
    ```
 
@@ -45,6 +46,7 @@ If the SHA is not an ancestor of `HEAD`, `prepare-diff` falls back to full revie
 |------|---------|
 | `$TMPDIR/ai-code-review-*/` | Ephemeral session IPC (diff, analyzer outputs, raw, validator) |
 | `.ai-code-review/findings.json` | Final v2 report |
+| `.ai-code-review/findings.md` | Human-readable report (local IDE only; not written in CI) |
 | `.ai-code-review/validator-summary.json` | Validator funnel summary |
 | `.ai-code-review/run-artifacts/session/` | Post-run snapshot of session IPC |
 
