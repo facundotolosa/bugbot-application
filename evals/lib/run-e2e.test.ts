@@ -111,6 +111,7 @@ describe("e2e pins and prompt", () => {
       target: pins.base_sha,
       prFiles,
       cwd: REPO_ROOT,
+      reviewPackages: [],
     });
 
     expect(diff.files.length).toBeGreaterThan(0);

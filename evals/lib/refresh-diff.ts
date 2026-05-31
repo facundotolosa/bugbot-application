@@ -30,17 +30,29 @@ export async function loadDiffRefs(caseDir: string): Promise<DiffRefs> {
   };
 }
 
+function toMonorepoPrFiles(fixtureId: string, prFiles: string[]): string[] {
+  const prefix = path.posix.join("evals", "fixtures", fixtureId);
+  return prFiles.map((file) => {
+    const normalized = file.replace(/^\.\//, "");
+    if (normalized.startsWith("evals/")) {
+      return normalized;
+    }
+    return path.posix.join(prefix, normalized);
+  });
+}
+
 export async function refreshCaseDiffInput(options: {
   caseDir: string;
   fixtureId: string;
 }): Promise<PrepareDiffOutput> {
   const refs = await loadDiffRefs(options.caseDir);
-  const fixtureRoot = path.join(EVALS_ROOT, "fixtures", options.fixtureId);
+  const monorepoRoot = path.join(EVALS_ROOT, "..");
   const output = await prepareDiff({
     source: refs.source,
     target: refs.target,
-    prFiles: new Set(refs.pr_files),
-    cwd: fixtureRoot,
+    prFiles: new Set(toMonorepoPrFiles(options.fixtureId, refs.pr_files)),
+    cwd: monorepoRoot,
+    reviewPackages: [],
   });
 
   const dest = path.join(options.caseDir, "inputs", "diff.json");

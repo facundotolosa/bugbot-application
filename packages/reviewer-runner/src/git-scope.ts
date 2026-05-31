@@ -1,6 +1,10 @@
 import { execFile } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
+import {
+  filterPathsByReviewPackages,
+  loadReviewPackagesFromConfig,
+} from "../../../.cursor/skills/ai-code-review/scripts/review-scope.js";
 import type { FoundTrackingComment } from "./github.js";
 import * as log from "./logger.js";
 
@@ -233,18 +237,28 @@ export async function isPureSync(
   return log.trim() === "";
 }
 
+export async function applyReviewPackageScope(
+  paths: string[],
+  cwd: string,
+): Promise<string[]> {
+  const reviewPackages = await loadReviewPackagesFromConfig(cwd);
+  return filterPathsByReviewPackages(paths, reviewPackages);
+}
+
 export async function computeEffectiveScope(
   input: ShouldSkipAgentInput,
 ): Promise<EffectiveScope> {
   const runner = input.runner ?? createExecGitRunner();
-  const prFiles = await runner.listPrFiles(input.base, input.head, input.cwd);
+  const rawPrFiles = await runner.listPrFiles(input.base, input.head, input.cwd);
+  const prFiles = await applyReviewPackageScope(rawPrFiles, input.cwd);
 
   if (input.mode === "incremental" && input.sinceCommit) {
-    const incrementalFiles = await runner.listIncrementalFiles(
+    const rawIncremental = await runner.listIncrementalFiles(
       input.sinceCommit,
       input.head,
       input.cwd,
     );
+    const incrementalFiles = await applyReviewPackageScope(rawIncremental, input.cwd);
     return {
       prFiles,
       incrementalFiles,

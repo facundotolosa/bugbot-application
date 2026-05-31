@@ -60,6 +60,8 @@ You do **not** filter severity, dedupe findings, or run verification yourself â€
 
 **Do not** paste a raw full-PR `git diff` as the primary input; use `prepare-diff` so scope, ignores, and metadata stay consistent with CI.
 
+**Review package scope:** When `.ai-code-review/review.config.json` exists (e.g. `{ "reviewPackages": ["packages/reviewer-runner"] }`), `prepare-diff` only includes paths under those prefixes (exclusions appear as `review-package` in metadata). Build `pr-files` from the full PR; package filtering is automatic. Eval/fixture runs pass `reviewPackages: []` to disable.
+
 ## Progress visibility
 
 The runner forwards **every line you print to stdout** with an `[orchestrator]` prefix as it streams. Operators must see **what you are doing in order**, not only a dump at the end.

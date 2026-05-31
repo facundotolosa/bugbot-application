@@ -32,6 +32,20 @@ describe("filterReviewableFiles", () => {
     expect(result.excludedPatterns.lockfile).toBe(1);
     expect(result.excludedPatterns["build-output"]).toBe(1);
   });
+
+  it("excludes in-pr paths outside reviewPackages", () => {
+    const prFiles = new Set([
+      "packages/reviewer-runner/src/a.ts",
+      "packages/ledger-lite/src/b.ts",
+    ]);
+    const result = filterReviewableFiles(
+      ["packages/reviewer-runner/src/a.ts", "packages/ledger-lite/src/b.ts"],
+      prFiles,
+      ["packages/reviewer-runner"],
+    );
+    expect(result.reviewable).toEqual(["packages/reviewer-runner/src/a.ts"]);
+    expect(result.excludedPatterns["review-package"]).toBe(1);
+  });
 });
 
 describe("resolveDiffBase", () => {
