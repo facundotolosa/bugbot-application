@@ -1,0 +1,23 @@
+{
+  "suite": "validator",
+  "must_find": [
+    {
+      "file": "src/auth.ts",
+      "match": "hardcoded|token|secret",
+      "severity_min": "major"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "src/config.ts",
+      "match": "YOUR_API_KEY|placeholder"
+    },
+    {
+      "file": "src/utils.test.ts",
+      "match": "null check|test"
+    }
+  ],
+  "judge": {
+    "rubric": "Keep the real hardcoded token in src/auth.ts. Drop placeholder YOUR_API_KEY noise in src/config.ts and test-file null-check nit in src/utils.test.ts per false-positive filters."
+  }
+}

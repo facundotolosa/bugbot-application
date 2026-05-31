@@ -167,7 +167,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | ≥2 validator cases (positive funnel + filter/negative) with three-line Task prompt only; **no** validator retry. |
 
 #### Steps
@@ -183,8 +183,8 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 #### Verification
 
 - [ ] `CURSOR_API_KEY=… npm run eval -- --suite validator` passes both cases locally
-- [ ] Missing validator output fails case without retry (simulate by corrupting path in dry test or unit test hook)
-- [ ] Validator Task prompt is exactly three lines from `invocation.ts`
+- [x] Missing validator output fails case without retry (simulate by corrupting path in dry test or unit test hook)
+- [x] Validator Task prompt is exactly three lines from `invocation.ts`
 
 ---
 
@@ -304,3 +304,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Phase 2 done: `invocation.ts` + tests; README invocation parity section |
 | 2026-05-31 | Phase 3 done: expect schema, workspace seeding, structural gates, judge + assert-case |
 | 2026-05-31 | Phase 4 done: run-component harness, leaked-key + n-plus-one cases, run.ts wiring, refresh-inputs |
+| 2026-05-31 | Phase 5 done: validator harness (no retry), dedup-positive + fp-filter-negative cases |

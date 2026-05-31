@@ -33,7 +33,7 @@ export const PERFORMANCE_TASK_LINES = [
   `Write findings to: ${PATHS.performanceFindings}`,
 ] as const;
 
-const VALIDATOR_TASK_LINES = [
+export const VALIDATOR_TASK_LINES = [
   `Read findings from: ${PATHS.rawFindings}`,
   `Read known issues from: ${PATHS.knownIssues}`,
   `Write output to: ${PATHS.validatorOutput}`,

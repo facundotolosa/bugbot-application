@@ -1,0 +1,29 @@
+{
+  "version": "2",
+  "findings": [
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 10,
+      "issue": "Hardcoded API key in source",
+      "suggestion": "Load the API key from an environment variable or secret manager"
+    },
+    {
+      "analyzer": "security",
+      "severity": "major",
+      "file": "src/auth.ts",
+      "line": 11,
+      "issue": "Hardcoded secret exposed in auth module",
+      "suggestion": "Remove the secret from source control"
+    },
+    {
+      "analyzer": "security",
+      "severity": "minor",
+      "file": "src/auth.ts",
+      "line": 12,
+      "issue": "API key visible in client bundle",
+      "suggestion": "Keep secrets server-side only"
+    }
+  ]
+}
