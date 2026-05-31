@@ -34,6 +34,11 @@ export function sumAmounts(values: number[]): number {
   return values.reduce((acc, v) => acc + v, 0);
 }
 
+/** Converts amount using rate; rate of 0 yields Infinity (intentional demo bug). */
+export function convertWithRate(amount: number, rate: number): number {
+  return amount / rate;
+}
+
 /** True when amount is exactly zero (fixture dashboards use this for empty totals). */
 export function isZeroAmount(amount: number): boolean {
   return amount === 0;
