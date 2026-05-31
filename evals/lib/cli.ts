@@ -35,7 +35,7 @@ export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliOptions
 export function requireCursorApiKey(): void {
   if (!process.env[API_KEY_ENV]?.trim()) {
     console.error(
-      `Evals require a Cursor API key. Set ${API_KEY_ENV} in your environment and run again.`,
+      `Evals require a Cursor API key. Set ${API_KEY_ENV} in the repository root .env or your environment and run again.`,
     );
     process.exit(1);
   }

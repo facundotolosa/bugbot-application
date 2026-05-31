@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { loadRepoEnv } from "./load-repo-env.js";
+
+loadRepoEnv();
+
 import { installProcessGuards } from "./process-guard.js";
 
 installProcessGuards();
@@ -102,7 +106,9 @@ async function main() {
   const needsAgent = !args.dryRun && !args.skipAgent;
 
   if (needsAgent && !apiKey) {
-    log.error("CURSOR_API_KEY is required unless --dry-run or --skip-agent");
+    log.error(
+      "CURSOR_API_KEY is required unless --dry-run or --skip-agent (set in repo root .env or environment)",
+    );
     process.exit(1);
   }
 

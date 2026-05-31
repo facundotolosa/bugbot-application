@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { loadRepoEnv } from "../packages/reviewer-runner/src/load-repo-env.js";
+
+loadRepoEnv();
+
 import path from "node:path";
 
 import { EVALS_ROOT } from "./config.js";
