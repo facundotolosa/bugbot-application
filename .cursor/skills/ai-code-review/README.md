@@ -75,4 +75,4 @@ npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts --help
 
 ## CI path
 
-`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `{reviewRunDir}/findings.json` (v2) and posts formatted inline comments. CI uploads `.ai-code-review/*/run-artifacts/**` as the `ai-review-run-artifacts` artifact.
+`packages/reviewer-runner` invokes **one** SDK agent with this skill. The orchestrator spawns analyzer subagents via Task; the runner reads `{reviewRunDir}/findings.json` (v2) and posts formatted inline comments. CI uploads `.ai-code-review/**/run-artifacts/**` (`include-hidden-files: true` — the parent dir is dot-prefixed) as the `ai-review-run-artifacts` artifact.
