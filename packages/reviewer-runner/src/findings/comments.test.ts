@@ -8,6 +8,9 @@ import { parseFindingsJson } from "./findings.js";
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures");
 
+const COMMENT_FEEDBACK_FOOTER =
+  '<sub><em>Was this comment useful?</em> <a href="#">👍</a> | <a href="#">👎</a></sub>';
+
 function finding(
   overrides: Partial<Finding> & Pick<Finding, "analyzer" | "severity" | "issue" | "suggestion">,
 ): Finding {
@@ -64,6 +67,22 @@ describe("formatCommentBody", () => {
     expect(body).not.toMatch(/\n💡 \*\*Suggestion:\*\*.*\n.*🚨/);
   });
 
+  it("appends demo feedback footer with sub wrapper and placeholder thumb links", () => {
+    const body = formatCommentBody(
+      finding({
+        analyzer: "security",
+        severity: "major",
+        issue: "example issue",
+        suggestion: "example suggestion",
+      }),
+    );
+    expect(body).toContain("<sub>");
+    expect(body).toContain("<em>Was this comment useful?</em>");
+    expect(body).toContain('<a href="#">👍</a>');
+    expect(body).toContain('<a href="#">👎</a>');
+    expect(body.endsWith(COMMENT_FEEDBACK_FOOTER)).toBe(true);
+  });
+
   it("matches spec example structure for performance minor", () => {
     const body = formatCommentBody(
       finding({
@@ -82,6 +101,8 @@ describe("formatCommentBody", () => {
         "💡 `getPracticeAccountFeatures` loads accountFeatures even though only `practice.country` is used.",
         "",
         "💡 **Suggestion:** Use a country-only projection or `context.practice.country` when present.",
+        "",
+        COMMENT_FEEDBACK_FOOTER,
       ].join("\n"),
     );
   });
