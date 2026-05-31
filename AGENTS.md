@@ -27,6 +27,7 @@ Application code and runtime assets.
 | `packages/reviewer-runner/` | Incremental orchestration, tracking comment, Cursor SDK, inline PR comments (npm workspace) |
 | `packages/ledger-lite/` | Non-functional React finance dashboard fixture (mock data + utils, npm workspace) |
 | `.github/workflows/ai-code-review.yml` | `pull_request` AI review via `reviewer-runner` |
+| `evals/` | Golden-case regression harness (LLM runs; separate from Vitest) |
 
 ---
 
