@@ -2,19 +2,26 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { EVALS_ROOT, getOutDir } from "../config.js";
-import { DURABLE_PATHS } from "./invocation.js";
+import { reviewRunInputPaths } from "./invocation.js";
 import { createEvalSession, type SessionManifest } from "./session.js";
+import { createReviewRunDir } from "../../packages/reviewer-runner/src/review-run-dir.js";
 
-const INPUT_DEST = (manifest: SessionManifest): Record<string, string> => ({
-  "diff.json": manifest.diff,
-  "security-findings.json": manifest.security,
-  "performance-findings.json": manifest.performance,
-  "raw-findings.json": manifest.raw,
-  "validator-output.json": manifest.validatorOut,
-  "known-issues.json": DURABLE_PATHS.knownIssues,
-  "findings.json": DURABLE_PATHS.findings,
-  "pr-files.txt": ".ai-code-review/pr-files.txt",
-});
+const inputDest = (
+  manifest: SessionManifest,
+  reviewRunDir: string,
+): Record<string, string> => {
+  const runPaths = reviewRunInputPaths(reviewRunDir);
+  return {
+    "diff.json": manifest.diff,
+    "security-findings.json": manifest.security,
+    "performance-findings.json": manifest.performance,
+    "raw-findings.json": manifest.raw,
+    "validator-output.json": manifest.validatorOut,
+    "known-issues.json": runPaths.knownIssues,
+    "findings.json": runPaths.findings,
+    "pr-files.txt": runPaths.prFiles,
+  };
+};
 
 /** Copied into case `inputs/` only for `--refresh-inputs`; not seeded into the workspace. */
 const INPUT_SKIP = new Set(["diff-refs.json"]);
@@ -29,6 +36,7 @@ export type SeedWorkspaceOptions = {
 
 export type SeededWorkspace = {
   cwd: string;
+  reviewRunDir: string;
   sessionDir: string;
   manifest: SessionManifest;
   cleanup: () => Promise<void>;
@@ -77,7 +85,9 @@ export async function seedWorkspace(
   await copyDir(fixtureSource, cwd);
 
   const session = await createEvalSession();
-  const destMap = INPUT_DEST(session.manifest);
+  const reviewRunDir = await createReviewRunDir(cwd);
+  process.env.AI_CODE_REVIEW_RUN_DIR = reviewRunDir;
+  const destMap = inputDest(session.manifest, reviewRunDir);
 
   const inputsDir = path.join(options.caseDir, "inputs");
   if (await pathExists(inputsDir)) {
@@ -98,6 +108,7 @@ export async function seedWorkspace(
 
   return {
     cwd,
+    reviewRunDir,
     sessionDir: session.sessionDir,
     manifest: session.manifest,
     cleanup: async () => {

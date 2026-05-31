@@ -47,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ai-review-run-artifacts
-          path: .ai-code-review/run-artifacts/**
+          path: .ai-code-review/*/run-artifacts/**
           if-no-files-found: ignore

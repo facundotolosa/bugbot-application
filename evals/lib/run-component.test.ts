@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { createReviewRunDir } from "../../packages/reviewer-runner/src/review-run-dir.js";
 import { securityTaskPrompt, validatorTaskPrompt } from "./invocation.js";
 import { createEvalSession } from "./session.js";
 import {
@@ -77,6 +78,8 @@ describe("runValidatorHarness", () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
     const cwd = await mkdtemp(join(tmpdir(), "eval-validator-"));
+    const reviewRunDir = await createReviewRunDir(cwd, new Date("2026-05-31T12:00:00.000Z"));
+    await writeFile(join(reviewRunDir, "known-issues.json"), JSON.stringify({ issues: [] }), "utf8");
     const session = await createEvalSession();
     cleanups.push(async () => {
       await session.cleanup();
@@ -113,12 +116,15 @@ describe("runValidatorHarness", () => {
 
     const result = await runValidatorHarness({
       cwd,
+      reviewRunDir,
       apiKey: "test-key",
       dryRun: true,
     });
 
     expect(result.retry).toBe(false);
-    expect(result.taskPrompt).toBe(validatorTaskPrompt(session.sessionDir, cwd));
+    expect(result.taskPrompt).toBe(
+      validatorTaskPrompt(session.sessionDir, join(reviewRunDir, "known-issues.json")),
+    );
     expect(result.taskPrompt.split("\n")).toHaveLength(3);
     expect(result.filterSummary.final_output).toBe(1);
   });
@@ -135,7 +141,12 @@ describe("runValidatorHarness", () => {
     });
 
     await expect(
-      runValidatorHarness({ cwd, apiKey: "test-key", dryRun: true }),
+      runValidatorHarness({
+        cwd,
+        reviewRunDir: await createReviewRunDir(cwd),
+        apiKey: "test-key",
+        dryRun: true,
+      }),
     ).rejects.toThrow(/no retry/i);
   });
 

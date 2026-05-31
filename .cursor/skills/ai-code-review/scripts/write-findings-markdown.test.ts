@@ -38,12 +38,12 @@ describe("formatFindingsMarkdown", () => {
       generatedAt: new Date("2026-05-31T12:00:00.000Z"),
     });
     const criticalIdx = md.indexOf("## Critical");
-    const majorIdx = md.indexOf("## Major");
     const minorIdx = md.indexOf("## Minor");
     const enhancementIdx = md.indexOf("## Enhancement");
-    expect(criticalIdx).toBeLessThan(majorIdx);
-    expect(majorIdx).toBeLessThan(minorIdx);
-    expect(minorIdx).toBeLessThan(enhancementIdx);
+    expect(criticalIdx).toBeGreaterThan(-1);
+    expect(minorIdx).toBeGreaterThan(criticalIdx);
+    expect(enhancementIdx).toBeGreaterThan(minorIdx);
+    expect(md).not.toContain("## Major");
   });
 
   it("lists findings under the matching severity section", () => {
@@ -53,23 +53,25 @@ describe("formatFindingsMarkdown", () => {
     expect(md).toContain("evals/lib/workspace.ts");
     const criticalSection = md.slice(
       md.indexOf("## Critical"),
-      md.indexOf("## Major"),
+      md.indexOf("## Minor"),
     );
     expect(criticalSection).toContain("Hardcoded secret.");
     expect(criticalSection).not.toContain("Session leak.");
   });
 
-  it("includes summary counts", () => {
+  it("includes summary counts for non-empty severities only", () => {
     const md = formatFindingsMarkdown(sample);
     expect(md).toContain(
-      "**Summary:** 3 findings · critical 1 · major 0 · minor 1 · enhancement 1",
+      "**Summary:** 3 findings · critical 1 · minor 1 · enhancement 1",
     );
+    expect(md).not.toContain("major 0");
   });
 
-  it("handles empty findings", () => {
+  it("handles empty findings without severity sections", () => {
     const md = formatFindingsMarkdown({ version: "2", findings: [] });
     expect(md).toContain("**Summary:** 0 findings");
-    expect(md).toContain("_No findings._");
+    expect(md).not.toContain("## Critical");
+    expect(md).not.toContain("_No findings._");
   });
 
   it("includes diff mode from metadata", () => {

@@ -4,8 +4,12 @@ import path from "node:path";
 import { promisify } from "util";
 
 import {
+  createReviewRunDir,
+  findingsPathInRun,
+  REVIEW_RUN_FILES,
+} from "../../packages/reviewer-runner/src/review-run-dir.js";
+import {
   buildReviewPrompt,
-  FINDINGS_PATH,
   runReviewAgent,
 } from "../../packages/reviewer-runner/src/agent.js";
 import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings.js";
@@ -96,18 +100,17 @@ export async function removeE2eWorktree(
 export async function seedE2eInputs(
   caseDir: string,
   worktreeRoot: string,
-): Promise<{ prFilesPath: string; knownIssuesPath: string }> {
-  const aiDir = path.join(worktreeRoot, ".ai-code-review");
-  await mkdir(aiDir, { recursive: true });
+): Promise<{ reviewRunDir: string; prFilesPath: string; knownIssuesPath: string }> {
+  const reviewRunDir = await createReviewRunDir(worktreeRoot);
 
-  const prFilesPath = path.join(aiDir, "pr-files.txt");
-  const knownIssuesPath = path.join(aiDir, "known-issues.json");
-  const inputsDir = path.join(caseDir, "inputs");
+  const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
+  const knownIssuesPath = join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
+  const inputsDir = join(caseDir, "inputs");
 
-  await copyFile(path.join(inputsDir, "pr-files.txt"), prFilesPath);
-  await copyFile(path.join(inputsDir, "known-issues.json"), knownIssuesPath);
+  await copyFile(join(inputsDir, "pr-files.txt"), prFilesPath);
+  await copyFile(join(inputsDir, "known-issues.json"), knownIssuesPath);
 
-  return { prFilesPath, knownIssuesPath };
+  return { reviewRunDir, prFilesPath, knownIssuesPath };
 }
 
 export async function refreshE2ePrFilesInput(options: {
@@ -127,12 +130,14 @@ export async function refreshE2ePrFilesInput(options: {
 
 export function buildE2eReviewPrompt(options: {
   worktreeRoot: string;
+  reviewRunDir: string;
   pins: E2ePins;
   prFilesPath: string;
   knownIssuesPath: string;
 }): string {
   const base = buildReviewPrompt({
     repoRoot: options.worktreeRoot,
+    reviewRunDir: options.reviewRunDir,
     sourceRef: options.pins.source_ref,
     targetRef: options.pins.target_ref,
     headSha: options.pins.head_sha,
@@ -208,7 +213,7 @@ export async function runE2eCase(options: {
   await addE2eWorktree(options.monorepoRoot, worktreePath, pins.head_sha);
 
   try {
-    const { prFilesPath, knownIssuesPath } = await seedE2eInputs(
+    const { reviewRunDir, prFilesPath, knownIssuesPath } = await seedE2eInputs(
       options.caseDir,
       worktreePath,
     );
@@ -217,6 +222,7 @@ export async function runE2eCase(options: {
 
     const prompt = buildE2eReviewPrompt({
       worktreeRoot: worktreePath,
+      reviewRunDir,
       pins,
       prFilesPath,
       knownIssuesPath,
@@ -224,12 +230,13 @@ export async function runE2eCase(options: {
 
     await writeFile(path.join(options.artifactDir, "review-prompt.txt"), prompt, "utf8");
 
-    const findingsPath = path.join(worktreePath, FINDINGS_PATH);
+    const findingsPath = findingsPathInRun(reviewRunDir);
 
     if (!options.dryRun) {
       await runReviewAgent({
         apiKey: options.apiKey,
         repoRoot: worktreePath,
+        reviewRunDir,
         sourceRef: pins.source_ref,
         targetRef: pins.target_ref,
         headSha: pins.head_sha,

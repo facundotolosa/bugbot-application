@@ -236,7 +236,7 @@ describe("logAgentStreamEvent", () => {
     forwardOrchestratorText("---\n");
     forwardOrchestratorText("The incremental diff covered 11 files.\n");
     forwardOrchestratorText("Final report: '.ai-code-review/findings.json'\n");
-    forwardOrchestratorText("Report written to: .ai-code-review/findings.json\n");
+    forwardOrchestratorText("Report written to: .ai-code-review/2026-05-31T12-00-00-000Z/findings.md\n");
     flushOrchestratorStream();
 
     expect(forwarded).toHaveLength(2);

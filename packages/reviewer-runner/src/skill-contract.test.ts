@@ -40,11 +40,13 @@ describe("ai-code-review skill contract", () => {
       "Collected analyzer output; merging raw findings.",
       "Running validator on raw findings.",
       "All analyzers returned no findings; skipping validator.",
-      "Report written to: .ai-code-review/findings.json",
     ];
     for (const line of lines) {
       expect(skill).toContain(line);
     }
+    expect(skill).toMatch(/Report written to:.*findings\.md/);
+    expect(skill).toMatch(/Report written to:.*findings\.json/);
+    expect(skill).toMatch(/findings\.md.*local|local.*findings\.md/i);
   });
 
   it("requires progress lines in assistant messages, not Shell stdout", () => {

@@ -50,11 +50,13 @@ describe("e2e pins and prompt", () => {
   it("buildE2eReviewPrompt requires full review (not incremental since HEAD)", async () => {
     const pins = await loadE2ePins(SECURITY_CASE);
     const worktreeRoot = "/tmp/eval-worktree";
-    const prFilesPath = join(worktreeRoot, ".ai-code-review/pr-files.txt");
-    const knownIssuesPath = join(worktreeRoot, ".ai-code-review/known-issues.json");
+    const reviewRunDir = `${worktreeRoot}/.ai-code-review/2026-05-31T12-00-00-000Z`;
+    const prFilesPath = `${reviewRunDir}/pr-files.txt`;
+    const knownIssuesPath = `${reviewRunDir}/known-issues.json`;
 
     const prompt = buildE2eReviewPrompt({
       worktreeRoot,
+      reviewRunDir,
       pins,
       prFilesPath,
       knownIssuesPath,
@@ -68,15 +70,19 @@ describe("e2e pins and prompt", () => {
   it("buildE2eReviewPrompt includes frozen input paths and head SHA", async () => {
     const pins = await loadE2ePins(SECURITY_CASE);
     const worktreeRoot = "/tmp/eval-worktree";
-    const prFilesPath = join(worktreeRoot, ".ai-code-review/pr-files.txt");
-    const knownIssuesPath = join(worktreeRoot, ".ai-code-review/known-issues.json");
+    const reviewRunDir = `${worktreeRoot}/.ai-code-review/2026-05-31T12-00-00-000Z`;
+    const prFilesPath = `${reviewRunDir}/pr-files.txt`;
+    const knownIssuesPath = `${reviewRunDir}/known-issues.json`;
 
     const prompt = buildE2eReviewPrompt({
       worktreeRoot,
+      reviewRunDir,
       pins,
       prFilesPath,
       knownIssuesPath,
     });
+
+    expect(prompt).toContain(`Review output directory: ${reviewRunDir}`);
 
     expect(prompt).toContain(pins.head_sha);
     expect(prompt).toContain("pr-files.txt");

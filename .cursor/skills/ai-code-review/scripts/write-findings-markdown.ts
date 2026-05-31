@@ -71,13 +71,22 @@ function formatFindingBlock(finding: Finding, index: number): string {
   return lines.join("\n");
 }
 
-function formatSeveritySection(severity: Severity, findings: Finding[]): string {
-  const sectionFindings = findings.filter((f) => f.severity === severity);
-  const lines = [`## ${SEVERITY_LABEL[severity]}`, ""];
-  if (sectionFindings.length === 0) {
-    lines.push("_No findings._", "");
-    return lines.join("\n");
+function formatSummaryCounts(counts: Record<Severity, number>, total: number): string {
+  const parts = [`${total} finding${total === 1 ? "" : "s"}`];
+  for (const severity of SEVERITY_ORDER) {
+    if (counts[severity] > 0) {
+      parts.push(`${severity} ${counts[severity]}`);
+    }
   }
+  return parts.join(" · ");
+}
+
+function formatSeveritySection(severity: Severity, findings: Finding[]): string | null {
+  const sectionFindings = findings.filter((f) => f.severity === severity);
+  if (sectionFindings.length === 0) {
+    return null;
+  }
+  const lines = [`## ${SEVERITY_LABEL[severity]}`, ""];
   sectionFindings.forEach((finding, i) => {
     lines.push(formatFindingBlock(finding, i + 1), "");
   });
@@ -118,7 +127,7 @@ export function formatFindingsMarkdown(
   header.push(
     `**Generated:** ${generatedAt}`,
     "",
-    `**Summary:** ${total} finding${total === 1 ? "" : "s"} · critical ${counts.critical} · major ${counts.major} · minor ${counts.minor} · enhancement ${counts.enhancement}`,
+    `**Summary:** ${formatSummaryCounts(counts, total)}`,
     "",
     "---",
     "",
@@ -126,7 +135,7 @@ export function formatFindingsMarkdown(
 
   const sections = SEVERITY_ORDER.map((severity) =>
     formatSeveritySection(severity, sorted),
-  );
+  ).filter((section): section is string => section !== null);
 
   return [...header, ...sections].join("\n").trimEnd() + "\n";
 }
@@ -141,9 +150,19 @@ export function writeFindingsMarkdownFile(
 }
 
 function main(): void {
-  const findingsPath = process.argv[2] ?? ".ai-code-review/findings.json";
-  const outputPath = process.argv[3] ?? ".ai-code-review/findings.md";
-  const prepareDiffPath = process.argv[4] ?? ".ai-code-review/prepare-diff.json";
+  const runDir = process.env.AI_CODE_REVIEW_RUN_DIR;
+  const defaultFindings = runDir
+    ? `${runDir}/findings.json`
+    : ".ai-code-review/findings.json";
+  const defaultMarkdown = runDir
+    ? `${runDir}/findings.md`
+    : ".ai-code-review/findings.md";
+  const defaultPrepareDiff = runDir
+    ? `${runDir}/prepare-diff.json`
+    : ".ai-code-review/prepare-diff.json";
+  const findingsPath = process.argv[2] ?? defaultFindings;
+  const outputPath = process.argv[3] ?? defaultMarkdown;
+  const prepareDiffPath = process.argv[4] ?? defaultPrepareDiff;
   const metadata = loadOptionalMetadata(prepareDiffPath);
   writeFindingsMarkdownFile(findingsPath, outputPath, { metadata });
 }
