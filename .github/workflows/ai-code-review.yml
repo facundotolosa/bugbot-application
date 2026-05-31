@@ -31,6 +31,7 @@ jobs:
         run: npm run build -w reviewer-runner
 
       - name: Run AI code review
+        working-directory: ${{ github.workspace }}
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
