@@ -1,7 +1,7 @@
 # Plan: reviewer-runner `src/` modular layout
 
 **Spec:** [spec.md](./spec.md)  
-**Plan status:** Draft
+**Plan status:** In progress
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ _Move-only refactor: each phase is a vertical slice—move one domain, fix relat
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `in progress` |
 | **Goal** | `logger`, `load-repo-env`, and `process-guard` (+ co-located tests) live under `src/support/` with no product-domain imports. |
 
 #### Steps

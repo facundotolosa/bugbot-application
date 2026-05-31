@@ -194,7 +194,7 @@ describe("executeReviewOrchestration", () => {
   });
 
   it("dry-run loads fixture findings and logs comments without agent", async () => {
-    const logger = await import("./logger.js");
+    const logger = await import("./support/logger.js");
     const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
     const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     const readFindings = vi.fn().mockResolvedValue(findings);

@@ -111,7 +111,7 @@ describe("upsertTrackingComment", () => {
   });
 
   it("logs tracking body on dry-run without calling GitHub", async () => {
-    const logger = await import("./logger.js");
+    const logger = await import("./support/logger.js");
     const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
     const client: GitHubClient = {
       listIssueComments: vi.fn(),

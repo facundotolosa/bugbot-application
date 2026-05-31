@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { loadRepoEnv } from "./load-repo-env.js";
+import { loadRepoEnv } from "./support/load-repo-env.js";
 
 loadRepoEnv();
 
-import { installProcessGuards } from "./process-guard.js";
+import { installProcessGuards } from "./support/process-guard.js";
 
 installProcessGuards();
 
@@ -13,7 +13,7 @@ import { runReviewAgent } from "./agent.js";
 import { resolveShasFromEnv } from "./diff.js";
 import { parseFindingsJson } from "./findings.js";
 import { createGitHubClient, loadPrContextFromEvent, postInlineReview } from "./github.js";
-import * as log from "./logger.js";
+import * as log from "./support/logger.js";
 import { executeReviewOrchestration } from "./orchestrate-review.js";
 import { resolveRepoRoot } from "./repo-root.js";
 
