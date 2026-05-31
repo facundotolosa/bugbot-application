@@ -19,11 +19,14 @@ npm run build
 npm run review -- --dry-run --base origin/main --head HEAD
 ```
 
-Full run (requires `CURSOR_API_KEY`):
+Full run (requires `CURSOR_API_KEY` in repo root `.env` or environment):
 
 ```bash
-CURSOR_API_KEY=... npm run review -- --base origin/main --head HEAD
+cp .env.example .env   # once
+npm run review -w reviewer-runner -- --base origin/main --head HEAD
 ```
+
+Both `reviewer-runner` and `evals` load `/.env` via `packages/reviewer-runner/src/load-repo-env.ts`.
 
 ## Secrets (GitHub Actions)
 

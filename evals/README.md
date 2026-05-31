@@ -16,10 +16,12 @@ Regression harness for the AI code review pipeline. Evals invoke LLM-backed agen
 ## Running locally
 
 ```bash
-export CURSOR_API_KEY=...   # required
+cp .env.example .env        # once: add CURSOR_API_KEY at repo root
 npm run eval                # all golden cases (6 in v1)
 npm test -w evals           # deterministic lib tests (no API key)
 ```
+
+`npm run eval` loads **`/.env`** at the repository root automatically (`packages/reviewer-runner/src/load-repo-env.ts`). Legacy `packages/reviewer-runner/.env` is still read if present.
 
 ### npm scripts (repo root)
 
@@ -42,7 +44,7 @@ npm test -w evals           # deterministic lib tests (no API key)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `CURSOR_API_KEY` | — | **Required** for `npm run eval` |
+| `CURSOR_API_KEY` | repo root `.env` | **Required** for `npm run eval` (auto-loaded) |
 | `EVAL_MODEL_ID` | `composer-2.5` | Reviewer / harness / E2E agent model |
 | `EVAL_JUDGE_MODEL_ID` | same as `EVAL_MODEL_ID` | LLM-as-judge for `must_find` / `must_not_find` |
 
