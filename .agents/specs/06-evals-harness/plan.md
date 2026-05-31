@@ -67,7 +67,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Single source of truth for `subagent_type` slugs, model id, `settingSources`, and exact Task prompt lines matching `SKILL.md`. |
 
 #### Steps
@@ -85,9 +85,9 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `npm test -w evals` passes (`invocation.test.ts`)
-- [ ] Manual: copy-paste `securityTaskPrompt()` output vs `SKILL.md` analyzer section — identical
-- [ ] `rg` shows no duplicate prompt string literals outside `invocation.ts` + `SKILL.md` + test fixtures
+- [x] `npm test -w evals` passes (`invocation.test.ts`)
+- [x] Manual: copy-paste `securityTaskPrompt()` output vs `SKILL.md` analyzer section — identical
+- [x] `rg` shows no duplicate prompt string literals outside `invocation.ts` + `SKILL.md` + test fixtures
 
 #### Notes
 
@@ -301,3 +301,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Initial plan from spec 06-evals-harness (7 phases, acceptance mapping) |
 | 2026-05-31 | Plan approved; status Done; prerequisite checked |
 | 2026-05-31 | Phase 1 done: evals workspace, CLI guard, stub runner, README, root `npm run eval` |
+| 2026-05-31 | Phase 2 done: `invocation.ts` + tests; README invocation parity section |
