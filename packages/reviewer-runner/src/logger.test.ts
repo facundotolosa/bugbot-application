@@ -109,6 +109,15 @@ describe("logger output", () => {
     expect(plain).toContain("Failed (1.2s): validator");
   });
 
+  it("bolds Validator skipped emoji block title", () => {
+    process.env = { FORCE_COLOR: "1" };
+    const out = captureStdout(() => {
+      orchestratorLine("⏭️ Validator skipped: all analyzers returned no findings");
+    });
+    expect(out).toMatch(/\x1b\[1mValidator skipped:\x1b\[0m/);
+    expect(stripAnsi(out)).toContain("all analyzers returned no findings");
+  });
+
   it("colors only [orchestrator] prefix on emoji blocks (title bold, body plain)", () => {
     process.env = { FORCE_COLOR: "1" };
     const out = captureStdout(() => {
