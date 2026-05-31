@@ -34,6 +34,43 @@ describe("shouldForwardOrchestratorLine", () => {
     expect(shouldForwardOrchestratorLine("")).toBe(false);
     expect(shouldForwardOrchestratorLine("- [x] analyzers")).toBe(false);
   });
+
+  it("drops paraphrased skill-start lines (canonical start line only)", () => {
+    expect(
+      shouldForwardOrchestratorLine(
+        "I'll read the ai-code-review skill and follow its workflow with your PR parameters.",
+      ),
+    ).toBe(false);
+    expect(
+      shouldForwardOrchestratorLine(
+        "I'll run the ai-code-review skill with the PR parameters from the prompt.",
+      ),
+    ).toBe(true);
+  });
+
+  it("drops Validator funnel line (duplicates ✅ block)", () => {
+    expect(shouldForwardOrchestratorLine("Validator funnel: 5 → 3")).toBe(false);
+  });
+
+  it("drops post-close verbose narration patterns", () => {
+    expect(shouldForwardOrchestratorLine("---")).toBe(false);
+    expect(shouldForwardOrchestratorLine("Final report: .ai-code-review/findings.json")).toBe(
+      false,
+    );
+    expect(
+      shouldForwardOrchestratorLine("Session artifacts were saved under .ai-code-review/run-artifacts/session/."),
+    ).toBe(false);
+  });
+
+  it("drops markdown table rows (findings belong in findings.json)", () => {
+    expect(
+      shouldForwardOrchestratorLine("| Severity | File | Line | Issue |"),
+    ).toBe(false);
+    expect(shouldForwardOrchestratorLine("| minor | evals/lib/run-e2e.ts | 181 | leak |")).toBe(
+      false,
+    );
+    expect(shouldForwardOrchestratorLine("|----------|------|------|-------|")).toBe(false);
+  });
 });
 
 describe("stripOrchestratorMarkdown", () => {
@@ -186,6 +223,25 @@ describe("logAgentStreamEvent", () => {
       expect.any(Number),
       "Security analyzer for PR diff",
     );
+  });
+
+  it("drops lines after Review complete except Report written to", () => {
+    const forwarded: string[] = [];
+    vi.spyOn(logger, "orchestratorLine").mockImplementation((line) => {
+      forwarded.push(line);
+    });
+
+    resetOrchestratorStream();
+    forwardOrchestratorText("🎯 Review complete: 0 critical, 0 major\n");
+    forwardOrchestratorText("---\n");
+    forwardOrchestratorText("The incremental diff covered 11 files.\n");
+    forwardOrchestratorText("Final report: '.ai-code-review/findings.json'\n");
+    forwardOrchestratorText("Report written to: .ai-code-review/2026-05-31T12-00-00-000Z/findings.md\n");
+    flushOrchestratorStream();
+
+    expect(forwarded).toHaveLength(2);
+    expect(forwarded[0]).toContain("Review complete");
+    expect(forwarded[1]).toContain("Report written to:");
   });
 
   it("forwards orchestrator narration as it streams", () => {

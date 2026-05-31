@@ -2,7 +2,7 @@
 
 Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → review mode → scope/skip → **one** Cursor SDK agent (orchestrator skill) → security/performance subagents → validator funnel → filtered inline comments.
 
-Resolves the monorepo root via `git rev-parse`. The wrapper uses ANSI `logger.*` lines (set `FORCE_COLOR=1` in CI). Orchestrator assistant text is prefixed `[orchestrator]`; Task lifecycle shows styled `› [sub-agent]` / `✔ [sub-agent]` lines only (no raw SDK `tool_call` noise). The orchestrator prints emoji progress blocks (📋 📊 🔬 …) and machine lines `Analyzers:` / `Validator funnel:` per the skill.
+Resolves the monorepo root via `git rev-parse`. The wrapper uses ANSI `logger.*` lines (set `FORCE_COLOR=1` in CI). Orchestrator assistant text is prefixed `[orchestrator]`; Task lifecycle shows styled `› [sub-agent]` / `✔ [sub-agent]` lines only (no raw SDK `tool_call` noise). The orchestrator prints emoji progress blocks (📋 📊 🔬 …) and machine line `Analyzers:` per the skill.
 
 ## Flow (CI)
 
@@ -14,7 +14,7 @@ Resolves the monorepo root via `git rev-parse`. The wrapper uses ANSI `logger.*`
 
 ## Findings schema (v2)
 
-Agent output: `.ai-code-review/findings.json` at repo root.
+Agent output: `.ai-code-review/<timestamp>/findings.json` (one folder per run; runner creates the timestamp dir before invoking the agent).
 
 ```json
 {
@@ -108,6 +108,7 @@ With `--dry-run` and no `CURSOR_API_KEY`, uses `fixtures/findings.json` (v2) aft
 | `.cursor/skills/ai-code-review/scripts/validator-output.ts` | Parse/map validator JSON to findings v2 |
 | `.cursor/agents/ai-code-review-*-analyzer.md` | Security / performance subagent definitions |
 | `.cursor/agents/ai-code-review-validator.md` | Validator funnel subagent |
-| `.ai-code-review/work/` | Diff, analyzer, raw, validator artifacts |
-| `.ai-code-review/known-issues.json` | Runner-built; validator input |
-| `.ai-code-review/findings.json` | Final v2 report post-validator (runner reads this) |
+| `.ai-code-review/<timestamp>/known-issues.json` | Runner-built; validator input |
+| `.ai-code-review/<timestamp>/findings.json` | Final v2 report post-validator (runner reads this) |
+| `.ai-code-review/<timestamp>/validator-summary.json` | Validator `filter_summary` (local debug) |
+| `.ai-code-review/<timestamp>/run-artifacts/session/` | Snapshot of ephemeral session IPC after a run |

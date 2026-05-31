@@ -1,6 +1,6 @@
 # Invocation criteria (v1)
 
-The orchestrator evaluates these rules **once per run** on `files[].path` and `files[].diff` from `prepare-diff` output (after writing `.ai-code-review/work/diff.json`).
+The orchestrator evaluates these rules **once per run** on `files[].path` and `files[].diff` from `prepare-diff` output (after writing session `diff.json` from `session-manifest.json`).
 
 Deterministic implementation: [`../scripts/select-analyzers.ts`](../scripts/select-analyzers.ts) (`selectAnalyzers`).
 

@@ -4,8 +4,12 @@ import path from "node:path";
 import { promisify } from "util";
 
 import {
+  createReviewRunDir,
+  findingsPathInRun,
+  REVIEW_RUN_FILES,
+} from "../../packages/reviewer-runner/src/review-run-dir.js";
+import {
   buildReviewPrompt,
-  FINDINGS_PATH,
   runReviewAgent,
 } from "../../packages/reviewer-runner/src/agent.js";
 import { parseFindingsFile } from "../../packages/reviewer-runner/src/findings.js";
@@ -17,7 +21,7 @@ import {
   prepareDiff,
 } from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";
 import { getOutDir } from "../config.js";
-import { PATHS, WORK_DIR } from "./invocation.js";
+import { createEvalSession } from "./session.js";
 import { assertCaseFromFile } from "./assert-case.js";
 import { loadExpectFile } from "./expect.js";
 import type { JudgeFn } from "./judge.js";
@@ -96,18 +100,17 @@ export async function removeE2eWorktree(
 export async function seedE2eInputs(
   caseDir: string,
   worktreeRoot: string,
-): Promise<{ prFilesPath: string; knownIssuesPath: string }> {
-  const aiDir = path.join(worktreeRoot, ".ai-code-review");
-  await mkdir(aiDir, { recursive: true });
+): Promise<{ reviewRunDir: string; prFilesPath: string; knownIssuesPath: string }> {
+  const reviewRunDir = await createReviewRunDir(worktreeRoot);
 
-  const prFilesPath = path.join(aiDir, "pr-files.txt");
-  const knownIssuesPath = path.join(aiDir, "known-issues.json");
-  const inputsDir = path.join(caseDir, "inputs");
+  const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);
+  const knownIssuesPath = join(reviewRunDir, REVIEW_RUN_FILES.knownIssues);
+  const inputsDir = join(caseDir, "inputs");
 
-  await copyFile(path.join(inputsDir, "pr-files.txt"), prFilesPath);
-  await copyFile(path.join(inputsDir, "known-issues.json"), knownIssuesPath);
+  await copyFile(join(inputsDir, "pr-files.txt"), prFilesPath);
+  await copyFile(join(inputsDir, "known-issues.json"), knownIssuesPath);
 
-  return { prFilesPath, knownIssuesPath };
+  return { reviewRunDir, prFilesPath, knownIssuesPath };
 }
 
 export async function refreshE2ePrFilesInput(options: {
@@ -127,19 +130,19 @@ export async function refreshE2ePrFilesInput(options: {
 
 export function buildE2eReviewPrompt(options: {
   worktreeRoot: string;
+  reviewRunDir: string;
   pins: E2ePins;
   prFilesPath: string;
   knownIssuesPath: string;
-  prTitle?: string;
 }): string {
   const base = buildReviewPrompt({
     repoRoot: options.worktreeRoot,
+    reviewRunDir: options.reviewRunDir,
     sourceRef: options.pins.source_ref,
     targetRef: options.pins.target_ref,
     headSha: options.pins.head_sha,
     prFilesPath: options.prFilesPath,
     knownIssuesPath: options.knownIssuesPath,
-    prTitle: options.prTitle,
     knownIssuesCount: 0,
   });
 
@@ -149,7 +152,7 @@ export function buildE2eReviewPrompt(options: {
     "E2E eval constraints (mandatory):",
     "- FULL review only: run prepare-diff with --source matching Source ref and --target matching Target branch. Never pass --since-commit.",
     '- The "Commit:" line is PR HEAD for metadata only; it is NOT "Since commit" and must not be used as an incremental boundary.',
-    "- If .ai-code-review/work/diff.json already exists with files.length > 0, use it as the diff; do not replace it with an empty incremental diff.",
+    "- If the session diff.json (under AI_CODE_REVIEW_SESSION_DIR from session-manifest) already exists with files.length > 0, use it; do not replace it with an empty incremental diff.",
     "- If you must regenerate the diff, use full mode (merge-base to head) without --since-commit.",
   ].join("\n");
 }
@@ -178,9 +181,10 @@ export async function seedE2eDiff(
     cwd: worktreeRoot,
   });
 
-  await mkdir(path.join(worktreeRoot, WORK_DIR), { recursive: true });
+  const session = await createEvalSession();
+  process.env.AI_CODE_REVIEW_SESSION_DIR = session.sessionDir;
   await writeFile(
-    path.join(worktreeRoot, PATHS.diff),
+    session.manifest.diff,
     JSON.stringify(diff, null, 2),
     "utf8",
   );
@@ -209,7 +213,7 @@ export async function runE2eCase(options: {
   await addE2eWorktree(options.monorepoRoot, worktreePath, pins.head_sha);
 
   try {
-    const { prFilesPath, knownIssuesPath } = await seedE2eInputs(
+    const { reviewRunDir, prFilesPath, knownIssuesPath } = await seedE2eInputs(
       options.caseDir,
       worktreePath,
     );
@@ -218,26 +222,26 @@ export async function runE2eCase(options: {
 
     const prompt = buildE2eReviewPrompt({
       worktreeRoot: worktreePath,
+      reviewRunDir,
       pins,
       prFilesPath,
       knownIssuesPath,
-      prTitle: `eval e2e ${options.caseId}`,
     });
 
     await writeFile(path.join(options.artifactDir, "review-prompt.txt"), prompt, "utf8");
 
-    const findingsPath = path.join(worktreePath, FINDINGS_PATH);
+    const findingsPath = findingsPathInRun(reviewRunDir);
 
     if (!options.dryRun) {
       await runReviewAgent({
         apiKey: options.apiKey,
         repoRoot: worktreePath,
+        reviewRunDir,
         sourceRef: pins.source_ref,
         targetRef: pins.target_ref,
         headSha: pins.head_sha,
         prFilesPath,
         knownIssuesPath,
-        prTitle: `eval e2e ${options.caseId}`,
         knownIssuesCount: 0,
         prompt,
       });
