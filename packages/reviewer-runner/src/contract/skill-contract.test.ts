@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const SKILL_DIR = join(import.meta.dirname, "../../../.cursor/skills/ai-code-review");
+const SKILL_DIR = join(import.meta.dirname, "../../../../.cursor/skills/ai-code-review");
 const TODO_IDS = [
   "prereq",
   "metadata",

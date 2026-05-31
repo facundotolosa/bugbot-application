@@ -4,6 +4,21 @@ Orchestrates **incremental AI code review** on GitHub PRs: tracking comment → 
 
 Resolves the monorepo root via `git rev-parse`. The wrapper uses ANSI `logger.*` lines (set `FORCE_COLOR=1` in CI). Orchestrator assistant text is prefixed `[orchestrator]`; Task lifecycle shows styled `› [sub-agent]` / `✔ [sub-agent]` lines only (no raw SDK `tool_call` noise). The orchestrator prints emoji progress blocks (📋 📊 🔬 …) and machine line `Analyzers:` per the skill.
 
+## Source layout
+
+| Folder | Responsibility |
+|--------|----------------|
+| `orchestration/` | Review pipeline: tracking → git scope → agent → parse → filter → post |
+| `agent/` | Cursor SDK agent, stream logging, run artifacts |
+| `github/` | Octokit client, PR context, tracking comment, inline post |
+| `git/` | Incremental vs full scope, ancestry, skip-agent rules, diff helper |
+| `findings/` | Findings v2 schema, inline comment bodies, post filter |
+| `paths/` | Timestamped `.ai-code-review/<run>/` paths, monorepo root |
+| `support/` | Logger, `.env` loading, process stderr guards |
+| `contract/` | Skill contract tests vs `ai-code-review` SKILL.md |
+
+`index.ts` and `cli.ts` stay at `src/` root (library barrel and bin entry).
+
 ## Flow (CI)
 
 1. Load PR issue comments; find `< ai-review-tracking >` (latest `At` wins).
@@ -51,7 +66,7 @@ Each finding with `file` + `line` becomes one PR review comment:
 💡 **Suggestion:** {suggestion}
 ```
 
-Analyzer titles and severity emojis are applied in `formatCommentBody` (`comments.ts`).
+Analyzer titles and severity emojis are applied in `formatCommentBody` (`findings/comments.ts`).
 
 ## Scripts
 
