@@ -16,7 +16,7 @@ describe("refreshCaseDiffInput", () => {
       fixtureId: "leaked-key",
     });
     expect(output.files.length).toBeGreaterThan(0);
-    expect(output.files[0]?.path).toBe("src/auth.ts");
+    expect(output.files[0]?.path).toBe("evals/fixtures/leaked-key/src/auth.ts");
 
     const written = await readFile(join(LEAKED_CASE, "inputs/diff.json"), "utf8");
     expect(written).toContain("API_KEY");
