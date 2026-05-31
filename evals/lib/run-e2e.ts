@@ -17,7 +17,7 @@ import {
   prepareDiff,
 } from "../../.cursor/skills/ai-code-review/scripts/prepare-diff.ts";
 import { getOutDir } from "../config.js";
-import { PATHS, WORK_DIR } from "./invocation.js";
+import { createEvalSession } from "./session.js";
 import { assertCaseFromFile } from "./assert-case.js";
 import { loadExpectFile } from "./expect.js";
 import type { JudgeFn } from "./judge.js";
@@ -149,7 +149,7 @@ export function buildE2eReviewPrompt(options: {
     "E2E eval constraints (mandatory):",
     "- FULL review only: run prepare-diff with --source matching Source ref and --target matching Target branch. Never pass --since-commit.",
     '- The "Commit:" line is PR HEAD for metadata only; it is NOT "Since commit" and must not be used as an incremental boundary.',
-    "- If .ai-code-review/work/diff.json already exists with files.length > 0, use it as the diff; do not replace it with an empty incremental diff.",
+    "- If the session diff.json (under AI_CODE_REVIEW_SESSION_DIR from session-manifest) already exists with files.length > 0, use it; do not replace it with an empty incremental diff.",
     "- If you must regenerate the diff, use full mode (merge-base to head) without --since-commit.",
   ].join("\n");
 }
@@ -178,9 +178,10 @@ export async function seedE2eDiff(
     cwd: worktreeRoot,
   });
 
-  await mkdir(path.join(worktreeRoot, WORK_DIR), { recursive: true });
+  const session = await createEvalSession();
+  process.env.AI_CODE_REVIEW_SESSION_DIR = session.sessionDir;
   await writeFile(
-    path.join(worktreeRoot, PATHS.diff),
+    session.manifest.diff,
     JSON.stringify(diff, null, 2),
     "utf8",
   );

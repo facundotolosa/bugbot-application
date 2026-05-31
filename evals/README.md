@@ -110,11 +110,12 @@ Cases are discovered when `expect.json` exists.
 
 Production subagents receive minimal Task prompts from the orchestrator skill; rules live in `.cursor/agents/*.md`.
 
-**`evals/lib/invocation.ts`** is the single source of truth for:
+**`evals/lib/invocation.ts`** + **`evals/lib/session.ts`** are the source of truth for:
 
-- `SUBAGENT_TYPES` and `.ai-code-review/work/` paths
-- `securityTaskPrompt()`, `performanceTaskPrompt()`, `validatorTaskPrompt()` — byte-identical to [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md)
-- `buildComponentHarnessPrompt()` — one Task only; **no** duplicated agent rules in the harness prompt. Harness agent `cwd` is the **monorepo root** (loads `.cursor/agents/`); Task lines use **absolute** paths into the isolated fixture workspace.
+- `SUBAGENT_TYPES` and ephemeral session paths (`$TMPDIR/ai-code-review-*` via `createEvalSession`)
+- `securityTaskPrompt(sessionDir)`, `performanceTaskPrompt(sessionDir)`, `validatorTaskPrompt(sessionDir, workspaceRoot)` — same **shape** as [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md) (absolute Read/Write paths)
+- `AI_CODE_REVIEW_SESSION_DIR` — set by the harness when seeding workspaces or E2E diffs
+- `buildComponentHarnessPrompt()` — one Task only; harness agent `cwd` is the **monorepo root**; Task lines use **absolute** session paths
 - `MODEL_ID` and `SETTING_SOURCES` (`["project"]`) matching `reviewer-runner` `agent.ts`
 
 E2E uses `buildReviewPrompt` + `runReviewAgent` from `packages/reviewer-runner` (same as CI).
@@ -126,7 +127,8 @@ Drift is caught by `npm test -w evals` (`invocation.test.ts`).
 | Module | Role |
 |--------|------|
 | `lib/expect.ts` | Parse and validate `expect.json` |
-| `lib/workspace.ts` | Copy fixture + frozen inputs into temp workspace |
+| `lib/session.ts` | `mkdtemp` session dir + `session-manifest.json` |
+| `lib/workspace.ts` | Copy fixture + frozen inputs into temp workspace + session IPC |
 | `lib/structural.ts` | JSON + schema gates |
 | `lib/judge.ts` | LLM-as-judge (live evals only) |
 | `lib/assert-case.ts` | Structural → judge → optional `validator_funnel` |

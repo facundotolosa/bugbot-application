@@ -2,7 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PATHS, validatorTaskPrompt } from "./invocation.js";
+import { securityTaskPrompt, validatorTaskPrompt } from "./invocation.js";
+import { createEvalSession } from "./session.js";
 import {
   readAnalyzerOutput,
   runAnalyzerHarness,
@@ -12,13 +13,10 @@ import {
 } from "./run-component.js";
 
 describe("runAnalyzerHarness", () => {
-  const cleanups: string[] = [];
+  const cleanups: (() => Promise<void>)[] = [];
 
   afterEach(async () => {
-    const { rm } = await import("node:fs/promises");
-    await Promise.all(
-      cleanups.map((dir) => rm(dir, { recursive: true, force: true })),
-    );
+    await Promise.all(cleanups.map((fn) => fn()));
     cleanups.length = 0;
   });
 
@@ -26,11 +24,15 @@ describe("runAnalyzerHarness", () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
     const cwd = await mkdtemp(join(tmpdir(), "eval-component-"));
-    cleanups.push(cwd);
+    const session = await createEvalSession();
+    cleanups.push(async () => {
+      await session.cleanup();
+      const { rm } = await import("node:fs/promises");
+      await rm(cwd, { recursive: true, force: true });
+    });
 
-    await mkdir(join(cwd, ".ai-code-review/work"), { recursive: true });
     await writeFile(
-      join(cwd, PATHS.securityFindings),
+      session.manifest.security,
       JSON.stringify({
         analyzer: "security",
         findings: [
@@ -54,9 +56,7 @@ describe("runAnalyzerHarness", () => {
     });
 
     expect(result.retry).toBe(false);
-    expect(result.taskPrompt).toBe(
-      "Read diff from: .ai-code-review/work/diff.json\nWrite findings to: .ai-code-review/work/security-findings.json",
-    );
+    expect(result.taskPrompt).toBe(securityTaskPrompt(session.sessionDir));
     expect(await readAnalyzerOutput(cwd, "security")).toContain("Hardcoded");
   });
 
@@ -66,13 +66,10 @@ describe("runAnalyzerHarness", () => {
 });
 
 describe("runValidatorHarness", () => {
-  const cleanups: string[] = [];
+  const cleanups: (() => Promise<void>)[] = [];
 
   afterEach(async () => {
-    const { rm } = await import("node:fs/promises");
-    await Promise.all(
-      cleanups.map((dir) => rm(dir, { recursive: true, force: true })),
-    );
+    await Promise.all(cleanups.map((fn) => fn()));
     cleanups.length = 0;
   });
 
@@ -80,11 +77,15 @@ describe("runValidatorHarness", () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
     const cwd = await mkdtemp(join(tmpdir(), "eval-validator-"));
-    cleanups.push(cwd);
+    const session = await createEvalSession();
+    cleanups.push(async () => {
+      await session.cleanup();
+      const { rm } = await import("node:fs/promises");
+      await rm(cwd, { recursive: true, force: true });
+    });
 
-    await mkdir(join(cwd, ".ai-code-review/work"), { recursive: true });
     await writeFile(
-      join(cwd, PATHS.validatorOutput),
+      session.manifest.validatorOut,
       JSON.stringify({
         findings: [
           {
@@ -117,7 +118,7 @@ describe("runValidatorHarness", () => {
     });
 
     expect(result.retry).toBe(false);
-    expect(result.taskPrompt).toBe(validatorTaskPrompt());
+    expect(result.taskPrompt).toBe(validatorTaskPrompt(session.sessionDir, cwd));
     expect(result.taskPrompt.split("\n")).toHaveLength(3);
     expect(result.filterSummary.final_output).toBe(1);
   });
@@ -126,7 +127,12 @@ describe("runValidatorHarness", () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
     const cwd = await mkdtemp(join(tmpdir(), "eval-validator-missing-"));
-    cleanups.push(cwd);
+    const session = await createEvalSession();
+    cleanups.push(async () => {
+      await session.cleanup();
+      const { rm } = await import("node:fs/promises");
+      await rm(cwd, { recursive: true, force: true });
+    });
 
     await expect(
       runValidatorHarness({ cwd, apiKey: "test-key", dryRun: true }),
