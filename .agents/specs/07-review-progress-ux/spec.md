@@ -15,16 +15,15 @@ This spec **extends** [05-pipeline-observability](../05-pipeline-observability/s
 | # | Area | Deliverable |
 |---|------|-------------|
 | 1 | **Mandatory TodoWrite (local IDE)** | `SKILL.md` + `references/progress-todos.md`: Step 0 before any other tool; exactly **7** items with stable `id` + fixed `content` strings; state machine; `merge: false` init, `merge: true` updates at **start** of each skill step; anti-patterns documented. |
-| 2 | **English-only pipeline stdout** | Orchestrator **must** print all prescribed status + emoji + machine lines in **English**, regardless of human chat language. Explicit override in skill + one line in `buildReviewPrompt`. Subagent finding text remains English (existing analyzer docs). |
+| 2 | **English-only orchestrator narration** | Orchestrator **must** emit all prescribed status + emoji + machine lines in **English** (assistant message text → `[orchestrator]` in CI), regardless of human chat language. Normative in `SKILL.md` only — **not** duplicated in `buildReviewPrompt`. Subagent finding text remains English (existing analyzer docs). |
 | 3 | **Canonical status lines** | Fixed one-sentence lines **before** each phase (prepare-diff, analyzer launch, collect, validator, skip-validator, close). No Spanish, no tool names, no “Let me…”. Table in **Behavior** below becomes normative in `SKILL.md`. |
 | 4 | **Ephemeral session directory** | Orchestrator creates `mkdtemp`-style dir under OS temp (e.g. `$TMPDIR/ai-code-review-<random>/`). All analyzer/validator IPC files live there. Task prompts use **session paths**, not `.ai-code-review/work/`. |
 | 5 | **Durable `.ai-code-review/` layout** | Only: `findings.json`, `validator-summary.json`, `known-issues.json`, `pr-files.txt` (runner), optional `prepare-diff.json` if human passes `--output`, `run-artifacts/**` (spec 05). **Remove** persistent `work/` from skill contract. |
 | 6 | **Session lifecycle** | Create session dir at start of orchestration; write `session-manifest.json` inside it (paths map). Before deleting temp: **copy** session tree → `.ai-code-review/run-artifacts/session/` (complements spec 05 SDK trace — no overlap). Then **best-effort `rm -rf`** temp dir. Crashed runs may leave orphans under `$TMPDIR`. |
-| 7 | **Runner prompt contract** | `buildReviewPrompt` adds: English stdout rule. Final report path stays `.ai-code-review/findings.json`. Session dir is orchestrator-owned (`$TMPDIR`); optional `AI_CODE_REVIEW_SESSION_DIR` env reuse only. |
-| 8 | **Subagent + skill path updates** | `.cursor/agents/ai-code-review-*.md`, `SKILL.md` Task prompt examples, `merge-findings` / `validator-output` inline scripts: parameterized paths or manifest-relative paths. |
-| 9 | **Evals / harness** | Update golden paths in `evals/` cases that assert on `work/*` if any; document temp-dir pattern for harness worktrees. |
-| 10 | **CI session snapshot** | Orchestrator copies `$TMPDIR` session into `run-artifacts/session/` before cleanup so existing `upload-artifact` (`run-artifacts/**`) includes IPC JSON without a new workflow step or `AI_CODE_REVIEW_SESSION_DIR` in Actions. |
-| 11 | **Tests** | `buildReviewPrompt` includes English directive; optional unit test that skill documents 7 todo ids; no regression on `reviewer-runner` stream tests from spec 05. |
+| 7 | **Subagent + skill path updates** | `.cursor/agents/ai-code-review-*.md`, `SKILL.md` Task prompt examples, `merge-findings` / `validator-output` inline scripts: parameterized paths or manifest-relative paths. |
+| 8 | **Evals / harness** | Update golden paths in `evals/` cases that assert on `work/*` if any; document temp-dir pattern for harness worktrees. |
+| 9 | **CI session snapshot** | Orchestrator copies `$TMPDIR` session into `run-artifacts/session/` before cleanup so existing `upload-artifact` (`run-artifacts/**`) includes IPC JSON without a new workflow step or `AI_CODE_REVIEW_SESSION_DIR` in Actions. |
+| 10 | **Tests** | Unit test that skill documents 7 todo ids + canonical English lines (`skill-contract.test.ts`); no regression on `reviewer-runner` stream tests from spec 05. |
 
 ### Out of scope
 
@@ -37,6 +36,7 @@ This spec **extends** [05-pipeline-observability](../05-pipeline-observability/s
 | New analyzers or validator phases | Specs 03–04. |
 | Auto-translating finding `issue`/`suggestion` | Analyzers already English; no i18n layer. |
 | Committing `.ai-code-review/` contents | Remains gitignored. |
+| **`buildReviewPrompt` orchestration / narration rules** | Runner passes PR parameters and paths only; execution pacing and English lines live in `SKILL.md` (see specs 01, 05). |
 
 ## Behavior
 
@@ -52,10 +52,9 @@ This spec **extends** [05-pipeline-observability](../05-pipeline-observability/s
 
 ### Language rules
 
-1. **Stdout (orchestrator):** English only — status sentences, emoji block labels, `Warning:`, `Analyzers:`, `Validator funnel:`, `Report written to:`.
-2. **IDE chat with human:** May stay Spanish per [concise-responses](../../conventions/concise-responses.md); **do not** mix Spanish into stdout lines.
-3. **Runner prompt:** Include: `All orchestrator stdout lines must be in English (short, one sentence per step).`
-4. **Finding bodies:** English (`issue`, `suggestion`).
+1. **Orchestrator narration (assistant text → `[orchestrator]` in CI):** English only — status sentences, emoji block labels, `Warning:`, `Analyzers:`, `Validator funnel:`, `Report written to:`.
+2. **IDE chat with human:** May stay Spanish per [concise-responses](../../conventions/concise-responses.md); **do not** mix Spanish into narration lines.
+3. **Finding bodies:** English (`issue`, `suggestion`).
 
 ### Mandatory TodoWrite — initialization (Step 0)
 
@@ -156,34 +155,33 @@ Write findings to: /var/folders/.../ai-code-review-abc/security-findings.json
 
 | Surface | Contract |
 |---------|----------|
-| **Skill** | Step 0 todos; English stdout table; session dir + manifest; updated file contract and Task prompt examples. |
-| **`buildReviewPrompt`** | Adds English stdout instruction. Does not create session dir (orchestrator does). |
+| **Skill** | Step 0 todos; English narration table; session dir + manifest; updated file contract and Task prompt examples. |
+| **`buildReviewPrompt`** | PR parameters + review run paths only (no narration/orchestration instructions). Does not create session dir (orchestrator does). |
 | **Env (optional)** | `AI_CODE_REVIEW_SESSION_DIR` — absolute path; if set, orchestrator uses it instead of creating a new temp dir. |
 | **Subagents** | Read/write paths **only** from Task prompt; manifest schema version `"1"`. |
 | **CI** | No new workflow env or artifact name. Orchestrator adds `run-artifacts/session/**` before temp cleanup; existing `upload-artifact` path `run-artifacts/**` picks it up. |
 
 ## Acceptance criteria
 
-- [ ] Running the skill locally shows **7 todos** on the first tool call; contents match the table above; no extra todo items appear during the run.
-- [ ] Todo states follow the state machine (only one `in_progress` except never two parallel in this repo).
-- [ ] A full local or CI run prints **only English** orchestrator status lines (manual check: no Spanish sentences in `[orchestrator]` stream).
-- [ ] `buildReviewPrompt` output includes an explicit **English stdout** requirement.
-- [ ] After a successful run, `.ai-code-review/` contains **no** `work/` tree; `findings.json` exists.
-- [ ] During the run, analyzer/validator IPC files exist under a temp session path, not under `.ai-code-review/work/`.
-- [ ] Task prompts in a captured CI run (from `run-artifacts/orchestrator.json`) reference session temp paths for diff/findings I/O.
-- [ ] After success, temp session dir is removed and `.ai-code-review/run-artifacts/session/` contains `diff.json`, analyzer outputs, `raw-findings.json`, and validator files (when run).
-- [ ] Downloaded CI artifact `ai-review-run-artifacts` includes both SDK trace (`orchestrator.json`, `subagents/`) and `session/` IPC (no duplicate of `findings.json` required in `session/` if already at repo root — copy is fine for self-contained artifact).
-- [ ] Spec 05 behaviors preserved: emoji blocks, `Analyzers:` / `Validator funnel:` lines, `[orchestrator]` prefix, no SDK noise on stdout.
-- [ ] `npm test -w reviewer-runner` passes; eval cases updated if they referenced `work/`.
+- [x] Running the skill locally shows **7 todos** on the first tool call; contents match the table above; no extra todo items appear during the run.
+- [x] Todo states follow the state machine (only one `in_progress` at a time).
+- [x] A full local or CI run prints **only English** orchestrator narration lines (no Spanish in `[orchestrator]` stream).
+- [x] After a successful run, `.ai-code-review/` contains **no** `work/` tree; `findings.json` exists.
+- [x] During the run, analyzer/validator IPC files exist under a temp session path, not under `.ai-code-review/work/`.
+- [x] Task prompts in a captured CI run (from `run-artifacts/orchestrator.json`) reference session temp paths for diff/findings I/O.
+- [x] After success, temp session dir is removed and `.ai-code-review/run-artifacts/session/` contains `diff.json`, analyzer outputs, `raw-findings.json`, and validator files (when run).
+- [x] Downloaded CI artifact `ai-review-run-artifacts` includes both SDK trace (`orchestrator.json`, `subagents/`) and `session/` IPC (no duplicate of `findings.json` required in `session/` if already at repo root — copy is fine for self-contained artifact).
+- [x] Spec 05 behaviors preserved: emoji blocks, `Analyzers:` / `Validator funnel:` lines, `[orchestrator]` prefix, no SDK noise on stdout.
+- [x] `npm test -w reviewer-runner` passes; eval cases updated if they referenced `work/`.
 
 ## Validation checklist
 
-- [ ] Acceptance criteria above are met
-- [ ] `npm test` passes (`reviewer-runner` at minimum)
-- [ ] Manual local skill run: todos visible + English `[orchestrator]` lines in terminal when using `npm run review`
-- [ ] Manual: list `.ai-code-review/` after success — no `work/` subdirectory
-- [ ] `references/progress-todos.md` matches skill Step 0 / state machine in `SKILL.md`
-- [ ] No open questions block release (or deferred with owner)
+- [x] Acceptance criteria above are met
+- [x] `npm test` passes (`reviewer-runner` at minimum)
+- [x] Manual local skill run: todos visible + English `[orchestrator]` lines in terminal when using `npm run review -w reviewer-runner`
+- [x] Manual: list `.ai-code-review/` after success — no `work/` subdirectory
+- [x] `references/progress-todos.md` matches skill Step 0 / state machine in `SKILL.md`
+- [x] No open questions block release (or deferred with owner)
 
 ## Open questions
 
@@ -202,4 +200,5 @@ _Status: `Open` · `Deferred` · `Resolved`_
 |------|--------|--------|
 | 2026-05-31 | brainstorm | Initial draft: 7-step todos; English stdout; ephemeral session IPC; durable outputs under `.ai-code-review/` |
 | 2026-05-31 | Human | Q1–Q4 resolved (`$TMPDIR`, orchestrator creates session, mirror `validator-summary.json`, session snapshot under `run-artifacts/session/`). |
-| 2026-05-31 | implement | Skill Step 0 todos; English stdout table; session IPC + lifecycle; runner prompt; evals `session.ts`; `skill-contract.test.ts`. |
+| 2026-05-31 | implement | Skill Step 0 todos; English stdout table; session IPC + lifecycle; evals `session.ts`; `skill-contract.test.ts`. |
+| 2026-05-31 | validate | Human sign-off: AC + checklist complete; removed `buildReviewPrompt` English narration AC (skill-only). |

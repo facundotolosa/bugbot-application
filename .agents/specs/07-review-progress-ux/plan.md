@@ -18,14 +18,13 @@
 | 7 todos on first tool call; fixed `id` + `content`; no extra todos | 1 |
 | Todo state machine; one `in_progress` at a time | 1 |
 | English-only orchestrator status lines (canonical table) | 2 |
-| `buildReviewPrompt` includes English stdout requirement | 3 |
 | No `work/` after success; `findings.json` exists | 4, 5 |
 | IPC under temp session during run | 4 |
 | Task prompts use session paths (CI `orchestrator.json` / artifact) | 4, 5 |
 | Temp removed; `run-artifacts/session/` has IPC snapshot | 5 |
 | CI artifact includes `session/` + spec 05 SDK trace | 5, 7 |
 | Spec 05 preserved (emoji blocks, machine lines, prefix, no SDK noise) | 2, 7 |
-| `npm test -w reviewer-runner`; evals updated if `work/` refs | 3, 6, 7 |
+| `npm test -w reviewer-runner`; evals updated if `work/` refs | 6, 7 |
 | `references/progress-todos.md` matches SKILL Step 0 | 1 |
 | `validator-summary.json` at `.ai-code-review/` root | 4, 5 |
 
@@ -64,20 +63,6 @@
 
 ---
 
-### Phase 3: Runner prompt — English stdout directive
-
-| Field | Value |
-|-------|--------|
-| **Status** | `done` |
-| **Goal** | `buildReviewPrompt` tells the orchestrator all stdout status lines must be English (one short sentence per step). |
-
-#### Verification
-
-- [x] `npm test -w reviewer-runner -- src/agent.test.ts` passes
-- [x] `npm test -w reviewer-runner` passes (stream/logger regression)
-
----
-
 ### Phase 4: Ephemeral session IPC + durable `.ai-code-review/` layout
 
 | Field | Value |
@@ -104,7 +89,7 @@
 
 - [x] `SKILL.md` describes copy → `run-artifacts/session/` before temp delete
 - [x] `rg 'run-artifacts/session' .github/workflows/ai-code-review.yml` — artifact glob still `run-artifacts/**`
-- [ ] Manual or post-implement CI: artifact contains `session/diff.json` when analyzers ran (Phase 7)
+- [x] Manual or post-implement CI: artifact contains `session/diff.json` when analyzers ran (Phase 7)
 
 ---
 
@@ -133,7 +118,7 @@
 #### Verification
 
 - [x] All automated verification commands pass
-- [ ] Manual checklist from spec **Validation checklist** documented as done or filed in Phase 7 PR notes
+- [x] Manual checklist from spec **Validation checklist** documented as done or filed in Phase 7 PR notes
 - [x] Spec 05 acceptance spot-check: emoji blocks and `Analyzers:` / `Validator funnel:` still in skill
 
 ---
@@ -144,3 +129,4 @@
 |------|--------|
 | 2026-05-31 | Initial plan from spec 07 (7 todos, English stdout, ephemeral session, evals parity) |
 | 2026-05-31 | Implemented all phases; `npm test -w reviewer-runner` and `npm test -w evals` green |
+| 2026-05-31 | `/validate` sign-off; dropped Phase 3 (`buildReviewPrompt` narration — skill-only per human) |
