@@ -8,7 +8,7 @@ import {
   resetOrchestratorStream,
 } from "./agent-stream.js";
 import { parseFindingsFile } from "./findings.js";
-import * as log from "./logger.js";
+import * as log from "./support/logger.js";
 import {
   createReviewRunDir,
   findingsPathInRun,

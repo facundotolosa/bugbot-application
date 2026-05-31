@@ -27,7 +27,7 @@ import {
   type GitRunner,
   type ShouldSkipAgentResult,
 } from "./git-scope.js";
-import * as log from "./logger.js";
+import * as log from "./support/logger.js";
 import { buildKnownIssuesJson, filterFindingsForPost } from "./post-review.js";
 
 function formatTrackingRef(commentId: number | undefined): string | undefined {
