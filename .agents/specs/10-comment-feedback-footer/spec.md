@@ -110,3 +110,4 @@ N/A — internal string formatting in `formatCommentBody`. No new env vars, webh
 | 2026-05-31 | brainstorm | Initial draft from `/brainstorm` |
 | 2026-05-31 | brainstorm | Links `[👍](#)`; footer wrapped in `<sub>` for smaller text |
 | 2026-05-31 | implement | Phase 1: `COMMENT_FEEDBACK_FOOTER` appended in `formatCommentBody` |
+| 2026-05-31 | implement | Phase 2: dry-run smoke; GitHub render check deferred to PR |
