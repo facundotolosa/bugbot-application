@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { Agent } from "@cursor/sdk";
 
+import { REPO_ROOT } from "../../packages/reviewer-runner/src/load-repo-env.js";
 import { getEvalModelId } from "../config.js";
 import type {
   FilterSummary,
@@ -94,7 +95,6 @@ export function validateAnalyzerOutputText(
 }
 
 async function runHarnessAgent(options: {
-  cwd: string;
   apiKey: string;
   harnessPrompt: string;
 }): Promise<void> {
@@ -102,7 +102,8 @@ async function runHarnessAgent(options: {
     apiKey: options.apiKey,
     model: { id: getEvalModelId() },
     local: {
-      cwd: options.cwd,
+      // Monorepo root so `.cursor/agents/*.md` load via settingSources; Task paths are absolute.
+      cwd: REPO_ROOT,
       settingSources: [...SETTING_SOURCES],
     },
   });
@@ -140,6 +141,7 @@ export async function runValidatorHarness(options: {
   const harnessPrompt = buildComponentHarnessPrompt(
     SUBAGENT_TYPES.validator,
     VALIDATOR_TASK_LINES,
+    { workspaceRoot: options.cwd },
   );
   const outputPath = path.join(options.cwd, PATHS.validatorOutput);
 
@@ -157,7 +159,6 @@ export async function runValidatorHarness(options: {
 
   if (!gate && !options.dryRun) {
     await runHarnessAgent({
-      cwd: options.cwd,
       apiKey: options.apiKey,
       harnessPrompt,
     });
@@ -196,7 +197,9 @@ export async function runAnalyzerHarness(options: {
 }): Promise<AnalyzerComponentResult> {
   const { subagentType, taskLines, outputRel } = analyzerConfig(options.analyzer);
   const taskPrompt = taskLines.join("\n");
-  const harnessPrompt = buildComponentHarnessPrompt(subagentType, taskLines);
+  const harnessPrompt = buildComponentHarnessPrompt(subagentType, taskLines, {
+    workspaceRoot: options.cwd,
+  });
   const outputPath = path.join(options.cwd, outputRel);
 
   let retry = false;
@@ -216,7 +219,6 @@ export async function runAnalyzerHarness(options: {
 
   if (!outputText && !options.dryRun) {
     await runHarnessAgent({
-      cwd: options.cwd,
       apiKey: options.apiKey,
       harnessPrompt,
     });
@@ -225,7 +227,6 @@ export async function runAnalyzerHarness(options: {
     if (!outputText) {
       retry = true;
       await runHarnessAgent({
-        cwd: options.cwd,
         apiKey: options.apiKey,
         harnessPrompt,
       });

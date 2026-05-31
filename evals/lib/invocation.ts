@@ -1,5 +1,7 @@
 /** Parity with `packages/reviewer-runner/src/agent.ts` and `.cursor/skills/ai-code-review/SKILL.md`. */
 
+import path from "node:path";
+
 export const MODEL_ID = "composer-2.5";
 
 export const SETTING_SOURCES = ["project"] as const;
@@ -54,6 +56,34 @@ export function validatorTaskPrompt(): string {
   return VALIDATOR_TASK_LINES.join("\n");
 }
 
+/** Map SKILL-relative paths to absolute paths under an isolated eval workspace. */
+export function absolutizeTaskPromptLines(
+  taskPromptLines: readonly string[],
+  workspaceRoot: string,
+): string[] {
+  const replacements: [string, string][] = [
+    [PATHS.diff, path.join(workspaceRoot, PATHS.diff)],
+    [PATHS.securityFindings, path.join(workspaceRoot, PATHS.securityFindings)],
+    [PATHS.performanceFindings, path.join(workspaceRoot, PATHS.performanceFindings)],
+    [PATHS.rawFindings, path.join(workspaceRoot, PATHS.rawFindings)],
+    [PATHS.validatorOutput, path.join(workspaceRoot, PATHS.validatorOutput)],
+    [PATHS.knownIssues, path.join(workspaceRoot, PATHS.knownIssues)],
+  ];
+
+  return taskPromptLines.map((line) => {
+    let updated = line;
+    for (const [rel, abs] of replacements) {
+      updated = updated.replace(rel, abs);
+    }
+    return updated;
+  });
+}
+
+export type HarnessPromptOptions = {
+  /** When set, Task lines use absolute paths (harness `cwd` should be monorepo root). */
+  workspaceRoot?: string;
+};
+
 /**
  * Eval harness agent prompt: launch one Task with production `subagent_type` and
  * minimal task lines only (agent rules load via `settingSources`, not inline here).
@@ -61,14 +91,20 @@ export function validatorTaskPrompt(): string {
 export function buildComponentHarnessPrompt(
   subagentType: string,
   taskPromptLines: readonly string[],
+  options?: HarnessPromptOptions,
 ): string {
-  const taskPrompt = taskPromptLines.join("\n");
+  const lines = options?.workspaceRoot
+    ? absolutizeTaskPromptLines(taskPromptLines, options.workspaceRoot)
+    : [...taskPromptLines];
+  const taskPrompt = lines.join("\n");
   return [
-    "You are an eval harness. Launch exactly one Task, then stop.",
+    "You are an eval harness. Use the Task tool exactly once, then stop.",
     "",
     `subagent_type: ${subagentType}`,
     "",
-    "Use this Task prompt verbatim (do not add agent rules or extra instructions):",
+    "Task prompt (verbatim — do not add agent rules or extra instructions):",
     taskPrompt,
+    "",
+    "After the Task completes, stop. Do not write output files yourself.",
   ].join("\n");
 }

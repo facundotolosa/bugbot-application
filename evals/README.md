@@ -114,7 +114,7 @@ Production subagents receive minimal Task prompts from the orchestrator skill; r
 
 - `SUBAGENT_TYPES` and `.ai-code-review/work/` paths
 - `securityTaskPrompt()`, `performanceTaskPrompt()`, `validatorTaskPrompt()` — byte-identical to [SKILL.md](../.cursor/skills/ai-code-review/SKILL.md)
-- `buildComponentHarnessPrompt()` — one Task only; **no** duplicated agent rules in the harness prompt
+- `buildComponentHarnessPrompt()` — one Task only; **no** duplicated agent rules in the harness prompt. Harness agent `cwd` is the **monorepo root** (loads `.cursor/agents/`); Task lines use **absolute** paths into the isolated fixture workspace.
 - `MODEL_ID` and `SETTING_SOURCES` (`["project"]`) matching `reviewer-runner` `agent.ts`
 
 E2E uses `buildReviewPrompt` + `runReviewAgent` from `packages/reviewer-runner` (same as CI).
