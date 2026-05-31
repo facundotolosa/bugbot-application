@@ -29,6 +29,8 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain(`PR files file: ${REPO}/.ai-code-review/pr-files.txt`);
     expect(prompt).not.toContain("prepare-diff.ts");
     expect(prompt).not.toContain("## Required steps");
+    expect(prompt).toContain("Narration pacing");
+    expect(prompt).toContain("turns A–F");
   });
 
   it("omits optional since commit and source branch when absent", () => {

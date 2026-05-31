@@ -53,4 +53,17 @@ describe("ai-code-review skill contract", () => {
     expect(skill).toMatch(/Do not use Shell\/Bash solely to emit progress lines/i);
     expect(skill).toMatch(/forwards each line of assistant text/i);
   });
+
+  it("requires narration pacing across turns A–F (no deferred dump)", () => {
+    const skill = readFileSync(join(SKILL_DIR, "SKILL.md"), "utf8");
+    const progress = readFileSync(
+      join(SKILL_DIR, "references/progress-todos.md"),
+      "utf8",
+    );
+    expect(skill).toMatch(/Narration pacing \(mandatory\)/);
+    expect(skill).toMatch(/Deferred narration dump/);
+    expect(skill).toMatch(/Single-turn full pipeline/);
+    expect(skill).toMatch(/\| Turn \| Narration first/);
+    expect(progress).toMatch(/Deferred narration dump/);
+  });
 });
