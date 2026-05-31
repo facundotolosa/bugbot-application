@@ -11,3 +11,6 @@ dist/
 
 # Vite
 packages/ledger-lite/dist/
+
+# Eval run artifacts
+evals/out/

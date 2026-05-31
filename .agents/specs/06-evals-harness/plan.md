@@ -35,7 +35,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | Top-level `evals/` exists with runnable `npm run eval` that fails fast when the API key is missing. |
 
 #### Steps
@@ -52,10 +52,10 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `npm run eval` exits non-zero with explicit “set CURSOR_API_KEY” message when unset
-- [ ] `npm test` at repo root still passes (no workspace breakage)
-- [ ] `npm test -w evals` runs (even if zero tests initially, runner starts)
-- [ ] `evals/out/` in `.gitignore`
+- [x] `npm run eval` exits non-zero with explicit “set CURSOR_API_KEY” message when unset
+- [x] `npm test` at repo root still passes (no workspace breakage)
+- [x] `npm test -w evals` runs (even if zero tests initially, runner starts)
+- [x] `evals/out/` in `.gitignore`
 
 #### Notes
 
@@ -300,3 +300,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 |------|--------|
 | 2026-05-31 | Initial plan from spec 06-evals-harness (7 phases, acceptance mapping) |
 | 2026-05-31 | Plan approved; status Done; prerequisite checked |
+| 2026-05-31 | Phase 1 done: evals workspace, CLI guard, stub runner, README, root `npm run eval` |
