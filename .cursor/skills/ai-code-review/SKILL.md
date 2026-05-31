@@ -115,6 +115,16 @@ console.log(sessionDir);
 | Known issues JSON | Path to `{ "issues": [{ "file", "line", "message" }] }` | Optional (CI supplies; may be `[]`) |
 | `Since commit: <sha>` | Runner (incremental) or human in local invocation | Optional — enables incremental diff |
 | Repository root (`cwd`) | Workspace / runner | Yes |
+| Execution context | Omitted (default **local**) or `Execution context: CI` from `reviewer-runner` | Optional |
+
+**Execution context (skill-owned behavior):**
+
+| Context | How to detect | Markdown report |
+|---------|---------------|-----------------|
+| **local** (default) | Prompt has no `Execution context:` line, or value is `local` | After `findings.json`, run `write-findings-markdown.ts` → `.ai-code-review/findings.md` |
+| **CI** | Prompt includes `Execution context: CI` | Do not write `findings.md` |
+
+The runner only passes context; it does not instruct orchestrator actions beyond the skill.
 
 **Local incremental:** only when the human supplies `Since commit: <full-sha>` in the prompt. Without it, run a **full** review from merge-base.
 
@@ -225,6 +235,7 @@ Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** �
     - Else: emit `Running validator on raw findings.` in assistant text; **Todo:** `collect` completed; `validate` in_progress. Ensure `known-issues.json` exists. Launch **one** validator Task (**no retry**).
 17. **Turn E:** **Collect validator output** — read manifest `validatorOut` only; validate with `parseValidatorOutput`; on missing/invalid → **abort** (do not write unvalidated `findings.json`). Emit `Warning: session files kept at <sessionDir>` in assistant text; snapshot session if possible; **do not** delete temp.
 18. **Turn E:** **Map** validated output → `.ai-code-review/findings.json` (v2); copy `filter_summary` → `.ai-code-review/validator-summary.json` and session `validatorSummary`.
+18b. **Turn E (local context):** When execution context is **local** (default — no `Execution context:` line, or `local`), run `write-findings-markdown.ts` (see [Local markdown report](#local-markdown-report-local-only)). When context is **CI**, skip.
 19. **Turn F — Todo:** `validate` completed; `report` in_progress.
 20. **Turn F:** Emit the **consolidated final block** once in assistant text (📋 📊 🔬 📥 ⏭️ or ✅ in order, then 🎯 severity counts from **final** `findings.json`) — see templates below. **Do not** paste a findings table, list, or per-finding details (those live only in `.ai-code-review/findings.json`). Use exact `⏭️ Validator skipped:` (emoji + bold title) when skipping validator. **Do not** repeat mid-run lines from turns B–E.
 21. **Turn F:** Emit **exactly one** closing line in assistant text: `Report written to: .ai-code-review/findings.json` — then **end orchestrator narration** (no recap, `---`, or file dumps).
@@ -278,6 +289,7 @@ Full rules: [references/invocation-criteria.md](references/invocation-criteria.m
 | Path | Role |
 |------|------|
 | `findings.json` | Final v2 report (runner input) |
+| `findings.md` | Human-readable report (local IDE only; severity-ordered) |
 | `validator-summary.json` | Copy of `filter_summary` (or zeroed on skip) |
 | `known-issues.json` | Runner-built; validator input only |
 | `pr-files.txt` | Runner-built PR file list |
@@ -388,6 +400,23 @@ if (!raw.findings?.length) {
 }
 "
 ```
+
+## Local markdown report (local only)
+
+Script: `.cursor/skills/ai-code-review/scripts/write-findings-markdown.ts`
+
+Run **after** `.ai-code-review/findings.json` exists when execution context is **local** (default if the prompt omits `Execution context:`):
+
+```bash
+npx tsx .cursor/skills/ai-code-review/scripts/write-findings-markdown.ts
+```
+
+- **Input:** `.ai-code-review/findings.json` (default)
+- **Output:** `.ai-code-review/findings.md` (default)
+- **Order:** `critical` → `major` → `minor` → `enhancement` (most severe first); within a severity, by file path then line
+- **Optional:** reads `.ai-code-review/prepare-diff.json` when present for mode/base header lines
+- **Do not** run when execution context is **CI** (`reviewer-runner`, GitHub Actions, E2E evals)
+- **Do not** paste markdown body in orchestrator narration — the file is the human-readable surface
 
 ## Output contract (final report — schema v2)
 

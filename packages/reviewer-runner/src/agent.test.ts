@@ -27,6 +27,8 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain(`Report file: ${REPO}/.ai-code-review/findings.json`);
     expect(prompt).toContain(`Known issues file: ${REPO}/.ai-code-review/known-issues.json`);
     expect(prompt).toContain(`PR files file: ${REPO}/.ai-code-review/pr-files.txt`);
+    expect(prompt).toContain("Execution context: CI");
+    expect(prompt).not.toMatch(/Execution context:.*findings\.md/i);
     expect(prompt).not.toContain("prepare-diff.ts");
     expect(prompt).not.toContain("## Required steps");
     expect(prompt).not.toContain("Orchestrator contract:");
