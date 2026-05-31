@@ -192,7 +192,7 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 | Field | Value |
 |-------|--------|
-| **Status** | `pending` |
+| **Status** | `done` |
 | **Goal** | ≥2 E2E cases using `buildReviewPrompt` + `runReviewAgent` against this monorepo with frozen scope files. |
 
 #### Steps
@@ -217,10 +217,10 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 
 #### Verification
 
-- [ ] `git show <head_sha> --stat` touches only `packages/ledger-lite/` (or documented exceptions)
+- [x] `git show <head_sha> --stat` touches only `packages/ledger-lite/` (or documented exceptions)
 - [ ] `CURSOR_API_KEY=… npm run eval -- --suite e2e` passes both cases locally
-- [ ] Prompt built by `buildReviewPrompt` includes frozen `pr-files.txt` / `known-issues.json` paths
-- [ ] No floating `main` in pin config (`rg 'main' evals/cases/e2e` only in prose, not as ref)
+- [x] Prompt built by `buildReviewPrompt` includes frozen `pr-files.txt` / `known-issues.json` paths
+- [x] No floating `main` in pin config (`rg 'main' evals/cases/e2e` only in prose, not as ref)
 
 #### Notes
 
@@ -305,3 +305,4 @@ _Each phase is a vertical slice. Deterministic code uses Vitest under `evals/` (
 | 2026-05-31 | Phase 3 done: expect schema, workspace seeding, structural gates, judge + assert-case |
 | 2026-05-31 | Phase 4 done: run-component harness, leaked-key + n-plus-one cases, run.ts wiring, refresh-inputs |
 | 2026-05-31 | Phase 5 done: validator harness (no retry), dedup-positive + fp-filter-negative cases |
+| 2026-05-31 | Phase 6 done: E2E worktree runner, factory branches, ledger-security + ledger-pipeline cases |

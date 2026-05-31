@@ -12,6 +12,7 @@ const INPUT_DEST: Record<string, string> = {
   "validator-output.json": PATHS.validatorOutput,
   "known-issues.json": PATHS.knownIssues,
   "findings.json": PATHS.findings,
+  "pr-files.txt": ".ai-code-review/pr-files.txt",
 };
 
 export type SeedWorkspaceOptions = {
