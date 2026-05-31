@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest";
-import type { InlineReviewComment } from "./comments.js";
-import * as log from "./logger.js";
+import type { InlineReviewComment } from "../findings/comments.js";
+import * as log from "../support/logger.js";
 import { formatTrackingBody, parseTrackingComment, selectTrackingComment } from "./tracking.js";
 
 export interface PrContext {

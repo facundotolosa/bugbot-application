@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FindingsReport } from "../../../../packages/reviewer-runner/src/findings.js";
+import type { FindingsReport } from "../../../../packages/reviewer-runner/src/findings/findings.js";
 import { formatFindingsMarkdown } from "./write-findings-markdown.js";
 
 const sample: FindingsReport = {

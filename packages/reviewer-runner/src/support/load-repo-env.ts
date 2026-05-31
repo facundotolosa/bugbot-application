@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 /** Monorepo root (`bugbot-application/`). */
 export const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
+  "../../../..",
 );
 
 const ENV_FILES = [

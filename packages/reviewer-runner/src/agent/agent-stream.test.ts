@@ -13,7 +13,7 @@ import {
   shouldForwardOrchestratorLine,
   stripOrchestratorMarkdown,
 } from "./agent-stream.js";
-import * as logger from "./logger.js";
+import * as logger from "../support/logger.js";
 
 afterEach(() => {
   resetOrchestratorStream();

@@ -127,7 +127,7 @@ Create immediately after the session dir (Turn A), **before** `prepare-diff`:
 
 ```bash
 npx tsx -e "
-import { createReviewRunDir } from './packages/reviewer-runner/src/review-run-dir.ts';
+import { createReviewRunDir } from './packages/reviewer-runner/src/paths/review-run-dir.ts';
 const runDir = process.env.AI_CODE_REVIEW_RUN_DIR
   ? process.env.AI_CODE_REVIEW_RUN_DIR
   : await createReviewRunDir(process.cwd());
@@ -242,7 +242,7 @@ Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** �
 2. **Turn A — Review run:** Create or reuse `{reviewRunDir}`; set `AI_CODE_REVIEW_RUN_DIR`; export for later turns.
 3. **Turn A — Session:** Create or reuse session dir; write `session-manifest.json`.
 4. **Turn A — Todo:** `prereq` in_progress (from step 0).
-5. **Turn A:** Run `prepare-diff` (see below); read JSON from stdout or `--output` file — **stop**; do not start analyzer Tasks in this turn.
+5. **Turn A:** Run `prepare-diff` (see below) from the **repository root** (`cd` there first in every Shell invocation, or pass `--cwd`); read JSON from stdout or `--output` file — **stop**; do not start analyzer Tasks in this turn.
 6. **Turn B — Todo:** `prereq` completed; `metadata` in_progress → then completed after metadata read.
 7. **Turn B:** Emit `Diff ready; selecting analyzers.` in assistant text (do **not** emit 📋/📊 yet — turn **F** only).
 8. **Turn B:** If incremental was requested but `metadata.is_incremental === false`, emit `Warning: full review fallback` plus each `metadata.warnings` entry (prefix `Warning:`).
@@ -287,14 +287,18 @@ Pacing: follow [Narration pacing](#narration-pacing-mandatory) turns **A–F** �
 
 Script: `.cursor/skills/ai-code-review/scripts/prepare-diff.ts`
 
+**Repository root (mandatory):** Paths like `.cursor/skills/...` are relative to the monorepo root. In CI the Shell tool may start under `packages/reviewer-runner/` — always `cd` to the git root before `npx tsx`, or pass `--cwd "$(git rev-parse --show-toplevel)"` (absolute paths for `--pr-files` / `--output` are fine).
+
 ```bash
-npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
+cd "$(git rev-parse --show-toplevel)" && npx tsx .cursor/skills/ai-code-review/scripts/prepare-diff.ts \
   --source <source-ref-or-sha> \
   --target <target-ref> \
   --pr-files <path-to-pr-files-list> \
   [--since-commit <full-sha>] \
   [--output $AI_CODE_REVIEW_RUN_DIR/prepare-diff.json]
 ```
+
+Same rule for other skill scripts invoked via Shell (`select-analyzers.ts`, `merge-findings.ts`, etc.) when using repo-relative paths.
 
 ## Orchestrator narration blocks (fixed templates)
 

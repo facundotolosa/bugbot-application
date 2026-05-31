@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { loadRepoEnv } from "../packages/reviewer-runner/src/load-repo-env.js";
+import { loadRepoEnv } from "../packages/reviewer-runner/src/support/load-repo-env.js";
 
 loadRepoEnv();
 

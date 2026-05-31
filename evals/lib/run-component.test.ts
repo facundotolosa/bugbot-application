@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createReviewRunDir } from "../../packages/reviewer-runner/src/review-run-dir.js";
+import { createReviewRunDir } from "../../packages/reviewer-runner/src/paths/review-run-dir.js";
 import { securityTaskPrompt, validatorTaskPrompt } from "./invocation.js";
 import { createEvalSession } from "./session.js";
 import {

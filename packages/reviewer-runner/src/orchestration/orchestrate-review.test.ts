@@ -2,10 +2,10 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReviewPromptInput } from "./agent.js";
-import type { FindingsReport } from "./findings.js";
-import type { GitHubClient, PrContext } from "./github.js";
-import type { GitRunner } from "./git-scope.js";
+import type { ReviewPromptInput } from "../agent/agent.js";
+import type { FindingsReport } from "../findings/findings.js";
+import type { GitHubClient, PrContext } from "../github/github.js";
+import type { GitRunner } from "../git/git-scope.js";
 import { executeReviewOrchestration } from "./orchestrate-review.js";
 
 const HEAD = "b".repeat(40);
@@ -194,7 +194,7 @@ describe("executeReviewOrchestration", () => {
   });
 
   it("dry-run loads fixture findings and logs comments without agent", async () => {
-    const logger = await import("./logger.js");
+    const logger = await import("../support/logger.js");
     const stepSpy = vi.spyOn(logger, "step").mockImplementation(() => {});
     const metaSpy = vi.spyOn(logger, "meta").mockImplementation(() => {});
     const readFindings = vi.fn().mockResolvedValue(findings);

@@ -4,7 +4,7 @@ import path from "node:path";
 import { EVALS_ROOT, getOutDir } from "../config.js";
 import { reviewRunInputPaths } from "./invocation.js";
 import { createEvalSession, type SessionManifest } from "./session.js";
-import { createReviewRunDir } from "../../packages/reviewer-runner/src/review-run-dir.js";
+import { createReviewRunDir } from "../../packages/reviewer-runner/src/paths/review-run-dir.js";
 
 const inputDest = (
   manifest: SessionManifest,

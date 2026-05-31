@@ -1,5 +1,5 @@
 import type { FilterSummary } from "../../.cursor/skills/ai-code-review/scripts/validator-output.ts";
-import type { AnalyzerKey } from "../../packages/reviewer-runner/src/findings.js";
+import type { AnalyzerKey } from "../../packages/reviewer-runner/src/findings/findings.js";
 
 import type { CaseExpect, JudgeResult } from "./types.js";
 import type { JudgeFn } from "./judge.js";

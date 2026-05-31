@@ -30,6 +30,7 @@ describe("buildReviewPrompt", () => {
     expect(prompt).toContain(`Report file: ${RUN_DIR}/findings.json`);
     expect(prompt).toContain(`Known issues file: ${RUN_DIR}/known-issues.json`);
     expect(prompt).toContain(`PR files file: ${RUN_DIR}/pr-files.txt`);
+    expect(prompt).toContain(`Repository root: ${REPO}`);
     expect(prompt).toContain("Execution context: CI");
     expect(prompt).not.toMatch(/Execution context:.*findings\.md/i);
     expect(prompt).not.toContain("prepare-diff.ts");

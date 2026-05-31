@@ -17,7 +17,7 @@ import {
   runValidatorHarness,
 } from "./run-component.js";
 import { seedWorkspace } from "./workspace.js";
-import type { AnalyzerKey } from "../../packages/reviewer-runner/src/findings.js";
+import type { AnalyzerKey } from "../../packages/reviewer-runner/src/findings/findings.js";
 
 export type CaseRunResult = {
   suite: string;
