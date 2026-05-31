@@ -30,8 +30,10 @@ describe("buildReviewPrompt", () => {
     expect(prompt).not.toContain("prepare-diff.ts");
     expect(prompt).not.toContain("## Required steps");
     expect(prompt).toContain(
-      "All orchestrator stdout lines must be in English",
+      "All orchestrator progress lines must be in English",
     );
+    expect(prompt).toContain("assistant messages");
+    expect(prompt).toContain("[orchestrator]");
   });
 
   it("omits optional since commit and source branch when absent", () => {
