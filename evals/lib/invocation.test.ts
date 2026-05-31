@@ -2,11 +2,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import path from "node:path";
+
 import {
   MODEL_ID,
   PATHS,
   SETTING_SOURCES,
   SUBAGENT_TYPES,
+  SECURITY_TASK_LINES,
+  absolutizeTaskPromptLines,
   buildComponentHarnessPrompt,
   performanceTaskPrompt,
   securityTaskPrompt,
@@ -92,6 +96,17 @@ describe("invocation parity", () => {
     ]);
     expect(prompt).toContain(`subagent_type: ${SUBAGENT_TYPES.security}`);
     expect(prompt).toContain("line-a\nline-b");
+    expect(prompt).toContain("Task tool");
     expect(prompt).not.toMatch(/severity|false.?positive|root.?cause/i);
+  });
+
+  it("absolutizeTaskPromptLines preserves relative SKILL lines in content", () => {
+    const ws = "/tmp/eval-ws";
+    const [read, write] = absolutizeTaskPromptLines(SECURITY_TASK_LINES, ws);
+    expect(read).toBe(`Read diff from: ${path.join(ws, PATHS.diff)}`);
+    expect(write).toBe(
+      `Write findings to: ${path.join(ws, PATHS.securityFindings)}`,
+    );
+    expect(securityTaskPrompt()).toContain(PATHS.diff);
   });
 });
