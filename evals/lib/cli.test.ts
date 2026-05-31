@@ -24,7 +24,28 @@ describe("cli", () => {
       suites: ["analyzer-security"],
       caseId: "leaked-key",
       refreshInputs: true,
+      verbose: false,
     });
+  });
+
+  it("parses --verbose flag", () => {
+    expect(parseCliArgs(["--verbose", "--suite", "e2e"])).toEqual({
+      suite: "e2e",
+      suites: ["e2e"],
+      caseId: undefined,
+      refreshInputs: false,
+      verbose: true,
+    });
+  });
+
+  it("reads EVAL_VERBOSE=1 when --verbose is absent", () => {
+    process.env.EVAL_VERBOSE = "1";
+    expect(parseCliArgs(["--suite", "e2e"]).verbose).toBe(true);
+  });
+
+  it("prefers --verbose over EVAL_VERBOSE=1", () => {
+    process.env.EVAL_VERBOSE = "1";
+    expect(parseCliArgs(["--verbose"]).verbose).toBe(true);
   });
 
   it("exits when CURSOR_API_KEY is unset", () => {

@@ -8,8 +8,10 @@ import path from "node:path";
 import { EVALS_ROOT } from "./config.js";
 import { parseCliArgs, requireCursorApiKey } from "./lib/cli.js";
 import { discoverCases } from "./lib/discover-cases.js";
+import { EvalReporter } from "./lib/reporter.js";
 import { runGoldenCase } from "./lib/run-case.js";
-import { buildEvalRunSummary, formatEvalRunSummary } from "./lib/summary.js";
+import { buildEvalRunSummary } from "./lib/summary.js";
+import { installProcessGuards } from "../packages/reviewer-runner/src/support/process-guard.js";
 
 function createRunId(): string {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -26,6 +28,10 @@ async function main(): Promise<void> {
   const options = parseCliArgs();
   requireCursorApiKey();
 
+  if (!options.verbose) {
+    installProcessGuards();
+  }
+
   const apiKey = process.env.CURSOR_API_KEY!.trim();
   const repoRoot = path.join(EVALS_ROOT, "..");
   const cases = await discoverCases(options);
@@ -41,48 +47,26 @@ async function main(): Promise<void> {
   }
 
   const runId = createRunId();
-  console.log(`Eval run ${runId}`);
-  console.log(`Cases: ${cases.length}`);
-  if (options.refreshInputs) {
-    console.log("Mode: --refresh-inputs enabled");
-  }
-  console.log();
+  const reporter = new EvalReporter();
+  reporter.setVerbose(options.verbose);
+  reporter.startRun(runId, cases, options.refreshInputs);
 
   const results = [];
   for (const discovered of cases) {
-    console.log(`▶ ${discovered.suite}/${discovered.caseId}`);
+    reporter.startCase(discovered.suite, discovered.caseId);
     const result = await runGoldenCase(discovered, {
       runId,
       refreshInputs: options.refreshInputs,
       apiKey,
       repoRoot,
+      verbose: options.verbose,
     });
     results.push(result);
-
-    const status = result.pass ? "PASS" : "FAIL";
-    const retry = result.retry ? " retry=yes" : "";
-    const judge = result.judgeUsed ? " judge=yes" : "";
-    console.log(
-      `  ${status} (${(result.durationMs / 1000).toFixed(1)}s${retry}${judge})`,
-    );
-    if (result.taskPrompt) {
-      const lineCount = result.taskPrompt.split("\n").length;
-      console.log(`  Task prompt (${lineCount} lines):`);
-      for (const line of result.taskPrompt.split("\n")) {
-        console.log(`    ${line}`);
-      }
-    }
-    if (result.error) {
-      console.log(`  ${result.error}`);
-    }
-    console.log();
+    reporter.endCase(result);
   }
 
   const summary = buildEvalRunSummary(results);
-  console.log("Summary");
-  console.log(formatEvalRunSummary(summary));
-  console.log();
-  console.log(`Artifacts: evals/out/${runId}/`);
+  reporter.printSummary(summary, runId);
 
   process.exit(summary.failed === 0 ? 0 : 1);
 }

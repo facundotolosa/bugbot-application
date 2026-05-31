@@ -80,6 +80,7 @@ export async function runGoldenCase(
     refreshInputs: boolean;
     apiKey: string;
     repoRoot: string;
+    verbose?: boolean;
   },
 ): Promise<CaseRunResult> {
   const started = Date.now();
@@ -114,6 +115,7 @@ export async function runGoldenCase(
         apiKey: options.apiKey,
         judgeFn,
         artifactDir,
+        verbose: options.verbose,
       });
 
       await writeFile(
@@ -129,6 +131,7 @@ export async function runGoldenCase(
         durationMs: Date.now() - started,
         retry: false,
         judgeUsed: true,
+        taskPrompt: options.verbose ? e2e.prompt : undefined,
         error: formatCaseError(e2e.assertion),
       };
     } catch (err) {
