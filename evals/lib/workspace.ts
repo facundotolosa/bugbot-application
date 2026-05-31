@@ -15,6 +15,9 @@ const INPUT_DEST: Record<string, string> = {
   "pr-files.txt": ".ai-code-review/pr-files.txt",
 };
 
+/** Copied into case `inputs/` only for `--refresh-inputs`; not seeded into the workspace. */
+const INPUT_SKIP = new Set(["diff-refs.json"]);
+
 export type SeedWorkspaceOptions = {
   caseDir: string;
   caseId: string;
@@ -76,6 +79,7 @@ export async function seedWorkspace(
   if (await pathExists(inputsDir)) {
     const files = await fs.readdir(inputsDir);
     for (const file of files) {
+      if (INPUT_SKIP.has(file)) continue;
       const destRel = INPUT_DEST[file];
       if (!destRel) {
         throw new Error(`Unknown input file "${file}" in ${inputsDir}`);
