@@ -69,15 +69,20 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
   return lines.join("\n");
 }
 
+export type ReviewAgentLogging = "default" | "quiet";
+
 export interface RunReviewAgentOptions extends Omit<ReviewPromptInput, "reviewRunDir"> {
   apiKey: string;
   /** When omitted, a new timestamped directory is created under `.ai-code-review/`. */
   reviewRunDir?: string;
   /** When set (e.g. E2E evals), sent to the agent instead of `buildReviewPrompt(options)`. */
   prompt?: string;
+  /** When `"quiet"`, suppress prompt box and orchestrator stdout (eval harness default). */
+  logging?: ReviewAgentLogging;
 }
 
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<void> {
+  const quiet = options.logging === "quiet";
   const reviewRunDir =
     options.reviewRunDir ?? (await createReviewRunDir(options.repoRoot));
   const findingsPath = findingsPathInRun(reviewRunDir);
@@ -87,8 +92,10 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
     buildReviewPrompt({ ...options, reviewRunDir });
   const knownIssues = options.knownIssuesCount ?? 0;
 
-  log.prompt(prompt, { chars: prompt.length, knownIssues });
-  log.step("Launching Cursor agent…");
+  if (!quiet) {
+    log.prompt(prompt, { chars: prompt.length, knownIssues });
+    log.step("Launching Cursor agent…");
+  }
 
   const startedAt = new Date().toISOString();
   const streamEvents: SDKMessage[] = [];
@@ -110,15 +117,21 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<vo
     resetOrchestratorStream();
     for await (const event of run.stream()) {
       streamEvents.push(event);
-      logAgentStreamEvent(event);
+      if (!quiet) {
+        logAgentStreamEvent(event);
+      }
     }
-    flushOrchestratorStream();
+    if (!quiet) {
+      flushOrchestratorStream();
+    }
 
     const result = await run.wait();
     if (result.status === "error") {
       throw new Error(`Agent run failed: ${result.id ?? run.id}`);
     }
-    log.ok(`Agent completed (${result.durationMs ?? "?"} ms)`);
+    if (!quiet) {
+      log.ok(`Agent completed (${result.durationMs ?? "?"} ms)`);
+    }
   } catch (err) {
     if (err instanceof CursorAgentError) {
       throw new Error(`Agent startup failed: ${err.message}`);
