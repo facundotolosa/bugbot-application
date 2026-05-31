@@ -7,15 +7,15 @@ import {
   logAgentStreamEvent,
   resetOrchestratorStream,
 } from "./agent-stream.js";
-import { parseFindingsFile } from "./findings.js";
-import * as log from "./support/logger.js";
+import { parseFindingsFile } from "../findings/findings.js";
+import * as log from "../support/logger.js";
 import {
   createReviewRunDir,
   findingsPathInRun,
   findingsReportRelativePath,
   REVIEW_RUN_FILES,
   runArtifactsDirInRun,
-} from "./paths/review-run-dir.js";
+} from "../paths/review-run-dir.js";
 import { writeRunArtifacts } from "./run-artifacts.js";
 
 /** @deprecated Use findings path inside a timestamped review run directory. */
@@ -158,7 +158,7 @@ export async function ensureReviewInputFiles(
   base: string,
   head: string,
 ): Promise<{ reviewRunDir: string; prFilesPath: string; knownIssuesPath: string }> {
-  const { listPrFiles, writePrFilesList } = await import("./git-scope.js");
+  const { listPrFiles, writePrFilesList } = await import("../git/git-scope.js");
   const reviewRunDir = await createReviewRunDir(repoRoot);
 
   const prFilesPath = join(reviewRunDir, REVIEW_RUN_FILES.prFiles);

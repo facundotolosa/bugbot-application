@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
-import type { FoundTrackingComment } from "./github.js";
-import * as log from "./support/logger.js";
+import type { FoundTrackingComment } from "../github/github.js";
+import * as log from "../support/logger.js";
 
 const execFileAsync = promisify(execFile);
 
