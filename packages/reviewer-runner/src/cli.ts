@@ -15,7 +15,7 @@ import { parseFindingsJson } from "./findings.js";
 import { createGitHubClient, loadPrContextFromEvent, postInlineReview } from "./github.js";
 import * as log from "./support/logger.js";
 import { executeReviewOrchestration } from "./orchestrate-review.js";
-import { resolveRepoRoot } from "./repo-root.js";
+import { resolveRepoRoot } from "./paths/repo-root.js";
 
 function parseArgs(argv: string[]) {
   const args = {

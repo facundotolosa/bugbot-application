@@ -5,7 +5,7 @@ import {
   createReviewRunDir,
   findingsPathInRun,
   REVIEW_RUN_FILES,
-} from "./review-run-dir.js";
+} from "./paths/review-run-dir.js";
 import { toInlineReviewComments, type InlineReviewComment } from "./comments.js";
 import { parseFindingsFile, type FindingsReport } from "./findings.js";
 import {
