@@ -80,6 +80,22 @@ npm run eval:validator
 npm run eval -- --suite validator --case dedup-positive
 ```
 
+### E2E golden cases (v1)
+
+Full orchestrator via `buildReviewPrompt` + `runReviewAgent` (same as CI). Each case uses a **detached git worktree** at pinned `head_sha` (see `pins.json` — never floating `main`).
+
+| Case | Factory branch | Intent |
+|------|----------------|--------|
+| `ledger-security` | `eval/e2e-security-head` | Hardcoded Plaid secret in `client.ts` |
+| `ledger-pipeline` | `eval/e2e-pipeline-head` | N+1-style loop in `transactions-export.ts` |
+
+Factory branches: `eval/e2e-base`, `eval/e2e-security-head`, `eval/e2e-pipeline-head`. SHAs are recorded in `evals/cases/e2e/_pins.json` and per-case `pins.json`.
+
+```bash
+npm run eval:e2e
+npm run eval -- --suite e2e --case ledger-security --refresh-inputs  # rewrite pr-files.txt from git diff
+```
+
 ## Invocation parity
 
 Production subagents receive minimal Task prompts from the orchestrator skill; rules live in `.cursor/agents/*.md`.

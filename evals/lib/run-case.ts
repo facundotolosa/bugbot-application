@@ -8,6 +8,11 @@ import type { DiscoveredCase } from "./discover-cases.js";
 import { createAgentJudge } from "./judge.js";
 import { refreshCaseDiffInput } from "./refresh-diff.js";
 import {
+  loadE2ePins,
+  refreshE2ePrFilesInput,
+  runE2eCase,
+} from "./run-e2e.js";
+import {
   runAnalyzerHarness,
   runValidatorHarness,
 } from "./run-component.js";
@@ -31,6 +36,7 @@ const ANALYZER_SUITES: Record<string, AnalyzerKey> = {
 };
 
 const VALIDATOR_SUITE = "validator";
+const E2E_SUITE = "e2e";
 
 async function writeComponentArtifacts(
   artifactDir: string,
@@ -86,6 +92,57 @@ export async function runGoldenCase(
 
   const analyzer = ANALYZER_SUITES[discovered.suite];
   const isValidator = discovered.suite === VALIDATOR_SUITE;
+  const isE2e = discovered.suite === E2E_SUITE;
+
+  if (isE2e) {
+    try {
+      if (options.refreshInputs) {
+        const pins = await loadE2ePins(discovered.dir);
+        await refreshE2ePrFilesInput({
+          caseDir: discovered.dir,
+          monorepoRoot: options.repoRoot,
+          pins,
+        });
+      }
+
+      const judgeFn = createAgentJudge(options.repoRoot, artifactDir);
+      const e2e = await runE2eCase({
+        caseDir: discovered.dir,
+        caseId: discovered.caseId,
+        monorepoRoot: options.repoRoot,
+        runId: options.runId,
+        apiKey: options.apiKey,
+        judgeFn,
+        artifactDir,
+      });
+
+      await writeFile(
+        path.join(artifactDir, "assert-result.json"),
+        JSON.stringify(e2e.assertion, null, 2),
+        "utf8",
+      );
+
+      return {
+        suite: discovered.suite,
+        caseId: discovered.caseId,
+        pass: e2e.pass,
+        durationMs: Date.now() - started,
+        retry: false,
+        judgeUsed: true,
+        error: formatCaseError(e2e.assertion),
+      };
+    } catch (err) {
+      return {
+        suite: discovered.suite,
+        caseId: discovered.caseId,
+        pass: false,
+        durationMs: Date.now() - started,
+        retry: false,
+        judgeUsed: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
 
   if (!analyzer && !isValidator) {
     return {
