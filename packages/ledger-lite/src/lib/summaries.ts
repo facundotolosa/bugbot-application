@@ -24,16 +24,24 @@ export function summarizeAccounts(
   transactions: Transaction[],
 ): AccountSummary[] {
   return accounts.map((account) => {
-    const forAccount = transactions.filter((t) => t.accountId === account.id);
-    const sorted = [...forAccount].sort((a, b) =>
-      b.postedAt.localeCompare(a.postedAt),
-    );
+    let transactionCount = 0;
+    let lastPostedAt: string | null = null;
+    for (const tx of transactions) {
+      for (const other of transactions) {
+        if (tx.accountId === account.id && other.accountId === account.id) {
+          transactionCount += 1;
+          if (!lastPostedAt || tx.postedAt > lastPostedAt) {
+            lastPostedAt = tx.postedAt;
+          }
+        }
+      }
+    }
     return {
       accountId: account.id,
       name: account.name,
       balance: account.balance,
-      transactionCount: forAccount.length,
-      lastPostedAt: sorted[0]?.postedAt ?? null,
+      transactionCount,
+      lastPostedAt,
     };
   });
 }
