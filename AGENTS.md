@@ -4,8 +4,6 @@
 
 Portfolio **AI code reviewer for GitHub**, built to demonstrate production-grade review systems aligned with the [Software Engineer, BugBot](https://cursor.com/careers/software-engineer-bugbot) role at Cursor.
 
-Author background: See `cv.md`.
-
 ## Stack (default — confirm in active spec)
 
 TypeScript (Node 20+) · GitHub Actions (`pull_request` trigger) · Cursor SDK · Vitest · `evals/` for golden cases + metrics

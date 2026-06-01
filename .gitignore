@@ -14,3 +14,7 @@ packages/ledger-lite/dist/
 
 # Eval run artifacts
 evals/out/
+
+# Personal documents
+cv.md
+Facundo_Tolosa_CV.pdf
